@@ -778,7 +778,7 @@ function importCsv(e){
 // ---------- Strava : état, synchro, erreurs visibles ----------
 var SYNC={t:0,msg:"",busy:false,conn:"check",res:null}, SYNCID=0, RUNS=[];
 try{var _s=JSON.parse(localStorage.getItem("thp40-sync")||"null"); if(_s){SYNC.t=_s.t||0;SYNC.msg=_s.msg||"";}}catch(e){}
-var CONNL={check:["warn","Vérification…"],ok:["ok","Connecté"],no:["off","Non connecté"],reauth:["warn","À reconnecter"],ask:["warn","Autorisation à donner"],denied:["off","Autorisation refusée"],nopage:["off","Indisponible ici"]};
+var CONNL={check:["warn","Vérification…"],ok:["ok","Connecté"],json:["ok","Strava via GitHub"],nojson:["off","Action GitHub à activer"],no:["off","Non connecté"],reauth:["warn","À reconnecter"],ask:["warn","Autorisation à donner"],denied:["off","Autorisation refusée"],nopage:["off","Indisponible ici"]};
 function syncWhen(){if(!SYNC.t)return "jamais";var d=new Date(SYNC.t); return fmtS(new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())))+" à "+pz(d.getHours())+":"+pz(d.getMinutes());}
 function setSync(p){for(var k in p)SYNC[k]=p[k]; try{render();}catch(e){}}
 function connFor(c){
@@ -806,6 +806,10 @@ function errInfo(c,msg){
     E.title="Autorisation Strava refusée pour cette page";
     E.body="Tu as refusé l’accès (ou la fenêtre d’autorisation n’a pas été validée). La page ne peut pas lire Strava sans ton accord.";
     E.steps=["Touche « Gérer les autorisations » ci-dessous, ou ouvre le menu Permissions de la page.","Autorise Strava, puis touche « Synchroniser »."]; E.manage=true;
+  }else if(c==="json_missing"){
+    E.title="Données Strava introuvables";
+    E.body="Le fichier activities.json n’existe pas encore (ou ne peut pas être lu). Il est créé par l’Action GitHub « Strava sync ».";
+    E.steps=["Dans ton dépôt GitHub, ouvre l’onglet Actions, choisis « Strava sync » puis Run workflow.","Attends la fin du travail (environ une minute).","Reviens ici et touche « Synchroniser »."];
   }else if(c==="timeout"){
     E.title="Strava ne répond pas";
     E.body="Aucune réponse au bout de 35 secondes. Une fenêtre d’autorisation de Claude est peut-être restée cachée.";
@@ -847,7 +851,10 @@ function syncCard(full){
 }
 function syncChip(){return syncCard(false);}
 function initConn(){
-  if(!window.claude||!claude.use){setSync({conn:"nopage"});return;}
+  if(!window.claude||!claude.use){
+    loadJson().then(function(){setSync({conn:"json"});autoSync();}).catch(function(){setSync({conn:"nojson",res:errInfo("json_missing")});});
+    return;
+  }
   claude.use("mcp").then(function(m){
     if(!m){setSync({conn:"nopage"});return;}
     return m.listTools("Strava").then(function(r){
@@ -883,9 +890,40 @@ function fetchRuns(m,id){
   }
   return page(null);
 }
-function syncStrava(auto){
+function syncFinish(acts,src,conn){
+  RUNS=acts.slice();
+  var startIso=iso(new Date(START)), before=acts.filter(function(a){return a.date<startIso;}).length, inPlan=acts.length-before;
+  var n=applyActs(acts), last=acts[acts.length-1], lines=[];
+  if(!acts.length)lines.push("Aucune sortie de course trouvée depuis le 28 septembre.");
+  if(inPlan===0&&acts.length)lines.push("Aucune sortie dans le plan pour l’instant : il commence le lundi 9 novembre 2026.");
+  if(inPlan>0)lines.push(n+" sortie"+(n>1?"s":"")+" rattachée"+(n>1?"s":"")+" à une séance du plan sur "+inPlan+" depuis le 9 novembre.");
+  LASTMATCH.slice(-4).forEach(function(x){lines.push("Rattachée : "+x);});
+  if(before)lines.push(before+" sortie"+(before>1?"s":"")+" d’avant le plan (comptée"+(before>1?"s":"")+" pour comparer ton allure au Jour J).");
+  var res={kind:"ok",title:"Strava est bien connecté",body:acts.length+" sortie"+(acts.length>1?"s":"")+" de course lue"+(acts.length>1?"s":"")+" depuis le 28 septembre"+(last?". Dernière : "+fmtS(new Date(last.date+"T00:00:00Z"))+", "+kmStr(last.km)+" km.":".")+(src?" "+src:""),lines:lines};
+  var t=Date.now(); try{localStorage.setItem("thp40-sync",JSON.stringify({t:t,msg:res.body}));}catch(e){}
+  setSync({busy:false,conn:conn||"ok",t:t,msg:res.body,res:res});
+}
+// ---------- Strava sans Claude : activities.json écrit par l'Action GitHub ----------
+function loadJson(){
+  return fetch("activities.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw {code:"json_missing"}; return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw {code:"format"}; return j;},function(e){throw (e&&e.code)?e:{code:"json_missing"};});
+}
+function jsonSync(auto){
   var id=++SYNCID;
-  if(!window.claude||!claude.use){setSync({busy:false,conn:"nopage",res:errInfo("no_claude")});return;}
+  setSync({busy:true,res:{kind:"info",title:"Lecture de tes sorties Strava…",body:"Données récupérées par l’Action GitHub."}});
+  loadJson().then(function(j){
+    if(id!==SYNCID)return;
+    var acts=j.runs.filter(function(r){return r&&/^\d{4}-\d{2}-\d{2}$/.test(String(r.date))&&r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:+r.dp||0,t:+r.t||0,name:""};}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
+    var u=j.updated?new Date(j.updated):null;
+    syncFinish(acts,u&&!isNaN(u)?"Données Strava du "+fmtS(new Date(Date.UTC(u.getFullYear(),u.getMonth(),u.getDate())))+" à "+pz(u.getHours())+":"+pz(u.getMinutes())+" (mises à jour toutes les 2 heures).":"","json");
+  }).catch(function(err){
+    if(id!==SYNCID)return;
+    var c=(err&&err.code)||"json_missing";
+    setSync({busy:false,conn:c==="json_missing"?"nojson":SYNC.conn,res:errInfo(c)});
+  });
+}
+function syncStrava(auto){
+  if(!window.claude||!claude.use){jsonSync(auto);return;}
+  var id=++SYNCID;
   setSync({busy:true,res:{kind:"info",title:"Connexion à Strava…",body:auto?"Synchronisation automatique.":"Si Claude te demande d’autoriser la connexion, accepte."}});
   var to=setTimeout(function(){if(id===SYNCID&&SYNC.busy)setSync({busy:false,res:errInfo("timeout")});},35000), mm;
   claude.use("mcp").then(function(m){
@@ -899,17 +937,7 @@ function syncStrava(auto){
     });
   }).then(function(){return fetchRuns(mm,id);}).then(function(acts){
     if(id!==SYNCID)return; clearTimeout(to);
-    RUNS=acts.slice();
-    var startIso=iso(new Date(START)), before=acts.filter(function(a){return a.date<startIso;}).length, inPlan=acts.length-before;
-    var n=applyActs(acts), last=acts[acts.length-1], lines=[];
-    if(!acts.length)lines.push("Aucune sortie de course trouvée depuis le 28 septembre.");
-    if(inPlan===0&&acts.length)lines.push("Aucune sortie dans le plan pour l’instant : il commence le lundi 9 novembre 2026.");
-    if(inPlan>0)lines.push(n+" sortie"+(n>1?"s":"")+" rattachée"+(n>1?"s":"")+" à une séance du plan sur "+inPlan+" depuis le 9 novembre.");
-    LASTMATCH.slice(-4).forEach(function(x){lines.push("Rattachée : "+x);});
-    if(before)lines.push(before+" sortie"+(before>1?"s":"")+" d’avant le plan (comptée"+(before>1?"s":"")+" pour comparer ton allure au Jour J).");
-    var res={kind:"ok",title:"Strava est bien connecté",body:acts.length+" sortie"+(acts.length>1?"s":"")+" de course lue"+(acts.length>1?"s":"")+" depuis le 28 septembre"+(last?". Dernière : "+fmtS(new Date(last.date+"T00:00:00Z"))+", "+kmStr(last.km)+" km.":"."),lines:lines};
-    var t=Date.now(); try{localStorage.setItem("thp40-sync",JSON.stringify({t:t,msg:res.body}));}catch(e){}
-    setSync({busy:false,conn:"ok",t:t,msg:res.body,res:res});
+    syncFinish(acts,"");
   }).catch(function(err){
     if(id!==SYNCID)return; clearTimeout(to);
     var c=err&&err.code;
@@ -917,7 +945,7 @@ function syncStrava(auto){
     setSync({busy:false,conn:connFor(c),res:errInfo(c,err&&err.message)});
   });
 }
-function autoSync(){if(SYNC.busy||SYNC.conn!=="ok"||!window.claude||!claude.use)return; if(Date.now()-SYNC.t<10*60*1000)return; syncStrava(true);}
+function autoSync(){if(SYNC.busy||(SYNC.conn!=="ok"&&SYNC.conn!=="json"))return; if(Date.now()-SYNC.t<10*60*1000)return; syncStrava(true);}
 setTimeout(initConn,300);
 document.addEventListener("visibilitychange",function(){if(!document.hidden)autoSync();});
 $("nav").addEventListener("click",function(e){var b=e.target.closest("button"); if(!b)return; view=b.dataset.v; if(view==="day")goNow(); render(); window.scrollTo(0,0);});

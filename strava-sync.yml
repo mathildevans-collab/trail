@@ -1,0 +1,37 @@
+name: Strava sync
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lire Strava
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
+          RT_OUT: ${{ runner.temp }}/new_rt
+        run: python3 scripts/strava.py sync
+      - name: Garder le jeton Strava à jour s'il a changé
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          RT_OUT: ${{ runner.temp }}/new_rt
+        run: |
+          if [ -f "$RT_OUT" ]; then
+            if [ -n "$GH_PAT" ]; then
+              GH_TOKEN="$GH_PAT" gh secret set STRAVA_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY" < "$RT_OUT"
+            else
+              echo "::warning::Strava a émis un nouveau jeton mais le secret GH_PAT est absent : ajoute-le pour éviter une panne."
+            fi
+          fi
+      - name: Publier activities.json
+        run: |
+          git config user.name "strava-bot"
+          git config user.email "strava-bot@users.noreply.github.com"
+          git add activities.json
+          git diff --cached --quiet || (git commit -m "Mise à jour Strava" && git push)

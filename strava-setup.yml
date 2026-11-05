@@ -1,0 +1,28 @@
+name: Strava setup (une seule fois)
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: "Code d'autorisation Strava (copié depuis l'adresse de redirection)"
+        required: true
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier le secret GH_PAT
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: test -n "$GH_PAT" || (echo "::error::Ajoute d'abord le secret GH_PAT (voir README)." && exit 1)
+      - name: Échanger le code contre un jeton
+        env:
+          STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
+          STRAVA_CLIENT_SECRET: ${{ secrets.STRAVA_CLIENT_SECRET }}
+          STRAVA_CODE: ${{ inputs.code }}
+          RT_OUT: ${{ runner.temp }}/new_rt
+        run: python3 scripts/strava.py setup
+      - name: Enregistrer le jeton dans les Secrets
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          RT_OUT: ${{ runner.temp }}/new_rt
+        run: GH_TOKEN="$GH_PAT" gh secret set STRAVA_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY" < "$RT_OUT"
