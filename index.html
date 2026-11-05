@@ -7,24 +7,24 @@
 /* Layout: day-by-day coaching app. Week strip on top, one hero session below, primary action docked above the thumb-reach tab bar.
    Palette: forest-ink neutrals, lavender brand, semantic green / amber / rose for coach verdicts. */
 :root{
-  --bg:#F5F6F3; --card:#FFFFFF; --ink:#15221A; --muted:#5C6B62; --line:#DDE3DD;
-  --brand:#5B47C9; --brand-ink:#FFFFFF; --brand-soft:#ECE9FB;
-  --ok:#2A7548; --ok-soft:#DFF0E5; --warn:#9A5A0E; --warn-soft:#FAEBD3; --off:#B23A48; --off-soft:#F8E1E4;
+  --bg:#F7F8FC; --card:#FFFFFF; --ink:#1A1F36; --muted:#6B7289; --line:#E4E7F0;
+  --brand:#5B6CFF; --brand-ink:#FFFFFF; --brand-soft:#EEF0FF;
+  --ok:#1F9D57; --ok-soft:#E5F8EE; --warn:#C47A0A; --warn-soft:#FFF3DF; --off:#D6455D; --off-soft:#FDE8EC;
   --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
   --body:"Hanken Grotesk",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0F1612; --card:#17211B; --ink:#E9F0EB; --muted:#93A39A; --line:#26342B;
-  --brand:#B3A6FF; --brand-ink:#16113A; --brand-soft:#2A2548;
-  --ok:#7CCB98; --ok-soft:#1B3325; --warn:#E3A857; --warn-soft:#3A2B12; --off:#F08A98; --off-soft:#3B1D22; color-scheme:dark}}
+  --bg:#1A1F2E; --card:#242B3D; --ink:#F0F2F8; --muted:#A8B0C4; --line:#343B52;
+  --brand:#8B9BFF; --brand-ink:#12162A; --brand-soft:#2E3550;
+  --ok:#4ADE80; --ok-soft:#1A3328; --warn:#FBBF24; --warn-soft:#3A2E14; --off:#FB7185; --off-soft:#3B1F28; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0F1612; --card:#17211B; --ink:#E9F0EB; --muted:#93A39A; --line:#26342B;
-  --brand:#B3A6FF; --brand-ink:#16113A; --brand-soft:#2A2548;
-  --ok:#7CCB98; --ok-soft:#1B3325; --warn:#E3A857; --warn-soft:#3A2B12; --off:#F08A98; --off-soft:#3B1D22; color-scheme:dark}
+  --bg:#1A1F2E; --card:#242B3D; --ink:#F0F2F8; --muted:#A8B0C4; --line:#343B52;
+  --brand:#8B9BFF; --brand-ink:#12162A; --brand-soft:#2E3550;
+  --ok:#4ADE80; --ok-soft:#1A3328; --warn:#FBBF24; --warn-soft:#3A2E14; --off:#FB7185; --off-soft:#3B1F28; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:14px 150px}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));
+  padding-block:10px 130px;-webkit-tap-highlight-color:transparent}
 .wrap{max-width:540px;margin:0 auto}
 h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;line-height:1.1}
 button{font:inherit;color:inherit}
@@ -56,7 +56,7 @@ button{font:inherit;color:inherit}
 .dpill[aria-pressed="true"] .dot{border-color:var(--brand-ink)}
 .dpill[aria-pressed="true"] .dot.done{background:var(--brand-ink)}
 .banner{background:var(--brand-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:12px}
-.hero{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:12px}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:8px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .tag{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px}
 .tag.q{background:var(--brand-soft);color:var(--brand)}
@@ -158,7 +158,10 @@ select,input[type="date"]{font:inherit;font-size:15px;color:var(--ink);backgroun
 .plan-row.cur{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
 .plan-row .r{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .phase{margin:18px 0 8px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:8px}
+.profwrap{position:relative}
+.profinfo{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:var(--brand-soft);color:var(--ink);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.profinfo.muted{background:var(--bg);color:var(--muted);font-weight:500}
 .card h3{font-size:21px;margin-bottom:8px}
 .card details{margin-top:0}
 .card details+details{border-top:1px solid var(--line)}
@@ -176,17 +179,24 @@ th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;le
 .msg{margin-top:10px;font-size:14px}
 svg text{fill:var(--muted);font-family:var(--body);font-size:9px}
 svg .lbl{fill:var(--ink);font-weight:600}
-nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);gap:2px;
-  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));z-index:5;min-height:64px}
-nav button{border:0;background:none;color:var(--muted);min-height:52px;border-radius:12px;cursor:pointer;font-weight:600;font-size:11px;min-width:0;padding:0 1px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+  padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));z-index:5;min-height:60px}
+nav button{border:0;background:none;color:var(--muted);min-height:52px;border-radius:12px;cursor:pointer;font-weight:600;font-size:10px;min-width:0;padding:4px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 nav button[aria-current="page"]{color:var(--brand);background:var(--brand-soft)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#8B9BFF);display:grid;place-items:center;flex:none}
+.logo-mark svg{width:18px;height:18px}
 button:focus-visible,summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.prog i{transition:none}}
 </style>
 
 <div class="wrap">
   <div class="top">
-    <div class="brand">THP40 · 4 h 55<small>Forcalquier, 38,8 km, +1 279 m</small></div>
+    <div class="logo">
+      <div class="logo-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 17l4-6 3 3 5-8 4 11" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="brand">THP40 · 4 h 55<small>Forcalquier · 38,8 km · +1 279 m</small></div>
+    </div>
     <div class="count" id="count"></div>
   </div>
   <div class="prog"><i id="progbar"></i></div>
@@ -195,12 +205,10 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--brand);outlin
 </div>
 <div class="act" id="act" hidden><div class="in"><button class="go" id="gobtn"></button></div></div>
 <nav id="nav">
-  <button data-v="day" aria-current="page">Aujourd’hui</button>
-  <button data-v="plan">Plan</button>
-  <button data-v="race">Course</button>
-  <button data-v="jj">Jour J</button>
-  <button data-v="guide">Exercices</button>
-  <button data-v="set">Réglages</button>
+  <button data-v="day" aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Aujourd’hui</button>
+  <button data-v="plan"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Plan</button>
+  <button data-v="jj"><svg viewBox="0 0 24 24"><path d="M3 17l5-8 4 4 4-7 5 11"/><path d="M3 20h18"/></svg>Course</button>
+  <button data-v="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Plus</button>
 </nav>
 
 <script>
@@ -500,7 +508,8 @@ function adjHTML(w){
   return '<section class="review adj'+(dec&&st==="on"||a.mode==="z2"?' on':'')+'">'+head+'<p class="state">'+esc(state)+'</p><p class="lead">'+esc(a.lead)+' '+esc(a.prop)+'</p><details><summary>Voir pourquoi</summary><div class="in">'+adjBody(a)+'</div></details>'+(act?'<div class="adjb">'+act+'</div>':'')+'</section>';
 }
 function ciHTML(w){
-  if(w>nowWeek())return "";
+  var ti=todayIdx(), isMon=ti>=0&&(ti%7)===0, onCur=w===nowWeek();
+  if(!isMon||!onCur||w>nowWeek())return "";
   var c=ci[w]||{};
   function o(list,sel){return list.map(function(x){return '<option value="'+x[0]+'"'+(c[sel]===x[0]?" selected":"")+'>'+x[1]+'</option>';}).join("");}
   return '<section class="card"><h3>Check-in du lundi</h3><p class="muted" style="margin:0">Facultatif, 10 secondes. Le coach s’en sert pour ajuster la suite.</p><div class="cigrid"><label>Sommeil<select class="ci" data-f="sleep">'+o([["","—"],["bien","Bien"],["moyen","Moyen"],["mauvais","Mauvais"]],"sleep")+'</select></label><label>Jambes<select class="ci" data-f="legs">'+o([["","—"],["legeres","Légères"],["normales","Normales"],["lourdes","Lourdes"]],"legs")+'</select></label><label>Semaine passée<select class="ci" data-f="feel">'+o([["","—"],["ok","Ça va"],["dur","Dure"],["trop","Trop dure"]],"feel")+'</select></label></div></section>';
@@ -588,6 +597,26 @@ function vPlan(){
 }
 var PASS=[[5,35],[10,70],[15,108],[20,143],[25,181],[30,218],[35,258],[38.8,285]];
 var PROFILE=[[0,570],[0.5,586],[1,573],[1.5,562],[2,616],[2.5,667],[3,653],[3.5,666],[4,666],[4.5,664],[5,659],[5.5,610],[6,600],[6.5,596],[7,607],[7.5,599],[8,583],[8.5,662],[9,635],[9.5,617],[10,646],[10.5,624],[11,636],[11.5,669],[12,701],[12.5,731],[13,736],[13.5,799],[14,834],[14.5,852],[15,826],[15.5,894],[16,893],[16.5,892],[17,871],[17.5,854],[18,820],[18.5,754],[19,703],[19.5,688],[20,672],[20.5,666],[21,635],[21.5,617],[22,633],[22.5,656],[23,630],[23.5,678],[24,669],[24.5,692],[25,727],[25.5,746],[26,764],[26.5,795],[27,802],[27.5,794],[28,772],[28.5,733],[29,712],[29.5,737],[30,769],[30.5,722],[31,652],[31.5,622],[32,566],[32.5,514],[33,550],[33.5,538],[34,541],[34.5,606],[35,655],[35.5,684],[36,642],[36.5,635],[37,624],[37.5,584],[38,542],[38.5,545],[38.8,545]];
+function profileCumul(){
+  var out=[], up=0, dn=0, i;
+  for(i=0;i<PROFILE.length;i++){
+    if(i>0){var d=PROFILE[i][1]-PROFILE[i-1][1]; if(d>0)up+=d; else dn-=d;}
+    out.push({km:PROFILE[i][0], elev:PROFILE[i][1], up:Math.round(up), dn:Math.round(dn)});
+  }
+  return out;
+}
+var PROFILE_CUM=null;
+function profileAt(km){
+  if(!PROFILE_CUM)PROFILE_CUM=profileCumul();
+  var i=0; while(i<PROFILE_CUM.length-1&&PROFILE_CUM[i+1].km<=km)i++;
+  var a=PROFILE_CUM[i], b=PROFILE_CUM[Math.min(i+1,PROFILE_CUM.length-1)], t=b.km===a.km?0:(km-a.km)/(b.km-a.km);
+  return {km:km, elev:Math.round(a.elev+(b.elev-a.elev)*t), up:Math.round(a.up+(b.up-a.up)*t), dn:Math.round(a.dn+(b.dn-a.dn)*t)};
+}
+function nextAid(km){
+  if(typeof AIDS==="undefined")return null;
+  for(var i=0;i<AIDS.length;i++){if(AIDS[i].km>km+0.05)return AIDS[i];}
+  return null;
+}
 function profile(){
   var X=function(k){return 24+k/38.8*364;}, Y=function(e){return 150-(e-480)/(920-480)*130;}, n=PROFILE.length;
   function slope(i){var a=PROFILE[Math.max(0,i-2)], b=PROFILE[Math.min(n-1,i+3)]; return (b[1]-a[1])/((b[0]-a[0])*1000)*100;}
@@ -597,7 +626,7 @@ function profile(){
     return slope(i)>=3.5?"climb":"flat";
   }
   var COL={flat:"var(--ok)",climb:"var(--warn)",trap:"var(--off)"};
-  var s='<svg viewBox="0 0 400 190" width="100%" role="img" aria-label="Profil altimétrique du THP40 : parcours roulant, montées soutenues et deux pièges aux km 30 et 34">';
+  var s='<div class="profwrap"><svg id="profsvg" viewBox="0 0 400 190" width="100%" role="img" aria-label="Profil altimétrique du THP40" style="touch-action:none;cursor:crosshair">';
   [500,700,900].forEach(function(e){s+='<line x1="24" x2="388" y1="'+Y(e)+'" y2="'+Y(e)+'" style="stroke:var(--line)"/><text x="21" y="'+(Y(e)+3)+'" text-anchor="end">'+e+'</text>';});
   var C=[], t, r, e2, z;
   for(t=0;t<n-1;t++)C.push(cls(t));
@@ -620,9 +649,34 @@ function profile(){
   s+='<text class="lbl" style="'+H+'font-size:10px;fill:var(--off)" x="'+(X(31.4)+4)+'" y="20" text-anchor="end">Piège 1 · km 30 · −13 %</text>';
   s+='<line x1="'+X(34.8)+'" x2="'+X(34.8)+'" y1="'+(Y(600)-2)+'" y2="40" style="stroke:var(--off)" stroke-dasharray="2 2"/>';
   s+='<text class="lbl" style="'+H+'font-size:10px;fill:var(--off)" x="392" y="36" text-anchor="end">Piège 2 · km 34 · +12 %</text>';
+  s+='<line id="profcur" x1="24" x2="24" y1="18" y2="160" style="stroke:var(--brand);stroke-width:1.5;display:none"/>';
+  s+='<circle id="profdot" cx="24" cy="100" r="4.5" style="fill:var(--brand);stroke:var(--card);stroke-width:2;display:none"/>';
   s+='</svg>';
-  s+='<div class="legend"><span><i style="background:var(--ok)"></i>Roulant</span><span><i style="background:var(--warn)"></i>Montée soutenue</span><span><i style="background:var(--off)"></i>Piège</span></div>';
+  s+='<div id="profinfo" class="profinfo muted">Touche le profil · km, D+ / D−, ravito</div>';
+  s+='<div class="legend"><span><i style="background:var(--ok)"></i>Roulant</span><span><i style="background:var(--warn)"></i>Montée</span><span><i style="background:var(--off)"></i>Piège</span></div></div>';
   return s;
+}
+function bindProfile(){
+  var svg=$("profsvg"), cur=$("profcur"), dot=$("profdot"), info=$("profinfo");
+  if(!svg||!cur||!dot||!info)return;
+  var Y=function(e){return 150-(e-480)/(920-480)*130;};
+  function at(clientX){
+    var r=svg.getBoundingClientRect(), ratio=(clientX-r.left)/r.width;
+    var km=Math.max(0,Math.min(38.8,(ratio*400-24)/364*38.8));
+    var p=profileAt(km), aid=nextAid(km);
+    var sx=24+km/38.8*364, sy=Y(p.elev);
+    cur.setAttribute("x1",sx); cur.setAttribute("x2",sx); cur.style.display="";
+    dot.setAttribute("cx",sx); dot.setAttribute("cy",sy); dot.style.display="";
+    var txt="Km "+kmStr(Math.round(km*10)/10)+" · "+p.elev+" m · +"+p.up+" / −"+p.dn+" m";
+    if(aid)txt+=" · ravito "+aid.n+" (km "+kmStr(aid.km)+")";
+    else if(km>=38)txt+=" · arrivée";
+    info.textContent=txt; info.className="profinfo";
+  }
+  function hide(){cur.style.display="none";dot.style.display="none";info.textContent="Touche le profil · km, D+ / D−, ravito";info.className="profinfo muted";}
+  svg.onmousemove=function(e){at(e.clientX);};
+  svg.onmouseleave=hide;
+  svg.ontouchstart=function(e){if(e.touches[0]){at(e.touches[0].clientX);e.preventDefault();}};
+  svg.ontouchmove=function(e){if(e.touches[0]){at(e.touches[0].clientX);e.preventDefault();}};
 }
 function vRace(){
   var h='<div class="card"><h3>Profil du parcours</h3>'+profile()+'<p class="muted" style="margin:6px 0 0">Altitude en mètres, entre 511 et 909 m. Les deux zones rouges sont les pièges : une descente raide, puis une montée à 12 % jambes fatiguées.</p></div>';
@@ -643,9 +697,8 @@ function vGuide(){
 function vSet(){
   return '<div class="card"><h3>Relier Strava</h3>'+syncCard(true)+'</div>'+
   '<div class="card"><h3>Comment le coach juge</h3><ul style="margin:0;padding-left:18px"><li>Distance : en cible entre 90 et 115 % du prévu.</li><li>Dénivelé : en cible au-dessus de 75 % du prévu.</li><li>Sorties faciles : trop rapides si ton allure par km-effort dépasse celle de ton objectif 4 h 55.</li><li>Séance du jeudi : enregistrée, jamais jugée.</li><li>Chaque semaine, le coach regarde ton volume, tes sorties trop rapides et ton check-in du lundi, puis te propose un ajustement.</li></ul></div>'+
-  '<div class="card"><h3>Importer un export CSV</h3><p style="margin:0">Fichier Activities.csv de Garmin Connect ou export Strava. Il fonctionne sans connexion.</p><label class="fileb">Choisir un fichier CSV<input type="file" id="csv" accept=".csv,text/csv"></label><div class="msg" id="csvmsg"></div></div>'+
   cycleCard()+
-  '<div class="card"><h3>Sur ton écran d’accueil</h3><ol style="margin:0 0 8px;padding-left:20px"><li>iPhone : ouvre cette page dans Safari, touche Partager, puis « Sur l’écran d’accueil ».</li><li>Android : ouvre-la dans Chrome, touche le menu ⋮, puis « Ajouter à l’écran d’accueil ».</li></ol><p class="muted" style="margin:0">Tu dois être connectée à ton compte Claude dans ce navigateur. Il faut une connexion internet.</p></div>'+
+  vGuide()+
   '<div class="card"><h3>Ta progression</h3><p class="muted" style="margin:0 0 12px">Cette action efface les séances cochées et les données importées.</p><button class="btn small" id="reset">Tout effacer</button></div>';
 }
 // ---------- onglet Jour J ----------
@@ -664,11 +717,11 @@ function projHTML(a,live){
   return h;
 }
 function vJ(){
-  var t=new Date(), tod=iso(new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()))), live=(tod===iso(new Date(RACE))), j=Math.ceil((RACE-Date.now())/86400000);
-  var h='<div class="card"><span class="eyebrow">THP40 · Forcalquier</span><h2 style="margin:4px 0 6px;font-family:var(--display)">'+(live?"C’est le jour J":j>0?"Jour J dans "+j+" jours":"Course passée")+'</h2><p style="margin:0 0 6px">38,8 km · +1 279 m · objectif 4 h 55</p><p class="muted" style="margin:0">Mode actuel : <b>'+(live?"suivi en direct":"préparation")+'</b>. Date supposée : samedi 8 mai 2027, à confirmer sur le site de l’organisateur.</p></div>';
+  var t=new Date(), tod=iso(new Date(Date.UTC(t.getFullYear(),t.getMonth(),t.getDate()))), live=(tod===iso(new Date(RACE)));
+  var h='';
   // D. suivi / comparaison
   var runs=RUNS.slice().reverse(), cand=live?runs.filter(function(r){return r.date===tod;}):runs.filter(function(r){return r.km>=10;});
-  h+='<div class="card"><h3>'+(live?"Suivi en direct":"Ton allure réelle contre l’objectif")+'</h3>';
+  h+='<div class="card"><h3>'+(live?"Suivi en direct":"Ton allure vs objectif")+'</h3>';
   if(!RUNS.length){
     h+='<p style="margin:0 0 10px">Synchronise Strava pour comparer tes sorties à l’objectif de 4 h 55.</p><button class="btn primary syncbtn"'+(SYNC.busy?" disabled":"")+'>'+(SYNC.busy?"Synchronisation…":"Synchroniser Strava")+'</button>'+(SYNC.res&&SYNC.res.kind==="err"?'<div class="sres err" role="alert"><b>'+esc(SYNC.res.title)+'</b><p>'+esc(SYNC.res.body||"")+'</p></div>':'');
   }else if(!cand.length){
@@ -698,7 +751,8 @@ function vJ(){
 function render(){
   var v=$("view"), act=$("act");
   act.hidden=true;
-  v.innerHTML=view==="day"?vDay():view==="plan"?vPlan():view==="race"?vRace():view==="jj"?vJ():view==="guide"?vGuide():vSet();
+if(view==="race"||view==="guide")view="jj";
+  v.innerHTML=view==="day"?vDay():view==="plan"?vPlan():view==="jj"?vJ():vSet();
   Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(b){if(b.dataset.v===view)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current");});
   var tot=0,dn=0; PLAN.forEach(function(p){tot+=5;dn+=weekDone(p);});
   $("progbar").style.width=Math.round(dn/tot*100)+"%";
@@ -722,6 +776,7 @@ function bind(){
   var cd=$("cydate"); if(cd)cd.onchange=function(){cycle.start=cd.value; persist(); render();};
   var cl=$("cylen"); if(cl)cl.onchange=function(){cycle.len=+cl.value; persist(); render();};
   var rs=$("reset"); if(rs)rs.onclick=function(){if(rs.dataset.armed){done={};actual={};ci={};adj={};cycle={on:false,start:"",len:28};persist();render();}else{rs.dataset.armed="1";rs.textContent="Confirmer : tout effacer";}};
+  bindProfile();
 }
 
 // ---------- activités réelles (Strava ou CSV) ----------
