@@ -5,6 +5,9 @@ on:
       code:
         description: "Code d'autorisation Strava (copié depuis l'adresse de redirection)"
         required: true
+concurrency:
+  group: strava
+  cancel-in-progress: false
 jobs:
   setup:
     runs-on: ubuntu-latest

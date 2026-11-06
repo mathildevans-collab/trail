@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:  # jamais deux lectures en même temps : le jeton Strava pourrait être perdu
+  group: strava
+  cancel-in-progress: false
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -26,12 +29,17 @@ jobs:
             if [ -n "$GH_PAT" ]; then
               GH_TOKEN="$GH_PAT" gh secret set STRAVA_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY" < "$RT_OUT"
             else
-              echo "::warning::Strava a émis un nouveau jeton mais le secret GH_PAT est absent : ajoute-le pour éviter une panne."
+              echo "::error::Strava a émis un nouveau jeton mais le secret GH_PAT est absent ou expiré : la prochaine synchro échouera. Recrée GH_PAT (voir le README) puis relance « Strava setup »."
+              exit 1
             fi
           fi
       - name: Publier activities.json
+        if: always()
         run: |
           git config user.name "strava-bot"
           git config user.email "strava-bot@users.noreply.github.com"
           git add activities.json
-          git diff --cached --quiet || (git commit -m "Mise à jour Strava" && git push)
+          git diff --cached --quiet && exit 0
+          git commit -m "Mise à jour Strava"
+          for i in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
+          exit 1
