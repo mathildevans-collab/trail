@@ -428,9 +428,11 @@ function vPrep(r,pl){
   h+='</div>';
   var s=sessAt(wk,sel);
   h+=cycleBanner(selD,s);
+  var showM=cur===tw&&sel===td;
+  if(showM)h+=weekMeter(r,wk,td);
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
   h+=bilanCard(r,pl);
-  h+=weekCard(r,pl,wk,s);
+  h+=weekCard(r,pl,wk,s,showM);
   h+=checkinCard(r,pl,cur);
   return h;
 }
@@ -458,9 +460,22 @@ function bilanCard(r,pl){
   var rv=review(pl.m,best.s,best.ac), b=BADGE[rv.lvl], ac=best.ac, s=best.s;
   return '<div class="card"><div class="verdict"><h3>'+(best.d===t?"Bilan du jour":"Bilan de "+DOWL[dowOf(best.d)])+'</h3><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km · prévu '+kmS(s.km)+'</span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m · prévu '+nb(s.dp||0)+'</span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
 }
-function weekCard(r,pl,wk,s){
-  var pk=0,ak=0,pd=0,ad=0; wk.s.forEach(function(x){if(x.race)return; pk+=x.km||0; pd+=x.dp||0; var ac=D.actual[sk(r,wk.n,x.k)]; if(ac){ak+=ac.km; ad+=ac.dp||0;} else if(D.done[sk(r,wk.n,x.k)]){ak+=x.km||0; ad+=x.dp||0;}});
-  var h='<div class="card"><h3>Ta semaine</h3><div class="sb num small" style="margin-bottom:6px"><span>'+kmS(ak)+' / '+kmS(pk)+' km</span><span class="muted">'+nb(ad)+' / '+nb(pd)+' m D+</span></div><div class="bar"><i style="width:'+Math.min(100,pk?ak/pk*100:0)+'%"></i></div><div style="margin-top:8px">';
+function weekTot(r,wk,upto){
+  var pk=0,ak=0,pd=0,ad=0,ek=0,ed=0;
+  wk.s.forEach(function(x){if(x.race)return; pk+=x.km||0; pd+=x.dp||0; if(x.dow<=upto){ek+=x.km||0; ed+=x.dp||0;} var ac=D.actual[sk(r,wk.n,x.k)]; if(ac){ak+=ac.km; ad+=ac.dp||0;} else if(D.done[sk(r,wk.n,x.k)]){ak+=x.km||0; ad+=x.dp||0;}});
+  return {pk:pk,ak:ak,pd:pd,ad:ad,ek:ek,ed:ed};
+}
+function meterRow(label,val,plan,exp,unit){
+  var pc=plan?Math.round(val/plan*100):0;
+  return '<div class="sb num small" style="margin-bottom:6px"><b>'+label+'</b><span>'+nb(val)+' / '+nb(plan)+' '+unit+' <span class="muted">· '+pc+' %</span></span></div><div class="bar tick" role="img" aria-label="'+label+' : '+pc+' % du prévu"><i style="width:'+Math.min(100,plan?val/plan*100:0)+'%"></i>'+(plan?'<u style="left:'+Math.min(100,exp/plan*100)+'%" title="Prévu à ce jour"></u>':'')+'</div>';
+}
+function weekMeter(r,wk,td){
+  var t=weekTot(r,wk,td);
+  return '<div class="card"><h3>Ta semaine</h3>'+meterRow("Km",Math.round(t.ak*10)/10,Math.round(t.pk*10)/10,t.ek,"km")+'<div style="height:12px"></div>'+meterRow("D+",t.ad,t.pd,t.ed,"m")+'<p class="small muted" style="margin:8px 0 0">Le trait marque le prévu jusqu’à aujourd’hui.</p></div>';
+}
+function weekCard(r,pl,wk,s,noMeter){
+  var t0=weekTot(r,wk,6), pk=t0.pk, ak=t0.ak, pd=t0.pd, ad=t0.ad;
+  var h=noMeter?'<div class="card"><div>':'<div class="card"><h3>Ta semaine</h3><div class="sb num small" style="margin-bottom:6px"><span>'+kmS(ak)+' / '+kmS(pk)+' km</span><span class="muted">'+nb(ad)+' / '+nb(pd)+' m D+</span></div><div class="bar"><i style="width:'+Math.min(100,pk?ak/pk*100:0)+'%"></i></div><div style="margin-top:8px">';
   var t=todayUTC(), rf=null; wk.s.forEach(function(x){if(x.renfo&&!rf&&sessDate(pl,wk.n,x)>=t)rf=x;}); if(!rf)wk.s.forEach(function(x){if(x.renfo&&!rf)rf=x;});
   if(rf){var R0=RENFO[rf.renfo], dd=Math.round((sessDate(pl,wk.n,rf)-t)/DAY), parts=R0.name.split(" · "); h+='<button class="link" data-sheet="renfo:'+rf.renfo+'"><span class="ico">'+I.dumb+'</span><span class="tx"><b>'+esc(parts[0])+' '+(dd===0?"aujourd’hui":dd===1?"demain":DOWL[rf.dow])+'</b><small>'+esc(parts[1]||"")+' · 25 min · une chaise</small></span><span class="chev">›</span></button>';}
   var nk=s?s.nut:"rest"; if(!NUT[nk])nk="easy";
