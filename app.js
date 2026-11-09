@@ -429,7 +429,7 @@ function vPrep(r,pl){
   var s=sessAt(wk,sel);
   h+=cycleBanner(selD,s);
   var showM=cur===tw&&sel===td;
-  if(showM)h+=weekMeter(r,wk,td);
+  if(showM)h+=weekMeter(r,pl,wk,td);
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
   h+=bilanCard(r,pl);
   h+=weekCard(r,pl,wk,s,showM);
@@ -466,32 +466,24 @@ function weekTot(r,wk,upto){
   return {pk:pk,ak:ak,pd:pd,ad:ad,ek:ek,ed:ed};
 }
 var WM="km";
-function weekDays(r,wk){
-  var o=[0,1,2,3,4,5,6].map(function(){return {pk:0,pd:0,ak:0,ad:0,t:0,has:false};});
-  wk.s.forEach(function(x){
-    if(x.race)return; var d=o[x.dow]; d.pk+=x.km||0; d.pd+=x.dp||0;
-    var ac=D.actual[sk(r,wk.n,x.k)];
-    if(ac){d.ak+=ac.km; d.ad+=ac.dp||0; d.t+=ac.t||0; d.has=true;}
-    else if(D.done[sk(r,wk.n,x.k)]){d.ak+=x.km||0; d.ad+=x.dp||0; d.has=true;}
-  });
-  return o;
-}
-// Résumé façon Strava : chiffres de la semaine + histogramme jour par jour (prévu en clair, réalisé en couleur)
-function weekMeter(r,wk,td){
-  var days=weekDays(r,wk), t=weekTot(r,wk,td), isKm=WM==="km", tt=0, mx=1;
-  days.forEach(function(d){tt+=d.t; mx=Math.max(mx,isKm?d.pk:d.pd,isKm?d.ak:d.ad);});
+// Résumé façon Strava : chiffres de la semaine + histogramme semaine par semaine (prévu en clair, réalisé en couleur)
+function weekMeter(r,pl,wk,td){
+  var t=weekTot(r,wk,td), isKm=WM==="km", tt=0;
+  wk.s.forEach(function(x){var ac=D.actual[sk(r,wk.n,x.k)]; if(ac)tt+=ac.t||0;});
+  var n0=Math.max(1,Math.min(wk.n-5,pl.n-7)), n1=Math.min(pl.n,n0+7), W=[], mx=1, i, o;
+  for(i=n0;i<=n1;i++){o=weekTot(r,P(pl,i),6); W.push({n:i,pl:isKm?o.pk:o.pd,ac:isKm?o.ak:o.ad}); mx=Math.max(mx,isKm?o.pk:o.pd,isKm?o.ak:o.ad);}
   var h='<div class="card wm"><div class="wm-top"><h3>Cette semaine</h3><div class="wm-seg" role="group" aria-label="Afficher">'+
     '<button data-wm="km" aria-pressed="'+isKm+'">Distance</button><button data-wm="dp" aria-pressed="'+!isKm+'">Dénivelé</button></div></div>';
   h+='<div class="wm-nums num"><div><b>'+kmS(Math.round(t.ak*10)/10)+'<small> km</small></b><span>sur '+kmS(Math.round(t.pk*10)/10)+' prévus</span></div>'+
      '<div><b>+'+nb(t.ad)+'<small> m</small></b><span>sur '+nb(t.pd)+' prévus</span></div>'+
      '<div><b>'+(tt?dur(tt):"–")+'</b><span>temps couru</span></div></div>';
-  h+='<div class="wm-bars" role="img" aria-label="Histogramme de la semaine, '+(isKm?"distance":"dénivelé")+' par jour">';
-  days.forEach(function(d,i){
-    var pl=isKm?d.pk:d.pd, ac=isKm?d.ak:d.ad, ph=pl?Math.max(6,pl/mx*100):0, ah=ac?Math.max(6,ac/mx*100):0;
-    h+='<div class="wm-col'+(i===td?" today":"")+'"><span class="wm-v num">'+(ac?(isKm?kmS(Math.round(ac*10)/10):nb(ac)):"")+'</span><div class="wm-plot">'+
-       (ph?'<i class="p" style="height:'+ph+'%"></i>':'<i class="rest"></i>')+(ah?'<i class="a" style="height:'+ah+'%"></i>':'')+'</div><b>'+DL[i]+'</b></div>';
+  h+='<div class="wm-bars" style="grid-template-columns:repeat('+W.length+',1fr)" role="img" aria-label="Histogramme semaine par semaine, '+(isKm?"distance":"dénivelé")+'">';
+  W.forEach(function(w){
+    var ph=w.pl?Math.max(6,w.pl/mx*100):0, ah=w.ac?Math.max(6,w.ac/mx*100):0;
+    h+='<div class="wm-col'+(w.n===wk.n?" today":"")+'"><span class="wm-v num">'+(w.ac?(isKm?kmS(Math.round(w.ac)):nb(w.ac)):"")+'</span><div class="wm-plot">'+
+       (ph?'<i class="p" style="height:'+ph+'%"></i>':'<i class="rest"></i>')+(ah?'<i class="a" style="height:'+ah+'%"></i>':'')+'</div><b>'+w.n+'</b></div>';
   });
-  return h+'</div><p class="small muted" style="margin:8px 0 0"><i class="wm-key p"></i>prévu <i class="wm-key a"></i>réalisé</p></div>';
+  return h+'</div><p class="small muted" style="margin:8px 0 0">Numéro de semaine en bas. <i class="wm-key p"></i>prévu <i class="wm-key a"></i>réalisé</p></div>';
 }
 function weekCard(r,pl,wk,s,noMeter){
   var t0=weekTot(r,wk,6), pk=t0.pk, ak=t0.ak, pd=t0.pd, ad=t0.ad;
