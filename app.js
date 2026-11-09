@@ -465,13 +465,33 @@ function weekTot(r,wk,upto){
   wk.s.forEach(function(x){if(x.race)return; pk+=x.km||0; pd+=x.dp||0; if(x.dow<=upto){ek+=x.km||0; ed+=x.dp||0;} var ac=D.actual[sk(r,wk.n,x.k)]; if(ac){ak+=ac.km; ad+=ac.dp||0;} else if(D.done[sk(r,wk.n,x.k)]){ak+=x.km||0; ad+=x.dp||0;}});
   return {pk:pk,ak:ak,pd:pd,ad:ad,ek:ek,ed:ed};
 }
-function meterRow(label,val,plan,exp,unit){
-  var pc=plan?Math.round(val/plan*100):0;
-  return '<div class="sb num small" style="margin-bottom:6px"><b>'+label+'</b><span>'+nb(val)+' / '+nb(plan)+' '+unit+' <span class="muted">· '+pc+' %</span></span></div><div class="bar tick" role="img" aria-label="'+label+' : '+pc+' % du prévu"><i style="width:'+Math.min(100,plan?val/plan*100:0)+'%"></i>'+(plan?'<u style="left:'+Math.min(100,exp/plan*100)+'%" title="Prévu à ce jour"></u>':'')+'</div>';
+var WM="km";
+function weekDays(r,wk){
+  var o=[0,1,2,3,4,5,6].map(function(){return {pk:0,pd:0,ak:0,ad:0,t:0,has:false};});
+  wk.s.forEach(function(x){
+    if(x.race)return; var d=o[x.dow]; d.pk+=x.km||0; d.pd+=x.dp||0;
+    var ac=D.actual[sk(r,wk.n,x.k)];
+    if(ac){d.ak+=ac.km; d.ad+=ac.dp||0; d.t+=ac.t||0; d.has=true;}
+    else if(D.done[sk(r,wk.n,x.k)]){d.ak+=x.km||0; d.ad+=x.dp||0; d.has=true;}
+  });
+  return o;
 }
+// Résumé façon Strava : chiffres de la semaine + histogramme jour par jour (prévu en clair, réalisé en couleur)
 function weekMeter(r,wk,td){
-  var t=weekTot(r,wk,td);
-  return '<div class="card"><h3>Ta semaine</h3>'+meterRow("Km",Math.round(t.ak*10)/10,Math.round(t.pk*10)/10,t.ek,"km")+'<div style="height:12px"></div>'+meterRow("D+",t.ad,t.pd,t.ed,"m")+'<p class="small muted" style="margin:8px 0 0">Le trait marque le prévu jusqu’à aujourd’hui.</p></div>';
+  var days=weekDays(r,wk), t=weekTot(r,wk,td), isKm=WM==="km", tt=0, mx=1;
+  days.forEach(function(d){tt+=d.t; mx=Math.max(mx,isKm?d.pk:d.pd,isKm?d.ak:d.ad);});
+  var h='<div class="card wm"><div class="wm-top"><h3>Cette semaine</h3><div class="wm-seg" role="group" aria-label="Afficher">'+
+    '<button data-wm="km" aria-pressed="'+isKm+'">Distance</button><button data-wm="dp" aria-pressed="'+!isKm+'">Dénivelé</button></div></div>';
+  h+='<div class="wm-nums num"><div><b>'+kmS(Math.round(t.ak*10)/10)+'<small> km</small></b><span>sur '+kmS(Math.round(t.pk*10)/10)+' prévus</span></div>'+
+     '<div><b>+'+nb(t.ad)+'<small> m</small></b><span>sur '+nb(t.pd)+' prévus</span></div>'+
+     '<div><b>'+(tt?dur(tt):"–")+'</b><span>temps couru</span></div></div>';
+  h+='<div class="wm-bars" role="img" aria-label="Histogramme de la semaine, '+(isKm?"distance":"dénivelé")+' par jour">';
+  days.forEach(function(d,i){
+    var pl=isKm?d.pk:d.pd, ac=isKm?d.ak:d.ad, ph=pl?Math.max(6,pl/mx*100):0, ah=ac?Math.max(6,ac/mx*100):0;
+    h+='<div class="wm-col'+(i===td?" today":"")+'"><span class="wm-v num">'+(ac?(isKm?kmS(Math.round(ac*10)/10):nb(ac)):"")+'</span><div class="wm-plot">'+
+       (ph?'<i class="p" style="height:'+ph+'%"></i>':'<i class="rest"></i>')+(ah?'<i class="a" style="height:'+ah+'%"></i>':'')+'</div><b>'+DL[i]+'</b></div>';
+  });
+  return h+'</div><p class="small muted" style="margin:8px 0 0"><i class="wm-key p"></i>prévu <i class="wm-key a"></i>réalisé</p></div>';
 }
 function weekCard(r,pl,wk,s,noMeter){
   var t0=weekTot(r,wk,6), pk=t0.pk, ak=t0.ak, pd=t0.pd, ad=t0.ad;
@@ -800,6 +820,7 @@ $("view").addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b)return; var ds=b.dataset;
   if(ds.go){if(ds.go==="settings"){prevTab=tab;tab="settings";render();} else if(ds.go==="back")setTab(prevTab||"today"); else if(ds.go==="today-race"){browsing=false;setTab("today");} else setTab(ds.go); return;}
   if(ds.theme){D.set.theme=ds.theme; applyTheme(); save(); render(true); return;}
+  if(ds.wm){WM=ds.wm; render(true); return;}
   if(ds.day!=null){sel=+ds.day; render(true); return;}
   if(ds.done){if(D.done[ds.done])delete D.done[ds.done]; else{D.done[ds.done]=1; vib(30);} save(); render(true); return;}
   if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, o=D.ci[kk]||(D.ci[kk]={}); o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; save(); render(true); return;}
