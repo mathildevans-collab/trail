@@ -1,4 +1,4 @@
-# Plan THP40
+# Cadenzo
 
 Application d'entraînement pour le Trail de Haute Provence (THP40) et d'autres courses : plan sur 26 semaines, coach, mode Course, séances vers la montre. Elle s'installe sur le téléphone (Partager, Sur l'écran d'accueil) et marche hors ligne.
 

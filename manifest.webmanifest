@@ -1,6 +1,6 @@
 {
-  "name": "Plan THP40",
-  "short_name": "THP40",
+  "name": "Cadenzo",
+  "short_name": "Cadenzo",
   "description": "Préparation et mode Course du Trail de Haute Provence 40 km",
   "start_url": "./",
   "scope": "./",
@@ -10,9 +10,9 @@
   "theme_color": "#2f5d46",
   "lang": "fr",
   "icons": [
-    {"src": "icon.svg?v=1", "sizes": "any", "type": "image/svg+xml"},
-    {"src": "icon-512.png?v=1", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
-    {"src": "icon-192.png?v=1", "sizes": "192x192", "type": "image/png"},
-    {"src": "icon-180.png?v=1", "sizes": "180x180", "type": "image/png"}
+    {"src": "icon.svg?v=15", "sizes": "any", "type": "image/svg+xml"},
+    {"src": "icon-512.png?v=15", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-192.png?v=15", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-180.png?v=15", "sizes": "180x180", "type": "image/png"}
   ]
 }
