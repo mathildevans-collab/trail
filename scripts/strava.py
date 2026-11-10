@@ -5,7 +5,7 @@ Aucun secret n'est écrit dans le dépôt : tout passe par les Secrets GitHub.""
 import json, os, sys, time, datetime, urllib.error, urllib.parse, urllib.request
 
 API = "https://www.strava.com"
-START = int(datetime.datetime(2026, 9, 28, tzinfo=datetime.timezone.utc).timestamp())
+START = int(datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc).timestamp())
 
 
 KEEPALIVE_DAYS = 30  # GitHub coupe les tâches planifiées d'un dépôt sans commit depuis 60 jours
@@ -77,7 +77,8 @@ def sync():
                 runs.append({"date": a["start_date_local"][:10],
                              "km": round(a["distance"] / 1000, 2),
                              "dp": round(a.get("total_elevation_gain", 0)),
-                             "t": int(a.get("moving_time", 0))})
+                             "t": int(a.get("moving_time", 0))}
+                            | ({"hr": round(a["average_heartrate"])} if a.get("average_heartrate") else {}))
         page += 1
     runs.sort(key=lambda r: (r["date"], r["km"]))
     try:

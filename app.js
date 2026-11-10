@@ -795,7 +795,7 @@ if(MQ&&MQ.addEventListener)MQ.addEventListener("change",function(){applyTheme();
 // ---------- rendu ----------
 function render(keep){
   var y=window.scrollY, v;
-  if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else v=vSettings();
+  if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else v=vSettings();
   $("view").innerHTML=v;
   document.querySelectorAll("#tabs button").forEach(function(b){b.setAttribute("aria-current",b.dataset.t===tab?"page":"false");});
   if(tab==="course"){var f=focusRace(); if(f){var g=$("goal");
@@ -805,6 +805,77 @@ function render(keep){
 }
 function setTab(t){if(t!=="settings")prevTab=t; tab=t; resetArmed=false; editRes=false; if(t==="today"&&!browsing)goNow(); render();}
 
+
+// ---------- Forme : volume + forme/fraîcheur (depuis toutes les sorties Strava lues) ----------
+var HIST=[]; try{HIST=JSON.parse(localStorage.getItem("thp40hist")||"[]")||[];}catch(e){HIST=[];}
+var VP="week";
+var HRREST=55, HRMAX=196;
+function histSave(a){HIST=a; try{localStorage.setItem("thp40hist",JSON.stringify(a));}catch(e){}}
+function dayN(s){return Math.round(dms(s)/864e5);}
+function weekStart(n){return n-((n+3)%7);} // n = jours depuis 1970 ; 1er janv. 1970 = jeudi
+function runLoad(r){ // charge d’entraînement (TRIMP de Banister, version femme) ; sans FC : estimation
+  var min=(r.t||0)/60, x=r.hr>0?Math.max(0,Math.min(1,(r.hr-HRREST)/(HRMAX-HRREST))):0.62+Math.min(r.dp||0,1500)/6000;
+  if(!r.hr)min+= (r.dp||0)/12;
+  return min*x*0.86*Math.exp(1.67*x);
+}
+function formeSeries(){
+  if(!HIST.length)return null;
+  var first=dayN(HIST[0].date), last=Math.round(todayUTC()/864e5), L={}, est=0;
+  HIST.forEach(function(r){var d=dayN(r.date); L[d]=(L[d]||0)+runLoad(r); if(!r.hr)est++;});
+  var ctl=0, atl=0, out=[], kc=1-Math.exp(-1/42), ka=1-Math.exp(-1/7);
+  for(var d=first;d<=last;d++){var l=L[d]||0; ctl+=(l-ctl)*kc; atl+=(l-atl)*ka; out.push({d:d,f:ctl,a:atl,z:ctl-atl});}
+  return {pts:out,est:est,n:HIST.length};
+}
+function pcStat(p){return p>=0?"+"+Math.round(p)+" %":"−"+Math.abs(Math.round(p))+" %";}
+function periodRange(n0){ // n0 = aujourd’hui (jours) ; renvoie [début, début précédent, fin précédente]
+  var d=new Date(n0*864e5), y=d.getUTCFullYear(), m=d.getUTCMonth(), st, ps, pe;
+  if(VP==="week"){st=weekStart(n0); ps=st-7; pe=ps+(n0-st);}
+  else if(VP==="month"){st=Math.round(Date.UTC(y,m,1)/864e5); ps=Math.round(Date.UTC(y,m-1,1)/864e5); pe=ps+(n0-st);}
+  else {st=Math.round(Date.UTC(y,0,1)/864e5); ps=Math.round(Date.UTC(y-1,0,1)/864e5); pe=ps+(n0-st);}
+  return [st,ps,pe];
+}
+function sumRuns(a,b){var o={km:0,dp:0,t:0,n:0}; HIST.forEach(function(r){var d=dayN(r.date); if(d>=a&&d<=b){o.km+=r.km;o.dp+=r.dp;o.t+=r.t;o.n++;}}); return o;}
+function vForme(){
+  var h=header("Ton suivi","Forme"), n0=Math.round(todayUTC()/864e5);
+  if(!HIST.length){
+    return h+'<div class="card"><h3>Pas encore de sorties</h3><p class="small muted" style="margin:0">Ouvre l’onglet Aujourd’hui et lance « Synchroniser Strava » pour charger ton historique. Ce suivi se remplit ensuite tout seul.</p></div>';
+  }
+  var R=periodRange(n0), c=sumRuns(R[0],n0), p=sumRuns(R[1],R[2]);
+  var pace=c.km>0?c.t/c.km:0, vs=p.km>0?(c.km-p.km)/p.km*100:null;
+  h+='<div class="card wm"><div class="wm-top"><h3>Volume</h3><div class="wm-seg" role="group" aria-label="Période">'+
+    [["week","Semaine"],["month","Mois"],["year","Année"]].map(function(x){return '<button data-vp="'+x[0]+'" aria-pressed="'+(VP===x[0])+'">'+x[1]+'</button>';}).join("")+'</div></div>';
+  var T=[[kmS(Math.round(c.km*10)/10)+'<small> km</small>',"Distance"],[String(c.n),"Sorties"],[c.t?dur(c.t):"–","Temps"],["+"+nb(c.dp)+'<small> m</small>',"D+"],
+    [pace?Math.floor(pace/60)+"’"+pz(Math.round(pace%60))+'<small> /km</small>':"–","Allure moy."],[vs==null?"–":pcStat(vs),"Vs période préc."]];
+  h+='<div class="fm-tiles num">'+T.map(function(x){return '<div><span>'+x[1]+'</span><b>'+x[0]+'</b></div>';}).join("")+'</div>';
+  // histogramme
+  var B=[], i, mx=1, title;
+  if(VP==="year"){title="Kilomètres par mois"; var d0=new Date(n0*864e5), y=d0.getUTCFullYear(), m=d0.getUTCMonth();
+    for(i=11;i>=0;i--){var a=Math.round(Date.UTC(y,m-i,1)/864e5), b=Math.round(Date.UTC(y,m-i+1,1)/864e5)-1, o=sumRuns(a,b); B.push({v:o.km,l:MON[new Date(a*864e5).getUTCMonth()].slice(0,1).toUpperCase(),cur:i===0});}}
+  else {title="Kilomètres par semaine"; var w0=weekStart(n0);
+    for(i=11;i>=0;i--){var a2=w0-7*i, o2=sumRuns(a2,a2+6), dd=new Date(a2*864e5); B.push({v:o2.km,l:dd.getUTCDate()+"/"+(dd.getUTCMonth()+1),cur:i===0});}}
+  B.forEach(function(x){mx=Math.max(mx,x.v);});
+  h+='<h4 style="margin:16px 0 2px">'+title+'</h4><p class="small muted num" style="margin:0 0 6px">max '+kmS(Math.round(mx))+' km</p><div class="wm-bars fm-bars" style="grid-template-columns:repeat('+B.length+',1fr)" role="img" aria-label="'+title+'">';
+  B.forEach(function(x,k){h+='<div class="wm-col'+(x.cur?" today":"")+'"><div class="wm-plot">'+(x.v?'<i class="a" style="height:'+Math.max(4,x.v/mx*100)+'%"></i>':'<i class="rest"></i>')+'</div><b class="fm-l">'+((VP==="year"||k%3===0||x.cur)?x.l:"")+'</b></div>';});
+  h+='</div></div>';
+  // forme / fatigue / fraîcheur
+  var S=formeSeries(), pts=S.pts, z=pts[pts.length-1], N=Math.min(pts.length,60), view=pts.slice(pts.length-N);
+  var st=z.z>15?["Très frais","ok","Tu es reposée : bon moment pour une séance de qualité ou une course."]:z.z>5?["Frais","ok","Tu récupères bien, tu peux charger un peu."]:z.z>=-10?["Équilibré","ok","Charge et récupération sont en phase."]:z.z>=-25?["Chargée","warn","Tu accumules de la fatigue : garde les séances faciles vraiment faciles."]:["Surcharge","off","Fatigue très élevée : allège les prochains jours."];
+  h+='<div class="card fm"><h3>Forme et fraîcheur</h3><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--off)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
+    '<div class="chip '+st[1]+'">'+st[0]+'</div><p class="small" style="margin:8px 0 12px">'+st[2]+'</p>';
+  var W=320, H=150, pl=30, pr=8, pt=8, pb=20, lo=0, hi=0; view.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f,q.a,q.z);});
+  var span=hi-lo||1; lo-=span*.06; hi+=span*.06; span=hi-lo;
+  function X(k){return pl+(W-pl-pr)*k/Math.max(1,N-1);} function Y(v){return pt+(H-pt-pb)*(1-(v-lo)/span);}
+  function path(f){return view.map(function(q,k){return (k?"L":"M")+X(k).toFixed(1)+" "+Y(q[f]).toFixed(1);}).join("");}
+  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Courbes de forme, fatigue et fraîcheur sur '+N+' jours">';
+  var step=Math.max(10,Math.ceil(span/4/10)*10), t0=Math.ceil(lo/step)*step;
+  for(var tv=t0;tv<=hi;tv+=step)g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(tv).toFixed(1)+'" y2="'+Y(tv).toFixed(1)+'" stroke="var(--line)" stroke-width="'+(tv===0?1.4:.6)+'"'+(tv===0?' stroke-dasharray="2 3"':'')+'/><text x="'+(pl-5)+'" y="'+(Y(tv)+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+tv+'</text>';
+  g+='<path d="'+path("f")+'" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><path d="'+path("a")+'" fill="none" stroke="var(--off)" stroke-width="1.8" stroke-dasharray="5 3"/><path d="'+path("z")+'" fill="none" stroke="var(--down)" stroke-width="1.8"/>';
+  [0,Math.floor((N-1)/2),N-1].forEach(function(k,j){var dd=new Date(view[k].d*864e5); g+='<text x="'+X(k).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+(j===0?"start":j===2?"end":"middle")+'" font-size="9" fill="var(--muted)">'+dd.getUTCDate()+" "+MON[dd.getUTCMonth()]+'</text>';});
+  h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--off);margin-left:10px"></i>fatigue <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>'+
+    '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></div>';
+  return h;
+}
+
 // ---------- interactions ----------
 $("tabs").addEventListener("click",function(e){var b=e.target.closest("button[data-t]"); if(!b)return; if(b.dataset.t==="today")browsing=false; setTab(b.dataset.t);});
 $("view").addEventListener("click",function(e){
@@ -813,6 +884,7 @@ $("view").addEventListener("click",function(e){
   if(ds.go){if(ds.go==="settings"){prevTab=tab;tab="settings";render();} else if(ds.go==="back")setTab(prevTab||"today"); else if(ds.go==="today-race"){browsing=false;setTab("today");} else setTab(ds.go); return;}
   if(ds.theme){D.set.theme=ds.theme; applyTheme(); save(); render(true); return;}
   if(ds.wm){WM=ds.wm; render(true); return;}
+  if(ds.vp){VP=ds.vp; render(true); return;}
   if(ds.day!=null){sel=+ds.day; render(true); return;}
   if(ds.done){if(D.done[ds.done])delete D.done[ds.done]; else{D.done[ds.done]=1; vib(30);} save(); render(true); return;}
   if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, o=D.ci[kk]||(D.ci[kk]={}); o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; save(); render(true); return;}
@@ -881,6 +953,7 @@ function sync(manual){
   ghCheck();
   get(0).then(function(j){
     var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
+    histSave((j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0};}));
     D.sync.t=Date.now(); D.sync.upd=j.updated||""; D.sync.err=""; var n=applyActs(runs); if(manual)toast(runs.length+" sorties lues · "+n+" séances du plan");
   }).catch(function(e){D.sync.err=String(e.message||e); if(manual)toast("Synchro impossible.");}).then(function(){syncing=false; save(); render(true);});
 }

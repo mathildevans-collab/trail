@@ -31,8 +31,8 @@ a{color:var(--brand)}
 
 /* ---------- barre d’onglets ---------- */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(8px + env(safe-area-inset-bottom))}
-.tabs-in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;height:58px}
-.tabs button{border:0;background:none;border-radius:14px;color:var(--muted);font-weight:600;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tabs-in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;height:58px}
+.tabs button{border:0;background:none;border-radius:14px;color:var(--muted);font-weight:600;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;white-space:nowrap;min-width:0}
 .tabs button svg{width:22px;height:22px}
 .tabs button[aria-current="page"]{color:var(--brand);background:var(--brand-soft)}
 
@@ -342,3 +342,14 @@ details summary svg{width:20px;height:20px;flex:none;color:var(--brand)}
 .rm-sync input{flex:1;min-width:0;min-height:52px;border-radius:14px;border:1px solid #2d3530;background:#141917;color:#e7ebe6;font:700 24px var(--display);padding:0 14px;font-variant-numeric:tabular-nums}
 .rm-sync button{min-height:52px;border:0;border-radius:14px;background:#7fb898;color:#10201a;font-weight:800;font-size:16px;padding:0 18px}
 .rm-hint{font-size:13px;color:#9aa49d;margin:0 0 4px}
+
+.fm-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 8px;margin-bottom:4px}
+.fm-tiles span{display:block;font-size:12px;color:var(--muted)}
+.fm-tiles b{display:block;font-family:var(--display);font-size:21px;line-height:1.15}.fm-tiles b small{font-size:12px;font-weight:700;color:var(--muted)}
+.fm-bars{gap:3px}.fm-bars .wm-plot{height:90px}.fm-bars .wm-plot i{width:70%}
+.fm-l{font-size:10px!important;font-weight:600;min-width:0!important;width:auto!important;height:14px!important;border-radius:0!important;background:none!important;color:var(--muted)!important;white-space:nowrap}
+.wm-col.today .fm-l{color:var(--ink)!important}
+.fm-top{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.fm-top span{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.fm-top b{display:block;font-family:var(--display);font-size:34px;line-height:1.05}
+.fm-svg{width:100%;height:auto;display:block}
