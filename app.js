@@ -834,8 +834,16 @@ function periodRange(n0){ // n0 = aujourd’hui (jours) ; renvoie [début, débu
   return [st,ps,pe];
 }
 function sumRuns(a,b){var o={km:0,dp:0,t:0,n:0}; HIST.forEach(function(r){var d=dayN(r.date); if(d>=a&&d<=b){o.km+=r.km;o.dp+=r.dp;o.t+=r.t;o.n++;}}); return o;}
+// Forme : deux sous-onglets, Strava (sorties récentes, ci-dessous) et Garmin (export ponctuel, analyse dans garmin.js)
+var FSUB="strava", GBUSY="";
 function vForme(){
-  var h=header("Ton suivi","Forme"), n0=Math.round(todayUTC()/864e5);
+  var h=header("Ton suivi","Forme")+'<div class="wm-seg fm-sub" role="tablist" aria-label="Source">'+
+    [["strava","Strava","récent"],["garmin","Garmin","export montre"]].map(function(x){return '<button role="tab" data-fsub="'+x[0]+'" aria-pressed="'+(FSUB===x[0])+'" aria-selected="'+(FSUB===x[0])+'">'+x[1]+'<small>'+x[2]+'</small></button>';}).join("")+'</div>';
+  if(FSUB==="garmin"){var r=activeRace(); return h+(window.GARMIN?GARMIN.html({busy:GBUSY,race:r?{name:r.name,km:+r.km||0,dp:+r.dp||0,goal:goalOf(r)}:null}):'<div class="card"><p class="small muted" style="margin:0">Module Garmin non chargé : recharge la page.</p></div>');}
+  return h+vFormeStrava();
+}
+function vFormeStrava(){
+  var h="", n0=Math.round(todayUTC()/864e5);
   if(!HIST.length){
     return h+'<div class="card"><h3>Pas encore de sorties</h3><p class="small muted" style="margin:0">Ouvre l’onglet Aujourd’hui et lance « Synchroniser Strava » pour charger ton historique. Ce suivi se remplit ensuite tout seul.</p></div>';
   }
@@ -884,6 +892,7 @@ $("view").addEventListener("click",function(e){
   if(ds.theme){D.set.theme=ds.theme; applyTheme(); save(); render(true); return;}
   if(ds.wm){WM=ds.wm; render(true); return;}
   if(ds.vp){VP=ds.vp; render(true); return;}
+  if(ds.fsub){FSUB=ds.fsub; render(true); return;}
   if(ds.day!=null){sel=+ds.day; render(true); return;}
   if(ds.done){if(D.done[ds.done])delete D.done[ds.done]; else{D.done[ds.done]=1; vib(30);} save(); render(true); return;}
   if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, o=D.ci[kk]||(D.ci[kk]={}); o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; save(); render(true); return;}
@@ -922,6 +931,8 @@ function act(a,b){
   else if(a==="csv")$("fileCsv").click();
   else if(a==="import")$("fileJson").click();
   else if(a==="export")exportData();
+  else if(a==="gimport"){if(!GBUSY)$("fileGarmin").click();}
+  else if(a==="gclear"){if(!confirm("Effacer l’export Garmin de ce téléphone ?"))return; GARMIN.clear(); render(true);}
   else if(a==="watchexp")watchExport();
   else if(a==="reset"){if(!resetArmed){resetArmed=true; render(true); setTimeout(function(){if(resetArmed){resetArmed=false; if(tab==="settings")render(true);}},5000); return;}
     var keep={set:D.set,races:D.races,active:D.active,focus:D.focus}; D=blank(); Object.assign(D,keep); resetArmed=false; MC={}; PC={}; save(); toast("Données effacées. Tes courses sont gardées."); goNow(); render(true);}
@@ -1005,6 +1016,14 @@ $("fileJson").addEventListener("change",function(){readFile(this,function(txt){
   if(!confirm("Remplacer les données de ce téléphone par cette sauvegarde ?"))return;
   D=o.v===3?assignState(blank(),o):migrate(o,blank()); MC={}; PC={}; applyTheme(); save(); goNow(); toast("Sauvegarde importée."); render();
 });});
+$("fileGarmin").addEventListener("change",function(){
+  var inp=this, fl=Array.prototype.slice.call(inp.files||[]); inp.value=""; if(!fl.length||!window.GARMIN)return;
+  GBUSY="Lecture de l’export…"; FSUB="garmin"; if(tab==="forme")render(true);
+  var lastR=0; GARMIN.importFiles(fl,function(i,n){if(Date.now()-lastR<250&&i<n)return; lastR=Date.now(); GBUSY="Lecture "+i+" / "+n+"…"; if(tab==="forme")render(true);})
+    .then(function(g){GBUSY=""; toast("Export Garmin lu : "+g.acts.length+" activités, du "+g.first.split("-").reverse().join("/")+" au "+g.last.split("-").reverse().join("/")+".");})
+    .catch(function(e){GBUSY=""; toast(String(e&&e.message||"Export illisible."));})
+    .then(function(){if(tab==="forme")render(true);});
+});
 function parseGpx(txt,fname){
   var doc=new DOMParser().parseFromString(txt,"application/xml"), pts=doc.getElementsByTagName("trkpt"); if(!pts.length)pts=doc.getElementsByTagName("rtept");
   if(pts.length<10)return null;

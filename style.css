@@ -365,3 +365,29 @@ details summary svg{width:20px;height:20px;flex:none;color:var(--brand)}
 .wm-plot i.a{background:var(--acc)}.wm-key.a{background:var(--acc)}
 .wm-col.today b{background:var(--acc);color:#fff}
 .chip.acc{background:var(--acc-soft);color:var(--acc-ink)}
+
+/* ---------- Forme : sous-onglets Strava / Garmin ---------- */
+.fm-sub{margin:0 0 12px}
+.fm-sub button{flex:1;display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:6px 10px}
+.fm-sub button small{font-size:11px;font-weight:600;opacity:.75}
+.g-head{display:flex;justify-content:space-between;gap:10px}
+.g-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.g-actions .btn{margin:0}
+.g-ol{margin:0;padding-left:20px}.g-ol li{margin:0 0 6px}
+.g-ins{list-style:none;margin:0;padding:0}
+.g-ins li{border-left:4px solid var(--line);padding:2px 0 2px 10px;margin:0 0 12px}
+.g-ins li:last-child{margin-bottom:0}
+.g-ins li.ok{border-color:var(--ok)}.g-ins li.warn{border-color:var(--warn)}.g-ins li.off{border-color:var(--off)}.g-ins li.info{border-color:var(--down)}
+.g-ins b{display:block;font-size:15px}.g-ins span{display:block;font-size:14px;color:var(--muted);margin-top:2px}
+.g-proj{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g-proj>div{background:var(--bg);border-radius:14px;padding:10px 12px}
+.g-proj span{display:block;font-size:12px;color:var(--muted)}
+.g-proj b{display:block;font-family:var(--display);font-size:28px;line-height:1.1}
+.g-proj em{font-style:normal;font-size:12px;font-weight:700}.g-proj em.ok{color:var(--ok)}.g-proj em.warn{color:var(--off)}
+.gz-bar{display:flex;height:26px;border-radius:8px;overflow:hidden;background:var(--bg)}
+.gz-bar i{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden}
+.g-chips{display:flex;flex-wrap:wrap;gap:6px}
+.g-tab{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+.g-tab th{font-size:11px;font-weight:700;color:var(--muted);text-align:left;padding:4px 4px;text-transform:uppercase;letter-spacing:.04em}
+.g-tab td{padding:6px 4px;border-top:1px solid var(--line)}
+.g-up{color:var(--ok);font-weight:700}.g-dn{color:var(--off);font-weight:700}
+.g-mt{margin-top:14px}
