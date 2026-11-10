@@ -958,11 +958,11 @@ function toast(m){var t=$("toast"); t.textContent=m; t.hidden=false; clearTimeou
 // ---------- Strava (coupé, gardé pour plus tard) ----------
 var syncing=false;
 function sync(manual){
-  if(!STRAVA||syncing)return; syncing=true;
+  if(!STRAVA||syncing)return Promise.resolve(); syncing=true;
   var urls=[D.set.json||DEF_JSON]; if(urls[0]!==DEF_JSON)urls.push(DEF_JSON); if(/github\.io$/.test(location.hostname))urls.push("activities.json");
   function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
   ghCheck();
-  get(0).then(function(j){
+  return get(0).then(function(j){
     var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
     histSave((j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0};}));
     D.sync.t=Date.now(); D.sync.upd=j.updated||""; D.sync.err=""; var n=applyActs(runs); if(manual)toast(runs.length+" sorties lues · "+n+" séances du plan");
@@ -1158,6 +1158,35 @@ function onPos(p){
 save(); goNow(); render();
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
+
+// ---------- tirer vers le bas pour rafraîchir (Strava + nouvelle version de l’appli) ----------
+(function(){
+  var el=document.createElement("div"); el.className="ptr"; el.setAttribute("aria-hidden","true");
+  el.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>';
+  document.body.appendChild(el);
+  var MAX=96, GO=64, y0=null, x0=0, pull=0, busy=false, armed=false;
+  function show(d){el.style.transform="translate(-50%,"+(d-56)+"px) rotate("+(d*3)+"deg)"; el.style.opacity=Math.min(1,d/GO); el.classList.toggle("go",d>=GO);}
+  function reset(){el.classList.remove("drag"); el.style.transform=""; el.style.opacity=""; el.classList.remove("go");}
+  function blocked(t){return !$("rm").hidden||!$("sheet").hidden||(t&&t.closest&&t.closest('input,textarea,select,#profsvg,[data-noptr]'));}
+  document.addEventListener("touchstart",function(e){
+    if(busy||e.touches.length!==1||window.scrollY>0||blocked(e.target)){y0=null; return;}
+    y0=e.touches[0].clientY; x0=e.touches[0].clientX; pull=0; armed=false;
+  },{passive:true});
+  document.addEventListener("touchmove",function(e){
+    if(y0==null)return; var dy=e.touches[0].clientY-y0, dx=e.touches[0].clientX-x0;
+    if(!armed){if(Math.abs(dx)>Math.abs(dy)||dy<=0||window.scrollY>0){if(Math.abs(dy)>6||Math.abs(dx)>6)y0=null; return;} armed=true; el.classList.add("drag");}
+    pull=Math.min(MAX,Math.max(0,dy*0.5)); if(e.cancelable)e.preventDefault(); show(pull);
+  },{passive:false});
+  function end(){
+    if(y0==null)return; y0=null; if(!armed)return; armed=false; el.classList.remove("drag");
+    if(pull<GO){reset(); return;}
+    busy=true; el.classList.add("spin"); el.style.transform=""; el.style.opacity="";
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(function(r){if(r)r.update();}).catch(function(){});
+    var t0=Date.now();
+    Promise.resolve(STRAVA?sync(true):render(true)).catch(function(){}).then(function(){setTimeout(function(){busy=false; el.classList.remove("spin"); reset();},Math.max(0,500-(Date.now()-t0)));});
+  }
+  document.addEventListener("touchend",end); document.addEventListener("touchcancel",end);
+})();
 var lastDay=todayUTC();
 setInterval(function(){if(!$("rm").hidden||!$("sheet").hidden)return; var t=todayUTC(); if(t!==lastDay){lastDay=t; PC={}; goNow(); render(true);}},60000);
 })();
