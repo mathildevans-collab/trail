@@ -597,7 +597,8 @@ function vCourse(){
   var m=model(f);
   if(f.prio==="A"&&a&&f.id!==a.id)h+='<div class="banner">Ce n’est pas ton plan en cours (tu suis '+esc(a.name)+'). <button class="btn sm primary" data-act="activate" data-r="'+f.id+'" style="margin-top:8px">Suivre le plan de '+esc(f.name)+'</button></div>';
   if(f.prio==="B"){var apl=a&&planOf(a), inA=apl&&dms(f.date)<apl.end&&dms(f.date)>=apl.start; h+='<div class="banner">Course B'+(inA?' : intégrée au plan de '+esc(a.name)+' le '+fmtD(dms(f.date))+', avec la veille et le lendemain allégés.':' : en dehors de ton plan en cours.')+'</div>';}
-  var gmin=Math.max(20,Math.round(m.goal*0.6/5)*5), gmax=Math.round(m.goal*1.5/5)*5;
+  // Bornes fixes, tirées du temps estimé (km + D+) et non de l’objectif : sinon le curseur se recentre à chaque relâchement.
+  var gref=estGoal(m.L,m.dp), gmin=Math.max(20,Math.round(Math.min(gref*0.6,m.goal)/5)*5), gmax=Math.round(Math.max(gref*1.5,m.goal)/5)*5;
   h+='<div class="card"><h3>Objectif</h3><div class="goal"><b class="num" id="goalv">'+hm(m.goal)+'</b><input type="range" id="goal" min="'+gmin+'" max="'+gmax+'" step="5" value="'+m.goal+'" aria-label="Objectif de temps"></div><p class="small muted" style="margin:0">Temps de passage, allures et mode Course suivent cet objectif.</p></div>';
   h+='<div class="card"><h3>Le parcours</h3>'+profileSVG(m,{id:"profsvg"})+(m.prof?'<div id="profinfo" class="profinfo muted">Touche le profil : km, altitude, D+ et passage visé.</div><div class="legend"><span><i style="background:var(--brand)"></i>Profil</span>'+(m.traps.length?'<span><i style="background:var(--off)"></i>'+m.trapTxt+'</span>':'')+(m.cps.length>1?'<span>R = ravito</span>':'')+'</div>':'<p class="small muted" style="margin:6px 0 0">Ajoute la trace GPX (Modifier la course) pour voir le profil, les montées et les descentes.</p>')+'</div>';
   h+='<div class="card"><h3>Temps de passage</h3><div id="passwrap">'+passHTML(f,m)+'</div></div>';
