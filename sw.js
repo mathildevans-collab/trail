@@ -1,6 +1,6 @@
 // Hors ligne : réseau d’abord, copie en cache sinon (indispensable le jour de la course).
-const C = 'thp40-v17';
-const SHELL = ['./', 'index.html', 'style.css?v=17', 'data.js?v=17', 'fit.js?v=17', 'app.js?v=17', 'garmin.js?v=17', 'icon.svg?v=17', 'icon-192.png?v=17', 'manifest.webmanifest?v=17'];
+const C = 'thp40-v18';
+const SHELL = ['./', 'index.html', 'style.css?v=18', 'data.js?v=18', 'fit.js?v=18', 'app.js?v=18', 'garmin.js?v=18', 'icon.svg?v=18', 'icon-192.png?v=18', 'manifest.webmanifest?v=18'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(C).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
@@ -8,6 +8,6 @@ self.addEventListener('fetch', e => {
   if (r.method !== 'GET') return;
   const same = u.origin === location.origin, fonts = /fonts\.(googleapis|gstatic)\.com$/.test(u.hostname);
   if (!same && !fonts) return;               // Strava (activities.json) : jamais mis en cache ici
-  e.respondWith(fetch(r).then(res => { if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(C).then(c => c.put(r, copy)); } return res; })
+  e.respondWith(fetch(r, same ? { cache: 'no-store' } : undefined).then(res => { if (res.ok || res.type === 'opaque') { const copy = res.clone(); caches.open(C).then(c => c.put(r, copy)); } return res; })
     .catch(() => caches.match(r).then(m => m || caches.match(r, { ignoreSearch: true }))));
 });

@@ -1161,4 +1161,21 @@ setTimeout(autoSync,400);
 setInterval(function(){if(!document.hidden)autoSync();},5*60*1000); // appli ouverte : relit Strava toute seule
 var lastDay=todayUTC();
 setInterval(function(){if(!$("rm").hidden||!$("sheet").hidden)return; var t=todayUTC(); if(t!==lastDay){lastDay=t; PC={}; goNow(); render(true);}},60000);
+// ---------- mise à jour automatique de l’appli (raccourci de l’écran d’accueil) ----------
+var updating=false;
+function runV(){var sc=document.querySelector('script[src*="app.js"]'), m=sc&&/[?&]v=(\d+)/.exec(sc.getAttribute("src")||""); return m?+m[1]:0;}
+function checkUpdate(){
+  var cur=runV(); if(updating||!cur||navigator.onLine===false)return;
+  if($("rm")&&!$("rm").hidden)return;                       // jamais pendant le chrono de course
+  var ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return; // pas pendant une saisie
+  fetch("index.html?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";}).then(function(t){
+    var m=/app\.js\?v=(\d+)/.exec(t), nv=m?+m[1]:0; if(!nv||nv<=cur)return;
+    try{if(sessionStorage.getItem("thp40upd")===String(nv))return; sessionStorage.setItem("thp40upd",String(nv));}catch(e){}
+    updating=true; var go=function(){location.reload();};
+    Promise.all([("caches" in window)?caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}):0,
+      navigator.serviceWorker?navigator.serviceWorker.getRegistration().then(function(g){return g&&g.update();}):0]).then(go,go);
+  }).catch(function(){});
+}
+setTimeout(checkUpdate,1500); setInterval(checkUpdate,10*60*1000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)checkUpdate();});
 })();
