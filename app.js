@@ -984,7 +984,7 @@ function stravaSub(){
   if(s.gh==="ok"&&s.ght)bits.push("Strava lu par GitHub "+ago(s.ght));
   return bits.join(" · ");
 }
-function autoSync(){if(STRAVA&&!syncing&&Date.now()-(D.sync.t||0)>10*60*1000)sync(false);}
+function autoSync(){if(STRAVA&&!syncing&&Date.now()-(D.sync.t||0)>5*60*1000)sync(false);}
 function applyActs(acts){
   var r=activeRace(); if(!r)return 0; var pl=planOf(r), bd=byDate(pl), byDay={}, n=0;
   acts.forEach(function(a){if(!a.date||!(a.km>0))return; var o=byDay[a.date]||(byDay[a.date]={km:0,dp:0,t:0,src:a.src}); o.km+=a.km; o.dp+=a.dp||0; o.t+=a.t||0;});
@@ -1158,6 +1158,7 @@ function onPos(p){
 save(); goNow(); render();
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
+setInterval(function(){if(!document.hidden)autoSync();},5*60*1000); // appli ouverte : relit Strava toute seule
 var lastDay=todayUTC();
 setInterval(function(){if(!$("rm").hidden||!$("sheet").hidden)return; var t=todayUTC(); if(t!==lastDay){lastDay=t; PC={}; goNow(); render(true);}},60000);
 })();
