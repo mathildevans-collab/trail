@@ -391,3 +391,33 @@ details summary svg{width:20px;height:20px;flex:none;color:var(--brand)}
 .g-tab td{padding:6px 4px;border-top:1px solid var(--line)}
 .g-up{color:var(--ok);font-weight:700}.g-dn{color:var(--off);font-weight:700}
 .g-mt{margin-top:14px}
+
+/* ---------- suivi : bilans visuels, repliable, tableau ---------- */
+.pvs{margin:12px 0 0}
+.pv{display:grid;grid-template-columns:64px 1fr 64px;gap:10px;align-items:center;margin:8px 0;font-size:13px}
+.pv>span{color:var(--muted)}
+.pv .tr{position:relative;height:10px;border-radius:6px;background:var(--line)}
+.pv .tr i{position:absolute;left:0;top:0;bottom:0;border-radius:6px;background:var(--brand)}
+.pv .tr u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55;text-decoration:none}
+.pv b{text-align:right;font-weight:700}
+details.more{margin-top:12px;border-top:1px solid var(--line);padding-top:4px}
+details.more>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;font-weight:700;min-height:44px}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+details.more>summary::after{content:"+";font-size:22px;color:var(--muted)}
+details.more[open]>summary::after{content:"−"}
+.rtab{width:100%;border-collapse:collapse;font-size:14px}
+.rtab th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:4px 0}
+.rtab td{padding:7px 0;border-top:1px solid var(--line)}
+
+details.more>summary>span{display:block}
+
+details.fold{padding:0}
+details.fold>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px;min-height:56px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary h3{margin:0}
+details.fold>summary span{margin-left:auto;font-size:13px;color:var(--muted);text-align:right}
+details.fold>summary::after{content:"+";font-size:22px;color:var(--muted)}
+details.fold[open]>summary::after{content:"−"}
+details.fold>*:not(summary){margin-left:16px;margin-right:16px}
+details.fold>*:last-child{margin-bottom:16px}

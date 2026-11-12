@@ -357,10 +357,10 @@ function P(pl,w){
   return Object.assign({},wk,{s:S,rb:rb,rbOff:false});
 }
 function rbCard(r,wk){
-  var rb=wk.rb; if(!rb||!rb.items.length)return ""; var off=wk.rbOff, h='<div class="card"><h3>Ajustement de ta semaine</h3><p class="small" style="margin:6px 0 8px">'+esc(rb.txt)+'</p>';
+  var rb=wk.rb; if(!rb||!rb.items.length)return ""; var off=wk.rbOff, h='<details class="card fold"><summary><h3>Ajustement de ta semaine</h3><span>'+(off?"désactivé":rb.items.length+" séance"+(rb.items.length>1?"s":"")+" adaptée"+(rb.items.length>1?"s":""))+'</span></summary><p class="small" style="margin:6px 0 8px">'+esc(rb.txt)+'</p>';
   h+='<ul class="pts">'+rb.items.map(function(x){return '<li>'+DOWL[x.dow]+' ('+esc(x.type.toLowerCase())+') : '+kmS(x.from)+' → <b>'+kmS(x.to)+' km</b>'+(off?" (non appliqué)":"")+'</li>';}).join("")+'</ul>';
   h+='<p class="small muted" style="margin:8px 0 10px">Les séances club, les courses et celles que tu as modifiées ne changent jamais.</p>';
-  return h+'<button class="btn sm" data-rb="'+(off?"on":"off")+'" data-w="'+wk.n+'">'+(off?"Appliquer l’ajustement":"Annuler l’ajustement")+'</button></div>';
+  return h+'<button class="btn sm" data-rb="'+(off?"on":"off")+'" data-w="'+wk.n+'">'+(off?"Appliquer l’ajustement":"Annuler l’ajustement")+'</button></details>';
 }
 function cycleDay(t){var c=D.cycle; if(!c.on||!isoOk(c.start))return 0; var d=Math.floor((t-dms(c.start))/DAY); if(d<0)return 0; return (d%(c.len||28))+1;}
 function inPeriod(t){var c=cycleDay(t); return c>=1&&c<=5;}
@@ -468,6 +468,7 @@ function vPrep(r,pl){
   h+=cycleBanner(selD,s);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
+  if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl);
   h+=rbCard(r,wk);
   h+=weekCard(r,pl,wk,s,showM);
@@ -496,7 +497,7 @@ function bilanCard(r,pl){
   pl.weeks.forEach(function(wk){wk.s.forEach(function(s){var d=sessDate(pl,wk.n,s), ac=D.actual[sk(r,wk.n,s.k)]; if(ac&&d<=t&&t-d<=10*DAY&&(!best||d>best.d))best={d:d,s:s,ac:ac};});});
   if(!best)return "";
   var rv=review(pl.m,best.s,best.ac), b=BADGE[rv.lvl], ac=best.ac, s=best.s;
-  return '<div class="card"><div class="verdict"><h3>'+(best.d===t?"Bilan du jour":"Bilan de "+DOWL[dowOf(best.d)])+'</h3><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km · prévu '+kmS(s.km)+'</span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m · prévu '+nb(s.dp||0)+'</span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
+  return '<div class="card"><div class="verdict"><h3>'+(best.d===t?"Bilan du jour":"Bilan de "+DOWL[dowOf(best.d)])+'</h3><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km · prévu '+kmS(s.km)+'</span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m · prévu '+nb(s.dp||0)+'</span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
 }
 function weekTot(r,wk,upto){
   var pk=0,ak=0,pd=0,ad=0,ek=0,ed=0;
@@ -526,6 +527,7 @@ function weekMeter(r,pl,wk,td){
 function weekCard(r,pl,wk,s,noMeter){
   var t0=weekTot(r,wk,6), pk=t0.pk, ak=t0.ak, pd=t0.pd, ad=t0.ad;
   var h=noMeter?'<div class="card"><div>':'<div class="card"><h3>Ta semaine</h3><div class="sb num small" style="margin-bottom:6px"><span>'+kmS(ak)+' / '+kmS(pk)+' km</span><span class="muted">'+nb(ad)+' / '+nb(pd)+' m D+</span></div><div class="bar"><i style="width:'+Math.min(100,pk?ak/pk*100:0)+'%"></i></div><div style="margin-top:8px">';
+  h+='<details class="more"'+(MOREOPEN?' open':'')+'><summary><span>Plus pour aujourd’hui<small>renfo · nutrition · montre · boucles</small></span></summary>';
   var t=todayUTC(), rf=null; wk.s.forEach(function(x){if(x.renfo&&!rf&&sessDate(pl,wk.n,x)>=t)rf=x;}); if(!rf)wk.s.forEach(function(x){if(x.renfo&&!rf)rf=x;});
   if(rf){var R0=RENFO[rf.renfo], dd=Math.round((sessDate(pl,wk.n,rf)-t)/DAY), parts=R0.name.split(" · "); h+='<button class="link" data-sheet="renfo:'+rf.renfo+'"><span class="ico">'+I.dumb+'</span><span class="tx"><b>'+esc(parts[0])+' '+(dd===0?"aujourd’hui":dd===1?"demain":DOWL[rf.dow])+'</b><small>'+esc(parts[1]||"")+' · 25 min · une chaise</small></span><span class="chev">›</span></button>';}
   var nk=s?s.nut:"rest"; if(!NUT[nk])nk="easy";
@@ -533,7 +535,7 @@ function weekCard(r,pl,wk,s,noMeter){
   if(window.FIT&&FIT.wktOf(s))h+='<button class="link" data-act="watch" data-w="'+wk.n+'" data-k="'+s.k+'"><span class="ico">'+I.watch+'</span><span class="tx"><b>Envoyer à la montre</b><small>'+esc(s.type)+' en entraînement guidé · fichier .FIT</small></span><span class="chev">›</span></button>';
   if(bestLoops(s).length)h+='<button class="link" data-sheet="loops:'+wk.n+'-'+s.k+'"><span class="ico">'+I.pin+'</span><span class="tx"><b>Où courir près de chez toi</b><small>Boucles proches de '+kmS(s.km)+' km</small></span><span class="chev">›</span></button>';
   h+='<button class="link" data-act="weekplan" data-w="'+wk.n+'"><span class="ico">'+I.list+'</span><span class="tx"><b>Toute la semaine</b><small>'+weekDone(r,wk)+' / '+nSess(wk)+' séances faites · modifier</small></span><span class="chev">›</span></button>';
-  return h+'</div>'+(wk.note?'<p class="small muted" style="margin:10px 0 0"><b style="color:var(--ink)">Le mot du coach :</b> '+esc(wk.note)+'</p>':'')+'</div>';
+  return h+'</div>'+(wk.note?'<p class="small muted" style="margin:10px 0 0"><b style="color:var(--ink)">Le mot du coach :</b> '+esc(wk.note)+'</p>':'')+'</details></div>';
 }
 function checkinCard(r,pl,w){
   if(!D.set.checkin)return ""; var ti=planIdx(pl); if(ti<0||w!==nowWeek(pl)||w<2||pl.weeks[w-1].ph==="Affûtage")return "";
@@ -876,6 +878,89 @@ function periodRange(n0){ // n0 = aujourd’hui (jours) ; renvoie [début, débu
 function sumRuns(a,b){var o={km:0,dp:0,t:0,n:0}; HIST.forEach(function(r){var d=dayN(r.date); if(d>=a&&d<=b){o.km+=r.km;o.dp+=r.dp;o.t+=r.t;o.n++;}}); return o;}
 // Forme : deux sous-onglets, Strava (sorties récentes, ci-dessous) et Garmin (export ponctuel, analyse dans garmin.js)
 var FSUB="strava", GBUSY="";
+// ---------- Suivi : cap vers la course, dénivelé, allures, bilans ----------
+var MOREOPEN=false;
+function wkSums(n0,count){ // semaines (lundi) se terminant par la semaine de n0, plus ancienne d’abord
+  var w0=weekStart(n0), o=[]; for(var i=count-1;i>=0;i--){var a=w0-7*i, c=sumRuns(a,a+6); c.a=a; o.push(c);} return o;
+}
+function plannedLoad(pl,x){var ed=estDur(pl.m,x); if(!ed)return 0; return runLoad({t:ed,dp:x.dp||0,hr:x.tag==="q"?156:x.tag==="l"?146:140});}
+function projSeries(){ // forme / fatigue / fraîcheur prévues jusqu’à la veille de la course, si tu fais le plan
+  var r=activeRace(); if(!r||!HIST.length)return null; var pl=planOf(r), S=formeSeries(); if(!S)return null;
+  var today=Math.round(todayUTC()/864e5), endD=Math.round(pl.end/864e5); if(endD<=today)return null;
+  var L={}; pl.weeks.forEach(function(w0){var wk=P(pl,w0.n); wk.s.forEach(function(x){if(x.race||x.type==="Course B")return; var d=Math.round(sessDate(pl,wk.n,x)/864e5); L[d]=(L[d]||0)+plannedLoad(pl,x);});});
+  var pts=S.pts, iso0=new Date(today*864e5).toISOString().slice(0,10), ran=HIST.some(function(q){return q.date===iso0;});
+  var base=pts[pts.length-1], start=today+1;
+  if(!ran&&pts.length>1){base=pts[pts.length-2]; start=today;}
+  var kc=1-Math.exp(-1/42), ka=1-Math.exp(-1/7), f=base.f, a=base.a, out=[];
+  for(var d=start;d<=endD;d++){var l=d<endD?(L[d]||0):0; f+=(l-f)*kc; a+=(l-a)*ka; out.push({d:d,f:f,a:a,z:f-a});}
+  return {pts:pts,prj:out,today:today,endD:endD,race:r,pl:pl};
+}
+function capCard(){
+  var P2=projSeries(); if(!P2)return "";
+  var pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-1], pk=prj.reduce(function(m,q){return q.f>m.f?q:m;},prj[0]);
+  var days=P2.endD-P2.today; if(pk.f<last.f)pk=last;
+  var verdict=end.z>=5&&end.z<=25?["ok","Dans la cible","Tu arriverais reposée et en forme : c’est l’objectif de l’affûtage."]:end.z<5?["warn","Pas assez reposée","Le plan te laisse encore de la fatigue le jour J : l’affûtage devra être plus net."]:["warn","Très reposée","Tu risques de perdre un peu de forme : garde quelques séances vives pendant l’affûtage."];
+  var h='<div class="card fm"><h3>Cap vers '+esc(P2.race.name)+'</h3><p class="small muted" style="margin:2px 0 10px">Plein : réel · pointillés : prévu · J−'+days+'</p>';
+  h+='<div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(last.f)+'</b></div><div><span>Pic prévu</span><b>'+Math.round(pk.f)+'</b></div><div><span>Fraîcheur J</span><b style="color:var(--down)">'+(end.z>=0?"+":"−")+Math.abs(Math.round(end.z))+'</b></div></div><div class="chip '+verdict[0]+'">'+verdict[1]+'</div><p class="small" style="margin:8px 0 12px">'+verdict[2]+'</p>';
+  var N0=P2.today-70, view=pts.filter(function(q){return q.d>=N0;}), W=320,H=150,pl=30,pr=10,pt=10,pb=22, lo=0, hi=0;
+  view.concat(prj).forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f);}); var sp=(hi-lo)||1; lo-=sp*.06; hi+=sp*.06; sp=hi-lo;
+  function X(d){return pl+(W-pl-pr)*(d-N0)/(P2.endD-N0);} function Y(v){return pt+(H-pt-pb)*(1-(v-lo)/sp);}
+  function path(a,f,from){return a.map(function(q,k){return (k||!from?(k?"L":"M"):"M")+X(q.d).toFixed(1)+" "+Y(q[f]).toFixed(1);}).join("");}
+  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Forme réelle et prévue jusqu’à la course">', step=Math.max(10,Math.ceil(sp/4/10)*10), t0=Math.ceil(lo/step)*step;
+  for(var tv=t0;tv<=hi;tv+=step)g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(tv).toFixed(1)+'" y2="'+Y(tv).toFixed(1)+'" stroke="var(--line)" stroke-width="'+(tv===0?1.4:.6)+'"'+(tv===0?' stroke-dasharray="2 3"':'')+'/><text x="'+(pl-5)+'" y="'+(Y(tv)+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+tv+'</text>';
+  g+='<line x1="'+X(P2.today).toFixed(1)+'" x2="'+X(P2.today).toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--muted)" stroke-width=".8" stroke-dasharray="2 3"/>';
+  var jf=[last].concat(prj);
+  g+='<path d="'+path(view,"z",1)+'" fill="none" stroke="var(--down)" stroke-width="1.6"/><path d="'+path(jf,"z",1)+'" fill="none" stroke="var(--down)" stroke-width="1.6" stroke-dasharray="4 3"/>';
+  g+='<path d="'+path(view,"f",1)+'" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round"/><path d="'+path(jf,"f",1)+'" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-dasharray="5 3" stroke-linejoin="round"/>';
+  g+='<line x1="'+X(P2.endD).toFixed(1)+'" x2="'+X(P2.endD).toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--acc)" stroke-width="2"/><circle cx="'+X(P2.endD).toFixed(1)+'" cy="'+Y(end.f).toFixed(1)+'" r="3.5" fill="var(--acc)"/>';
+  [[N0,"start"],[P2.today,"middle"],[P2.endD,"end"]].forEach(function(p0){var dd=new Date(p0[0]*864e5); g+='<text x="'+X(p0[0]).toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+p0[1]+'" font-size="9" fill="var(--muted)">'+(p0[0]===P2.today?"auj.":dd.getUTCDate()+" "+MON[dd.getUTCMonth()])+'</text>';});
+  h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>';
+  return h+'<p class="small muted" style="margin:8px 0 0">Prévision estimée, si tu fais toutes les séances du plan. Fraîcheur visée le jour J : +5 à +25.</p></div>';
+}
+function dpCard(){
+  var r=activeRace(), n0=Math.round(todayUTC()/864e5), W=wkSums(n0,12), cur=W[W.length-1], mx=1, rk=r&&r.km>0?r.dp/r.km:0;
+  W.forEach(function(x){mx=Math.max(mx,x.dp);});
+  var last4=W.slice(-4), k4=0,d4=0; last4.forEach(function(x){k4+=x.km;d4+=x.dp;}); var den=k4>0?d4/k4:0;
+  var rec=W.reduce(function(m,x){return x.dp>m.dp?x:m;},W[0]), rd=new Date(rec.a*864e5);
+  var msg=!rk?"":den<rk*0.6?"Tu t’entraînes sur un terrain nettement plus plat que ta course : ajoute du dénivelé sur ta sortie longue.":den<rk*0.85?"Tu t’approches du profil de ta course : continue à monter sur les sorties longues.":"Ton dénivelé par kilomètre est à la hauteur de ta course.";
+  var h='<details class="card fold"><summary><h3>Dénivelé</h3><span class="num">+'+nb(cur.dp)+' m cette sem.</span></summary><div class="fm-tiles num"><div><span>Cette semaine</span><b>+'+nb(cur.dp)+'<small> m</small></b></div><div><span>D+ par km · 4 sem.</span><b>'+Math.round(den)+'<small> m/km</small></b></div><div><span>'+(r?esc(r.name):"Course")+'</span><b>'+(rk?Math.round(rk):"–")+'<small> m/km</small></b></div></div>';
+  h+='<p class="small" style="margin:10px 0 6px">'+msg+'</p><p class="small muted num" style="margin:0 0 6px">D+ par semaine · max '+nb(mx)+' m (semaine du '+rd.getUTCDate()+"/"+(rd.getUTCMonth()+1)+')</p><div class="wm-bars fm-bars" style="grid-template-columns:repeat(12,1fr)" role="img" aria-label="Dénivelé par semaine">';
+  W.forEach(function(x,k){var dd=new Date(x.a*864e5); h+='<div class="wm-col'+(k===11?" today":"")+'"><div class="wm-plot">'+(x.dp?'<i class="a" style="height:'+Math.max(4,x.dp/mx*100)+'%"></i>':'<i class="rest"></i>')+'</div><b class="fm-l">'+((k%3===0||k===11)?dd.getUTCDate()+"/"+(dd.getUTCMonth()+1):"")+'</b></div>';});
+  return h+'</div><p class="small muted" style="margin:10px 0 0">La descente n’est pas mesurée à part : sur des boucles, elle est à peu près égale au D+. Le temps passé en côte n’est pas disponible dans les données lues.</p></details>';
+}
+function paceCard(){ // allure en endurance à fréquence cardiaque comparable, mois par mois
+  var M={}; HIST.forEach(function(q){ if(!(q.hr>=125&&q.hr<=155)||q.km<5||q.dp/q.km>28||!q.t)return; var k=q.date.slice(0,7); (M[k]||(M[k]={k:k,n:0,km:0,t:0,h:0}));
+    var o=M[k]; o.n++; o.km+=q.km; o.t+=q.t; o.h+=q.hr*q.km;});
+  var ks=Object.keys(M).sort().slice(-6).map(function(k){var o=M[k]; return {k:k,n:o.n,pace:o.t/o.km,hr:o.h/o.km};}).filter(function(o){return o.n>=2;});
+  var h='<details class="card fold"><summary><h3>Allure en endurance</h3><span class="num">'+(ks.length>1?mmss(ks[ks.length-1].pace)+' /km':'à venir')+'</span></summary><p class="small muted" style="margin:2px 0 8px">Sorties de 5 km et plus, assez plates, à 125–155 bpm : le meilleur signe de progrès.</p>';
+  if(ks.length<2)return h+'<p class="small" style="margin:0">Il faut au moins 2 sorties de ce type sur 2 mois différents pour voir ta progression.</p></details>';
+  var c=ks[ks.length-1], p=ks[ks.length-2], eq=p.pace*(c.hr/p.hr), diff=eq-c.pace; // >0 : plus rapide à même FC
+  h+='<table class="rtab num"><thead><tr><th>Mois</th><th>Allure</th><th>FC</th><th>Sorties</th></tr></thead><tbody>'+ks.slice().reverse().map(function(o){var d=new Date(o.k+"-01T00:00:00Z"); return '<tr><td>'+MON[d.getUTCMonth()]+'</td><td>'+mmss(o.pace)+' /km</td><td>'+Math.round(o.hr)+' bpm</td><td>'+o.n+'</td></tr>';}).join("")+'</tbody></table>';
+  var a=Math.abs(Math.round(diff)), txt=a<=2?"À fréquence cardiaque comparable, ton allure est stable par rapport au mois précédent.":diff>0?"À fréquence cardiaque comparable, tu cours environ <b>"+a+" s/km plus vite</b> que le mois précédent.":"À fréquence cardiaque comparable, tu cours environ <b>"+a+" s/km plus lentement</b> que le mois précédent : fatigue, chaleur ou terrain plus dur peuvent l’expliquer.";
+  return h+'<p class="small" style="margin:10px 0 0">'+txt+'</p><p class="small muted" style="margin:6px 0 0">Estimation : la vitesse est corrigée de l’écart de fréquence cardiaque moyenne entre les deux mois.</p></details>';
+}
+function pvBars(pl,x,ac){ // prévu contre réalisé, en une seconde
+  var ed=estDur(pl.m,x), pp=x.km&&ed?ed/x.km:0, ap=ac.t&&ac.km?ac.t/ac.km:0, R=[];
+  function row(l,r,txt){var w=Math.max(2,Math.min(150,r*100)); return '<div class="pv"><span>'+l+'</span><div class="tr"><i style="width:'+(w/1.5)+'%"></i><u style="left:'+(100/1.5)+'%"></u></div><b class="num">'+txt+'</b></div>';}
+  if(x.km>0)R.push(row("Distance",ac.km/x.km,Math.round(ac.km/x.km*100)+" %"));
+  if(x.dp>0)R.push(row("Dénivelé",(ac.dp||0)/x.dp,Math.round((ac.dp||0)/x.dp*100)+" %")); else if(ac.dp>150)R.push(row("Dénivelé",1.5,"+"+nb(ac.dp)+" m"));
+  if(pp&&ap){var rr=pp/ap; R.push(row("Allure",rr,mmss(ap)+" /km"));}
+  return R.length?'<details class="pvs" open><summary class="small muted" style="cursor:pointer;min-height:32px;list-style:none">Prévu contre réalisé</summary>'+R.join("")+'<p class="small muted" style="margin:2px 0 0">Le trait marque le prévu (100 %).</p></details>':"";
+}
+function weekEndCard(r,pl,ti){
+  var w=nowWeek(pl), td=ti-(w-1)*7, hr=new Date().getHours(), tw=(td===6&&hr>=17)?w:(td===0&&w>1)?w-1:0; if(!tw)return "";
+  var wk=P(pl,tw), t=weekTot(r,wk,6), dn=weekDone(r,wk), ns=nSess(wk), pc=t.pk>0?Math.round(t.ak/t.pk*100):0;
+  var badge=t.pk<=0?null:pc>=90&&pc<=115?["ok","Semaine réussie"]:pc>115?["warn","Semaine chargée"]:pc>=75?["warn","Un peu en dessous"]:["off","Semaine allégée"];
+  var h='<div class="card"><div class="verdict"><h3>Bilan de ta semaine '+tw+'</h3>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km · prévu '+kmS(Math.round(t.pk*10)/10)+'</span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m · prévu '+nb(t.pd)+'</span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
+  try{var S=formeSeries(); if(S&&S.pts.length>8){var q=S.pts[S.pts.length-1], q0=S.pts[S.pts.length-8], df=Math.round(q.f-q0.f), dz=Math.round(q.z);
+    h+='<p class="small" style="margin:10px 0 0">'+(Math.abs(df)<1?'Forme stable sur la semaine':'Forme '+(df>0?'+':'−')+Math.abs(df)+' sur la semaine')+' · fraîcheur '+(dz>=0?'+':'−')+Math.abs(dz)+'.</p>';}}catch(e){}
+  var nx=tw<pl.n?P(pl,tw+1):null;
+  if(nx){var key=nx.s.filter(function(x){return !x.race&&x.km>0&&(x.tag==="q"||x.tag==="l");}).map(function(x){return DOWL[x.dow]+" : "+esc(x.type.toLowerCase())+" "+kmS(x.km)+" km";});
+    h+='<h4 style="margin:14px 0 4px">Semaine prochaine · '+esc(nx.ph)+'</h4><p class="small" style="margin:0 0 4px">'+kmS(nx.km)+' km · +'+nb(nx.dp)+' m prévus.'+(key.length?' À retenir : '+key.join(" ; ")+'.':'')+'</p>';
+    var a=null; try{a=adjFor(pl,tw+1);}catch(e){} if(a)h+='<p class="small" style="margin:6px 0 0"><b>Le coach :</b> '+esc(a.lead+" "+a.prop)+'</p>';}
+  return h+'</div>';
+}
+document.addEventListener("toggle",function(e){var t=e.target; if(t&&t.classList&&t.classList.contains("more"))MOREOPEN=t.open;},true);
 function vForme(){
   var h=header("Ton suivi","Forme")+'<div class="wm-seg fm-sub" role="tablist" aria-label="Source">'+
     [["strava","Strava","récent"],["garmin","Garmin","export montre"]].map(function(x){return '<button role="tab" data-fsub="'+x[0]+'" aria-pressed="'+(FSUB===x[0])+'" aria-selected="'+(FSUB===x[0])+'">'+x[1]+'<small>'+x[2]+'</small></button>';}).join("")+'</div>';
@@ -887,6 +972,7 @@ function vFormeStrava(){
   if(!HIST.length){
     return h+'<div class="card"><h3>Pas encore de sorties</h3><p class="small muted" style="margin:0">Ouvre l’onglet Aujourd’hui et lance « Synchroniser Strava » pour charger ton historique. Ce suivi se remplit ensuite tout seul.</p></div>';
   }
+  h+=capCard();
   var R=periodRange(n0), c=sumRuns(R[0],n0), p=sumRuns(R[1],R[2]);
   var pace=c.km>0?c.t/c.km:0, vs=p.km>0?(c.km-p.km)/p.km*100:null;
   h+='<div class="card wm"><div class="wm-top"><h3>Volume</h3><div class="wm-seg" role="group" aria-label="Période">'+
@@ -904,10 +990,11 @@ function vFormeStrava(){
   h+='<h4 style="margin:16px 0 2px">'+title+'</h4><p class="small muted num" style="margin:0 0 6px">max '+kmS(Math.round(mx))+' km</p><div class="wm-bars fm-bars" style="grid-template-columns:repeat('+B.length+',1fr)" role="img" aria-label="'+title+'">';
   B.forEach(function(x,k){h+='<div class="wm-col'+(x.cur?" today":"")+'"><div class="wm-plot">'+(x.v?'<i class="a" style="height:'+Math.max(4,x.v/mx*100)+'%"></i>':'<i class="rest"></i>')+'</div><b class="fm-l">'+((VP==="year"||k%3===0||x.cur)?x.l:"")+'</b></div>';});
   h+='</div></div>';
+  h+=dpCard();
   // forme / fatigue / fraîcheur
   var S=formeSeries(), pts=S.pts, z=pts[pts.length-1], N=Math.min(pts.length,60), view=pts.slice(pts.length-N);
   var st=z.z>15?["Très frais","ok","Tu es reposée : bon moment pour une séance de qualité ou une course."]:z.z>5?["Frais","ok","Tu récupères bien, tu peux charger un peu."]:z.z>=-10?["Équilibré","ok","Charge et récupération sont en phase."]:z.z>=-25?["Chargée","warn","Tu accumules de la fatigue : garde les séances faciles vraiment faciles."]:["Surcharge","off","Fatigue très élevée : allège les prochains jours."];
-  h+='<div class="card fm"><h3>Forme et fraîcheur</h3><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--acc-ink)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
+  h+='<details class="card fm fold"><summary><h3>Forme et fraîcheur</h3><span class="num">'+st[0]+'</span></summary><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--acc-ink)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
     '<div class="chip '+st[1]+'">'+st[0]+'</div><p class="small" style="margin:8px 0 12px">'+st[2]+'</p>';
   var W=320, H=150, pl=30, pr=8, pt=8, pb=20, lo=0, hi=0; view.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f,q.a,q.z);});
   var span=hi-lo||1; lo-=span*.06; hi+=span*.06; span=hi-lo;
@@ -919,7 +1006,8 @@ function vFormeStrava(){
   g+='<path d="'+path("f")+'" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><path d="'+path("a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-dasharray="5 3"/><path d="'+path("z")+'" fill="none" stroke="var(--down)" stroke-width="1.8"/>';
   [0,Math.floor((N-1)/2),N-1].forEach(function(k,j){var dd=new Date(view[k].d*864e5); g+='<text x="'+X(k).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+(j===0?"start":j===2?"end":"middle")+'" font-size="9" fill="var(--muted)">'+dd.getUTCDate()+" "+MON[dd.getUTCMonth()]+'</text>';});
   h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--acc);margin-left:10px"></i>fatigue <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>'+
-    '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></div>';
+    '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></details>';
+  h+=paceCard();
   return h;
 }
 
