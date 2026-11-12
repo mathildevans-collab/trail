@@ -972,7 +972,6 @@ function vFormeStrava(){
   if(!HIST.length){
     return h+'<div class="card"><h3>Pas encore de sorties</h3><p class="small muted" style="margin:0">Ouvre l’onglet Aujourd’hui et lance « Synchroniser Strava » pour charger ton historique. Ce suivi se remplit ensuite tout seul.</p></div>';
   }
-  h+=capCard();
   var R=periodRange(n0), c=sumRuns(R[0],n0), p=sumRuns(R[1],R[2]);
   var pace=c.km>0?c.t/c.km:0, vs=p.km>0?(c.km-p.km)/p.km*100:null;
   h+='<div class="card wm"><div class="wm-top"><h3>Volume</h3><div class="wm-seg" role="group" aria-label="Période">'+
@@ -990,11 +989,11 @@ function vFormeStrava(){
   h+='<h4 style="margin:16px 0 2px">'+title+'</h4><p class="small muted num" style="margin:0 0 6px">max '+kmS(Math.round(mx))+' km</p><div class="wm-bars fm-bars" style="grid-template-columns:repeat('+B.length+',1fr)" role="img" aria-label="'+title+'">';
   B.forEach(function(x,k){h+='<div class="wm-col'+(x.cur?" today":"")+'"><div class="wm-plot">'+(x.v?'<i class="a" style="height:'+Math.max(4,x.v/mx*100)+'%"></i>':'<i class="rest"></i>')+'</div><b class="fm-l">'+((VP==="year"||k%3===0||x.cur)?x.l:"")+'</b></div>';});
   h+='</div></div>';
-  h+=dpCard();
+  var hv=h; h="";
   // forme / fatigue / fraîcheur
   var S=formeSeries(), pts=S.pts, z=pts[pts.length-1], N=Math.min(pts.length,60), view=pts.slice(pts.length-N);
   var st=z.z>15?["Très frais","ok","Tu es reposée : bon moment pour une séance de qualité ou une course."]:z.z>5?["Frais","ok","Tu récupères bien, tu peux charger un peu."]:z.z>=-10?["Équilibré","ok","Charge et récupération sont en phase."]:z.z>=-25?["Chargée","warn","Tu accumules de la fatigue : garde les séances faciles vraiment faciles."]:["Surcharge","off","Fatigue très élevée : allège les prochains jours."];
-  h+='<details class="card fm fold"><summary><h3>Forme et fraîcheur</h3><span class="num">'+st[0]+'</span></summary><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--acc-ink)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
+  h+='<div class="card fm"><h3>Forme et fraîcheur</h3><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--acc-ink)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
     '<div class="chip '+st[1]+'">'+st[0]+'</div><p class="small" style="margin:8px 0 12px">'+st[2]+'</p>';
   var W=320, H=150, pl=30, pr=8, pt=8, pb=20, lo=0, hi=0; view.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f,q.a,q.z);});
   var span=hi-lo||1; lo-=span*.06; hi+=span*.06; span=hi-lo;
@@ -1006,9 +1005,8 @@ function vFormeStrava(){
   g+='<path d="'+path("f")+'" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><path d="'+path("a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-dasharray="5 3"/><path d="'+path("z")+'" fill="none" stroke="var(--down)" stroke-width="1.8"/>';
   [0,Math.floor((N-1)/2),N-1].forEach(function(k,j){var dd=new Date(view[k].d*864e5); g+='<text x="'+X(k).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+(j===0?"start":j===2?"end":"middle")+'" font-size="9" fill="var(--muted)">'+dd.getUTCDate()+" "+MON[dd.getUTCMonth()]+'</text>';});
   h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--acc);margin-left:10px"></i>fatigue <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>'+
-    '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></details>';
-  h+=paceCard();
-  return h;
+    '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></div>';
+  return hv+h+dpCard();
 }
 
 // ---------- interactions ----------
