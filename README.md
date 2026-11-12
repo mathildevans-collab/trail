@@ -27,3 +27,13 @@ L'app l'affiche dans Réglages, Strava (« La lecture de Strava échoue sur GitH
 - **Synchro désactivée par GitHub** : GitHub coupe les tâches planifiées après 60 jours sans commit. Le script fait un petit commit au moins une fois par mois pour l'éviter. Si c'est arrivé quand même : onglet Actions, « Strava sync », Enable workflow.
 
 Deux synchros ne tournent jamais en même temps, une erreur passagère de Strava est réessayée, et une réponse vide n'efface pas les sorties déjà publiées.
+
+## Notification sur le téléphone (ntfy)
+
+Quand l'Action « Strava sync » trouve une nouvelle séance, elle peut t'envoyer une notification.
+
+1. Installe l'application gratuite **ntfy** sur ton téléphone.
+2. Invente un nom de canal long et secret (par exemple `cadenzo-` suivi de 15 lettres au hasard) et abonne-toi à ce canal dans l'application.
+3. Dans GitHub : Settings, Secrets and variables, Actions, New repository secret. Nom : `NTFY_TOPIC`. Valeur : le nom du canal.
+
+Tant que le secret `NTFY_TOPIC` n'existe pas, rien n'est envoyé. Le message ne contient que la distance, le dénivelé et la durée.

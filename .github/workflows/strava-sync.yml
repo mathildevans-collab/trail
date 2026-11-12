@@ -33,6 +33,9 @@ jobs:
               exit 1
             fi
           fi
+      - name: Repérer les nouvelles séances
+        if: always()
+        run: python3 scripts/notify.py "$RUNNER_TEMP/notif.txt"
       - name: Publier activities.json
         if: always()
         run: |
@@ -43,3 +46,14 @@ jobs:
           git commit -m "Mise à jour Strava"
           for i in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
           exit 1
+      - name: Prévenir sur le téléphone (ntfy)
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -s "$RUNNER_TEMP/notif.txt" ] && [ -n "$NTFY_TOPIC" ]; then
+            echo "::add-mask::$NTFY_TOPIC"
+            curl -fsS --max-time 20 -H "Title: Cadenzo" -H "Tags: running_shirt_with_sash" \
+              -H "Click: https://mathildevans-collab.github.io/trail/" \
+              --data-binary @"$RUNNER_TEMP/notif.txt" "https://ntfy.sh/$NTFY_TOPIC" >/dev/null \
+              || echo "::warning::Notification non envoyée (ntfy injoignable)."
+          fi
