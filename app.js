@@ -261,6 +261,7 @@ function sessByKey(wk,k){if(!wk)return null; for(var i=0;i<wk.s.length;i++)if(wk
 function sessAt(wk,dow){if(!wk)return null; for(var i=0;i<wk.s.length;i++)if(wk.s[i].dow===dow)return wk.s[i]; return null;}
 function planIdx(pl){return Math.floor((todayUTC()-pl.start)/DAY);}
 function nowWeek(pl){var i=planIdx(pl); return i<0?1:Math.min(pl.n,Math.floor(i/7)+1);}
+function extraWk(wk){var o={km:0,dp:0,n:0}; if(!wk||!wk.start||!D.extra)return o; for(var i=0;i<7;i++){var e=D.extra[iso(wk.start+i*DAY)]; if(e){o.km+=e.km;o.dp+=e.dp||0;o.n++;}} return o;}
 function weekDone(r,wk){var c=0; wk.s.forEach(function(s){if(D.done[sk(r,wk.n,s.k)])c++;}); return c;}
 function nSess(wk){return wk.s.filter(function(s){return !s.race;}).length;}
 function totals(pl){var t=0,d=0; pl.weeks.forEach(function(wk){t+=nSess(wk); d+=weekDone(pl.r,wk);}); return {t:t,d:d};}
@@ -331,13 +332,14 @@ function rbCompute(pl,w,wk){
   var r=pl.r, ti=planIdx(pl), td=ti-(w-1)*7; if(ti<0||td<0||td>6||!wk)return null;
   var pk=0, dk=0, dd=0, any=false;
   wk.s.forEach(function(x){if(x.race)return; pk+=x.km||0; var ac=D.actual[sk(r,w,x.k)]; if(ac&&ac.km>0){dk+=ac.km-(x.km||0); dd+=(ac.dp||0)-(x.dp||0); any=true;}});
+  var ex=extraWk(wk); if(ex.km>0){dk+=ex.km; dd+=ex.dp; any=true;}
   if(!any||pk<=0)return null;
   function flex(x){return !x.race&&!x.club&&x.type.indexOf("Club")!==0&&x.type!=="Course B"&&!x.edited&&x.km>0&&x.dow>=td&&!D.actual[sk(r,w,x.k)]&&!D.done[sk(r,w,x.k)]&&(x.tag==="e"||x.tag==="l");}
   var cand=wk.s.filter(flex), ch={}, items=[], txt="";
   if(dk>=Math.max(3,0.12*pk)&&cand.length){
     var tot=cand.reduce(function(a,x){return a+x.km;},0), A=Math.min(0.7*dk,0.3*tot);
     cand.forEach(function(x){var cut=A*x.km/tot, to=Math.max(x.tag==="l"?x.km*0.7:Math.min(4,x.km),x.km-cut); to=Math.round(to*2)/2; if(to<x.km)ch[x.k]=to;});
-    txt="Tu as couru "+kmS(Math.round(dk*10)/10)+" km de plus que prévu cette semaine"+(dd>=200?" (et +"+nb(Math.round(dd))+" m de dénivelé)":"")+". Pour arriver reposée à tes prochaines séances de qualité, j’en absorbe environ 70 % sur tes sorties faciles à venir.";
+    txt=(ex.km>0?"Tu as couru "+kmS(Math.round(ex.km*10)/10)+" km un jour sans séance prévue. ":"")+"Tu as couru "+kmS(Math.round(dk*10)/10)+" km de plus que prévu cette semaine"+(dd>=200?" (et +"+nb(Math.round(dd))+" m de dénivelé)":"")+". Pour arriver reposée à tes prochaines séances de qualité, j’en absorbe environ 70 % sur tes sorties faciles à venir.";
   } else if(dk<=-Math.max(3,0.15*pk)){
     var lg=cand.filter(function(x){return x.tag==="l";})[0], fr=null; try{var S=formeSeries(); fr=S&&S.pts[S.pts.length-1].z;}catch(e){}
     if(lg&&!(fr!=null&&fr<-25)){var to2=Math.round(Math.min(lg.km*1.1,lg.km+0.5*(-dk))*2)/2; if(to2>lg.km)ch[lg.k]=to2;}
@@ -491,7 +493,7 @@ function sessionHero(r,pl,wk,s){
   h+='<p class="sub">'+(ac?'Tes chiffres : '+kmS(ac.km)+' km'+(ac.dp?' · +'+ac.dp+' m':'')+(ac.t?' · '+dur(ac.t):'')+'. <button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Corriger</button>':STRAVA?'Le bilan arrive tout seul quand Strava reçoit ta sortie.':'<button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Ajoute tes chiffres</button> pour avoir le bilan du coach.')+'</p>';
   return h+'</div>';
 }
-function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h3 style="font-size:26px;margin:6px 0 8px">Repos</h3><p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p><details><summary>'+I.leaf+' Routine de mobilité</summary><div class="in">'+exHTML(MOB)+'</div></details></div>';}
+function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h3 style="font-size:26px;margin:6px 0 8px">Repos</h3>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+'<details><summary>'+I.leaf+' Routine de mobilité</summary><div class="in">'+exHTML(MOB)+'</div></details></div>';}
 function bilanCard(r,pl){
   var t=todayUTC(), best=null;
   pl.weeks.forEach(function(wk){wk.s.forEach(function(s){var d=sessDate(pl,wk.n,s), ac=D.actual[sk(r,wk.n,s.k)]; if(ac&&d<=t&&t-d<=10*DAY&&(!best||d>best.d))best={d:d,s:s,ac:ac};});});
@@ -502,6 +504,7 @@ function bilanCard(r,pl){
 function weekTot(r,wk,upto){
   var pk=0,ak=0,pd=0,ad=0,ek=0,ed=0;
   wk.s.forEach(function(x){if(x.race)return; pk+=x.km||0; pd+=x.dp||0; if(x.dow<=upto){ek+=x.km||0; ed+=x.dp||0;} var ac=D.actual[sk(r,wk.n,x.k)]; if(ac){ak+=ac.km; ad+=ac.dp||0;} else if(D.done[sk(r,wk.n,x.k)]){ak+=x.km||0; ad+=x.dp||0;}});
+  var ex=extraWk(wk); ak+=ex.km; ad+=ex.dp;
   return {pk:pk,ak:ak,pd:pd,ad:ad,ek:ek,ed:ed};
 }
 var WM="km";
@@ -1114,7 +1117,8 @@ function autoSync(){if(STRAVA&&!syncing&&Date.now()-(D.sync.t||0)>5*60*1000)sync
 function applyActs(acts){
   var r=activeRace(); if(!r)return 0; var pl=planOf(r), bd=byDate(pl), byDay={}, n=0;
   acts.forEach(function(a){if(!a.date||!(a.km>0))return; var o=byDay[a.date]||(byDay[a.date]={km:0,dp:0,t:0,src:a.src}); o.km+=a.km; o.dp+=a.dp||0; o.t+=a.t||0;});
-  Object.keys(byDay).forEach(function(dt){var mm=bd[dt]; if(!mm||mm.s.race)return; var o=byDay[dt]; if(o.km<2)return; var k=sk(r,mm.w,mm.s.k);
+  D.extra=D.extra||{};
+  Object.keys(byDay).forEach(function(dt){var mm=bd[dt], o0=byDay[dt]; if(!mm){ if(o0.km>=2&&dms(dt)>=pl.start&&dms(dt)<=pl.end)D.extra[dt]={km:Math.round(o0.km*100)/100,dp:Math.round(o0.dp),t:Math.round(o0.t)}; else delete D.extra[dt]; n++; return;} delete D.extra[dt]; if(mm.s.race)return; var o=byDay[dt]; if(o.km<2)return; var k=sk(r,mm.w,mm.s.k);
     if(D.actual[k]&&D.actual[k].src==="manual")return; D.actual[k]={km:Math.round(o.km*100)/100,dp:Math.round(o.dp),t:Math.round(o.t),src:o.src};
     if(mm.s.km&&o.km>=0.6*mm.s.km)D.done[k]=1; n++;});
   return n;

@@ -419,5 +419,6 @@ details.fold>summary h3{margin:0}
 details.fold>summary span{margin-left:auto;font-size:13px;color:var(--muted);text-align:right}
 details.fold>summary::after{content:"+";font-size:22px;color:var(--muted)}
 details.fold[open]>summary::after{content:"−"}
-details.fold>*:not(summary){margin-left:16px;margin-right:16px}
+details.fold>*:not(summary){padding-left:16px;padding-right:16px;box-sizing:border-box}
+details.fold>.btn{margin-left:16px}
 details.fold>*:last-child{margin-bottom:16px}
