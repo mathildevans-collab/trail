@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: write  # pour se relancer toute seule
 concurrency:  # jamais deux lectures en même temps : le jeton Strava pourrait être perdu
   group: strava
   cancel-in-progress: false
@@ -57,3 +58,13 @@ jobs:
               --data-binary @"$RUNNER_TEMP/notif.txt" "https://ntfy.sh/$NTFY_TOPIC" >/dev/null \
               || echo "::warning::Notification non envoyée (ntfy injoignable)."
           fi
+      - name: Se relancer dans 5 minutes
+        # GitHub saute souvent les passages programmés (parfois pendant des heures).
+        # La lecture se relance donc elle-même ; le cron ne sert plus que de secours.
+        # Si une relance est déjà en attente, GitHub n'en garde qu'une seule.
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 270
+          gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/strava-sync.yml/dispatches" -f ref="${GITHUB_REF_NAME}" || echo "::warning::Relance impossible, le cron prendra le relais."
