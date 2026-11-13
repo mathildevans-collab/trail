@@ -1112,7 +1112,7 @@ function sync(manual){
   get(0).then(function(j){
     var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
     histSave((j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0};}));
-    D.sync.t=Date.now(); D.sync.upd=j.updated||""; D.sync.err=""; var n=applyActs(runs); if(manual)toast(runs.length+" sorties lues · "+n+" séances du plan");
+    D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err=""; var n=applyActs(runs); if(manual)toast(runs.length+" sorties lues · "+n+" séances du plan");
   }).catch(function(e){D.sync.err=String(e.message||e); if(manual)toast("Synchro impossible.");}).then(function(){syncing=false; save(); render(true);});
 }
 // état de la dernière exécution de l’Action « Strava sync » (API publique GitHub, sans jeton)
@@ -1131,7 +1131,7 @@ function stravaSub(){
   if(s.gh==="ok"&&s.ght)bits.push("Strava lu par GitHub "+ago(s.ght));
   return bits.join(" · ");
 }
-function autoSync(){if(STRAVA&&!syncing&&Date.now()-(D.sync.t||0)>5*60*1000)sync(false);}
+function autoSync(){if(STRAVA&&!syncing&&(Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV()))sync(false);}
 function applyActs(acts){
   var r=activeRace(); if(!r)return 0; var pl=planOf(r), bd=byDate(pl), byDay={}, n=0;
   acts.forEach(function(a){if(!a.date||!(a.km>0))return; var o=byDay[a.date]||(byDay[a.date]={km:0,dp:0,t:0,src:a.src}); o.km+=a.km; o.dp+=a.dp||0; o.t+=a.t||0;});
@@ -1303,6 +1303,8 @@ function onPos(p){
 }
 
 // ---------- démarrage ----------
+// reclasse tout de suite les sorties déjà lues avec la logique de cette version (sorties hors plan comprises)
+try{if(HIST.length){applyActs(HIST.map(function(q){return {date:q.date,km:q.km,dp:q.dp,t:q.t,src:"strava"};}));}}catch(e){}
 save(); goNow(); render();
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
