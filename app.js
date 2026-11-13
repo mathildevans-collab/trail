@@ -471,7 +471,7 @@ function vPrep(r,pl){
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
   if(cur===tw)h+=weekEndCard(r,pl,ti);
-  h+=bilanCard(r,pl);
+  h+=bilanCard(r,pl,wk,sel,selD);
   h+=rbCard(r,wk);
   h+=weekCard(r,pl,wk,s,showM);
   h+=checkinCard(r,pl,cur);
@@ -494,12 +494,30 @@ function sessionHero(r,pl,wk,s){
   return h+'</div>';
 }
 function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h3 style="font-size:26px;margin:6px 0 8px">Repos</h3>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+'<details><summary>'+I.leaf+' Routine de mobilité</summary><div class="in">'+exHTML(MOB)+'</div></details></div>';}
-function bilanCard(r,pl){
-  var t=todayUTC(), best=null;
-  pl.weeks.forEach(function(wk){wk.s.forEach(function(s){var d=sessDate(pl,wk.n,s), ac=D.actual[sk(r,wk.n,s.k)]; if(ac&&d<=t&&t-d<=10*DAY&&(!best||d>best.d))best={d:d,s:s,ac:ac};});});
-  if(!best)return "";
-  var rv=review(pl.m,best.s,best.ac), b=BADGE[rv.lvl], ac=best.ac, s=best.s;
-  return '<div class="card"><div class="verdict"><h3>'+(best.d===t?"Bilan du jour":"Bilan de "+DOWL[dowOf(best.d)])+'</h3><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km · prévu '+kmS(s.km)+'</span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m · prévu '+nb(s.dp||0)+'</span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
+function bilanCard(r,pl,wk,sel,selD){
+  var t=todayUTC(); if(!wk||selD>t)return "";
+  var s=sessAt(wk,sel), ac=s?D.actual[sk(r,wk.n,s.k)]:null, ex=!s&&D.extra?D.extra[iso(selD)]:null;
+  var ttl=selD===t?"Bilan du jour":"Bilan de "+DOWL[sel];
+  if(s&&ac){
+    var rv=review(pl.m,s,ac), b=BADGE[rv.lvl];
+    return '<div class="card"><div class="verdict"><h3>'+ttl+'</h3><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km · prévu '+kmS(s.km)+'</span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m · prévu '+nb(s.dp||0)+'</span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
+  }
+  if(ex){
+    var di=iso(selD), hr=0, hn=0; HIST.forEach(function(q){if(q.date===di&&q.hr>0){hr+=q.hr*q.km;hn+=q.km;}}); hr=hn?hr/hn:0;
+    var pc=hr?hr/HRMAX:0, L=["Sortie non prévue au plan : "+kmS(ex.km)+" km"+(ex.dp>=100?" et +"+nb(ex.dp)+" m":"")+", elle compte dans ta semaine."];
+    var lvl=0;
+    if(hr){ if(pc>=0.85){lvl=1;L.push("Fréquence cardiaque moyenne "+Math.round(hr)+" bpm : effort soutenu pour un jour de repos, laisse-toi le temps de récupérer.");}
+      else if(pc>=0.75)L.push("Fréquence cardiaque moyenne "+Math.round(hr)+" bpm : effort modéré.");
+      else L.push("Fréquence cardiaque moyenne "+Math.round(hr)+" bpm : effort facile, bien pour récupérer.");}
+    if(ex.km>=10){lvl=1;}
+    if(wk.rb&&wk.rb.items&&wk.rb.items.length&&!wk.rbOff)L.push("Le reste de ta semaine a été ajusté en conséquence.");
+    var bd=BADGE[lvl]; var chip=lvl?'<span class="chip warn">Hors plan</span>':'<span class="chip off">Hors plan</span>';
+    return '<div class="card"><div class="verdict"><h3>'+ttl+'</h3>'+chip+'</div><div class="stats num"><div class="stat"><b>'+kmS(ex.km)+'</b><span>km · non prévu</span></div><div class="stat"><b>+'+nb(ex.dp||0)+'</b><span>m</span></div><div class="stat"><b>'+(ex.t?mmss(ex.t/ex.km):"–")+'</b><span>/km'+(ex.t?" · "+dur(ex.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(L.join(" "))+'</p></div>';
+  }
+  if(s&&!ac&&selD<t&&!s.race&&s.km>0&&!D.done[sk(r,wk.n,s.k)]){
+    return '<div class="card"><div class="verdict"><h3>'+ttl+'</h3><span class="chip off">Non faite</span></div><p class="small" style="margin:8px 0 0">Aucune sortie reçue de Strava ce jour-là pour « '+esc(s.type)+' ». '+(s.club||s.type.indexOf("Club")===0?'Si tu y es allée sans enregistrer, marque-la faite depuis la séance.':'Si tu l’as faite sans Strava, marque-la faite depuis la séance. Sinon, ne la rattrape pas d’un coup : le plan s’adapte.')+'</p></div>';
+  }
+  return "";
 }
 function weekTot(r,wk,upto){
   var pk=0,ak=0,pd=0,ad=0,ek=0,ed=0;
