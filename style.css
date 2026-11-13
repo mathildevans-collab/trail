@@ -189,7 +189,8 @@ dl.nut dd{margin:2px 0 0}
 .wk .n{font-family:var(--display);font-size:20px;color:var(--muted)}
 .wk.cur .n{color:var(--brand)}
 .wk .d{font-size:13px;color:var(--muted)}
-.wk .b{height:6px;border-radius:9px;background:var(--brand);opacity:.75;margin-top:4px}
+.wk .b{position:relative;overflow:hidden;height:6px;border-radius:9px;background:var(--brand);opacity:.75;margin-top:4px}
+.wk .b i{position:absolute;left:0;top:0;bottom:0;border-radius:9px;background:var(--acc)}
 .wk.rec .b{background:var(--ok)}
 .wk .k{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .wk .k small{display:block;font-weight:500;color:var(--muted);font-size:12px}
