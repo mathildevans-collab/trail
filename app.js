@@ -392,7 +392,14 @@ var I={
 // ---------- petits blocs ----------
 function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h2>'+title+'</h2></div><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div>';}
 function todoBtn(key,label,store){var st=store||D.todo, on=!!st[key]; return '<button class="todo" data-todo="'+esc(key)+'"'+(store?' data-store="kit"':'')+' aria-pressed="'+on+'"><span class="box">'+(on?I.check:"")+'</span><span class="t">'+label+'</span></button>';}
-function exHTML(list){return list.map(function(e){return '<div class="ex"><span>'+esc(e[0])+'</span><span>'+esc(e[1])+'</span></div>';}).join("");}
+function woBtns(code,only){ // boutons de lancement de la séance guidée
+  if(!window.WORKOUT)return "";
+  var m=WORKOUT.minutes(WORKOUT.build("mob",null,RENFO,MOB)), h='<div class="wo-start">';
+  if(code)h+='<button class="btn" data-wo="renfo:'+code+'">▶ Renfo guidé · '+WORKOUT.minutes(WORKOUT.build("renfo",code,RENFO,MOB))+' min</button>';
+  if(!only)h+='<button class="btn'+(code?' ghost':'')+'" data-wo="mob">▶ Mobilité guidée · '+m+' min</button>';
+  return h+'</div>';
+}
+function exHTML(list){return list.map(function(e){return '<div class="ex"><span class="exn">'+(window.WORKOUT?'<span class="exi">'+WORKOUT.img(e[0],true)+'</span>':'')+'<span>'+esc(e[0])+'</span></span><span>'+esc(e[1])+'</span></div>';}).join("");}
 function nutHTML(k){var n=NUT[k]; if(!n)return ""; var h='<dl class="nut"><dt>'+esc(n.t)+'</dt><dd>Glucides ≈ '+n.c+' g sur la journée ('+n.cg+'). Protéines ≈ '+n.p+' g, en 4 prises de 25 à 30 g.</dd>';
   if(n.pre)h+='<dt>Avant</dt><dd>'+esc(n.pre)+'</dd>'; if(n.dur)h+='<dt>Pendant</dt><dd>'+esc(n.dur)+'</dd>'; if(n.post)h+='<dt>Après</dt><dd>'+esc(n.post)+'</dd>'; return h+'<dt>Astuce</dt><dd>'+esc(n.tip)+'</dd></dl>';}
 var LOK={"Endurance + renfo":1,"Sortie longue":1,"Sortie club · dimanche":1,"Jour 2 du bloc":1,"Tempo long":1,"Fartlek nature":1,"Progressif":1,"Footing":1};
@@ -493,7 +500,7 @@ function sessionHero(r,pl,wk,s){
   h+='<p class="sub">'+(ac?'Tes chiffres : '+kmS(ac.km)+' km'+(ac.dp?' · +'+ac.dp+' m':'')+(ac.t?' · '+dur(ac.t):'')+'. <button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Corriger</button>':STRAVA?'Le bilan arrive tout seul quand Strava reçoit ta sortie.':'<button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Ajoute tes chiffres</button> pour avoir le bilan du coach.')+'</p>';
   return h+'</div>';
 }
-function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h3 style="font-size:26px;margin:6px 0 8px">Repos</h3>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+'<details><summary>'+I.leaf+' Routine de mobilité</summary><div class="in">'+exHTML(MOB)+'</div></details></div>';}
+function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h3 style="font-size:26px;margin:6px 0 8px">Repos</h3>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+'<details><summary>'+I.leaf+' Routine de mobilité</summary><div class="in">'+woBtns(null)+exHTML(MOB)+'</div></details></div>';}
 function bilanCard(r,pl,wk,sel,selD){
   var t=todayUTC(); if(!wk||selD>t)return "";
   var s=sessAt(wk,sel), ac=s?D.actual[sk(r,wk.n,s.k)]:null, ex=!s&&D.extra?D.extra[iso(selD)]:null;
@@ -711,14 +718,15 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
   if(b.dataset.sact)sheetAct(b.dataset.sact,b);});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
+document.addEventListener("click",function(e){var b=e.target.closest("[data-wo]"); if(!b||!window.WORKOUT)return; e.preventDefault(); var v=b.dataset.wo.split(":"); WORKOUT.start(v[0],v[1]||null,{RENFO:RENFO,MOB:MOB,closeSheet:closeSheet});});
 function showInfo(key){
   var p=key.split(":"), h="";
-  if(p[0]==="renfo"){var R0=RENFO[p[1]]; h='<h3>'+esc(R0.name)+'</h3><p class="small muted">'+esc(R0.tours)+'</p>'+exHTML(R0.ex)+'<h4 style="font-family:var(--display);margin:14px 0 4px">Mobilité après la séance</h4>'+exHTML(MOB.slice(0,4));}
+  if(p[0]==="renfo"){var R0=RENFO[p[1]]; h='<h3>'+esc(R0.name)+'</h3><p class="small muted">'+esc(R0.tours)+'</p>'+woBtns(p[1])+exHTML(R0.ex)+'<h4 style="font-family:var(--display);margin:14px 0 4px">Mobilité après la séance</h4>'+exHTML(MOB.slice(0,4));}
   else if(p[0]==="nut")h='<h3>Nutrition du jour</h3>'+nutHTML(p[1]);
   else if(p[0]==="loops"){var r=activeRace(), pl=planOf(r), q=p[1].split("-"), s=sessByKey(P(pl,+q[0]),q[1]); if(!s)return;
     h='<h3>Où courir près de chez toi</h3><p class="small muted">Les boucles les plus proches de '+kmS(s.km)+' km'+(s.dp>=100?' et +'+s.dp+' m':'')+'.</p>'+bestLoops(s).map(loopHTML).join("")+(s.km>16.5?'<p class="small muted" style="margin-top:8px">Pour atteindre '+kmS(s.km)+' km, enchaîne deux boucles voisines, ou ajoute des allers-retours de côtes de 500 m (+73 m).</p>':'')+'<p class="muted xs" style="margin-top:8px">Distances et dénivelés tels que publiés par chaque site. Vérifie le tracé avant de partir.</p>';}
   else if(key==="zones")h='<h3>Zones de fréquence cardiaque</h3><table class="tbl num"><tr><th>Zone</th><th>bpm</th><th>Usage</th></tr><tr><td>Z1</td><td>&lt; 127</td><td>Récupération</td></tr><tr><td>Z2</td><td>135-150</td><td>Endurance, sorties longues</td></tr><tr><td>Z3</td><td>153-167</td><td>Allure course, tempo</td></tr><tr><td>Z4</td><td>169-180</td><td>Seuil, côtes</td></tr><tr><td>Z5</td><td>&gt; 180</td><td>Court et très dur</td></tr></table><p class="muted xs" style="margin:8px 0 0">Basées sur une FC max de 196 bpm.</p>';
-  else if(key==="guide")h='<h3>Renfo et mobilité</h3><details open><summary>'+I.leaf+' Mobilité · 10 min</summary><div class="in">'+exHTML(MOB)+'</div></details>'+["A1","A2","B1","B2","C1","C2","D"].map(function(k){var R0=RENFO[k]; return '<details><summary>'+I.dumb+' '+esc(R0.name)+'</summary><div class="in"><p class="muted small">'+esc(R0.tours)+'</p>'+exHTML(R0.ex)+'</div></details>';}).join("");
+  else if(key==="guide")h='<h3>Renfo et mobilité</h3><details open><summary>'+I.leaf+' Mobilité · 10 min</summary><div class="in">'+woBtns(null)+exHTML(MOB)+'</div></details>'+["A1","A2","B1","B2","C1","C2","D"].map(function(k){var R0=RENFO[k]; return '<details><summary>'+I.dumb+' '+esc(R0.name)+'</summary><div class="in"><p class="muted small">'+esc(R0.tours)+'</p>'+woBtns(k,1)+exHTML(R0.ex)+'</div></details>';}).join("");
   else if(key==="judge")h='<h3>Comment le coach juge</h3><ul class="pts"><li>Distance : en cible entre 90 et 115 % du prévu.</li><li>Dénivelé : en cible au-dessus de 75 % du prévu.</li><li>Sorties faciles : trop rapides si l’allure par km-effort (1 km + 100 m de D+) dépasse celle de l’objectif.</li><li>Séance du club : enregistrée, jamais jugée.</li><li>Chaque semaine : volume, sorties trop rapides et check-in donnent une proposition d’ajustement, que tu acceptes ou non.</li><li>Quand tu modifies une séance, le coach compare tes chiffres à ta version.</li></ul>';
   openSheet(h);
 }

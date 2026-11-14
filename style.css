@@ -149,7 +149,7 @@ details[open]>summary::after{content:"–"}
 details .in{padding:0 0 12px}
 .ex{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
 .ex:first-child{border-top:0}
-.ex span:last-child{color:var(--muted);text-align:right;flex:none;max-width:45%}
+.ex>span:last-child{color:var(--muted);text-align:right;flex:none;max-width:45%}
 dl.nut{margin:0;font-size:14px}
 dl.nut dt{font-weight:700;margin-top:8px}
 dl.nut dd{margin:2px 0 0}
@@ -423,3 +423,50 @@ details.fold[open]>summary::after{content:"−"}
 details.fold>*:not(summary){padding-left:16px;padding-right:16px;box-sizing:border-box}
 details.fold>.btn{margin-left:16px}
 details.fold>*:last-child{margin-bottom:16px}
+
+/* ---------- séances guidées : renfo et mobilité ---------- */
+.wfig{display:block;width:100%;height:auto;color:var(--brand)}
+.wfig .p2{opacity:0}
+.wfig.anim .p1{animation:wo1 1.8s steps(1) infinite}
+.wfig.anim .p2{animation:wo2 1.8s steps(1) infinite}
+@keyframes wo1{0%{opacity:1}50%{opacity:0}}
+@keyframes wo2{0%{opacity:0}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.wfig.anim .p1{animation:none}.wfig.anim .p2{display:none}}
+.ex .exn{display:flex;align-items:center;gap:10px;min-width:0}
+.ex .exi{flex:none;width:64px;height:40px;border-radius:8px;background:var(--bg);overflow:hidden;display:block}
+.ex .exi .wfig{height:100%}
+.wo-start{display:flex;gap:8px;margin:10px 0 12px;flex-wrap:wrap}
+.wo-start .btn{flex:1;min-width:140px}
+.wo{position:fixed;inset:0;z-index:65;background:var(--bg);color:var(--ink);overflow-y:auto;overscroll-behavior:contain}
+.wo[hidden]{display:none}
+.wo-in{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(14px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom))}
+.wo-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wo-top small{display:block;color:var(--muted);font-weight:600}
+.wo-tr{display:flex;gap:6px}
+.wo-x{border:0;background:var(--card);color:var(--ink);width:44px;height:44px;border-radius:14px;font-size:22px;line-height:1;cursor:pointer;box-shadow:inset 0 0 0 1px var(--line)}
+.wo-bar{height:5px;border-radius:5px;background:var(--line);margin:12px 0;overflow:hidden}
+.wo-bar i{display:block;height:100%;background:var(--brand);border-radius:5px}
+.wo-stage{background:var(--card);border-radius:22px;padding:14px 18px;box-shadow:inset 0 0 0 1px var(--line);margin:4px 0 12px}
+.wo-stage .wfig{max-height:34dvh}
+.wo-name{font-family:var(--display);font-size:26px;line-height:1.15;margin:4px 0 2px;text-align:center}
+.wo-sub{margin:0 0 10px;color:var(--muted);text-align:center;font-size:14px}
+.wo-ring{position:relative;width:176px;height:176px;margin:4px auto 8px}
+.wo-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.wo-ring circle{fill:none;stroke-width:3}
+.wo-ring .bg{stroke:var(--line)}
+.wo-ring .fg{stroke:var(--brand);stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.wo-rest .wo-ring .fg{stroke:var(--acc)}
+.wo-t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:50px;font-weight:800;font-variant-numeric:tabular-nums}
+.wo-reps{text-align:center;margin:4px 0 8px}
+.wo-reps b{display:block;font-size:76px;line-height:1;color:var(--brand)}
+.wo-reps span{color:var(--muted);font-weight:600}
+.wo-reps small{display:block;margin-top:4px;color:var(--muted)}
+.wo-ctl{display:flex;gap:10px;margin-top:auto;padding-top:10px}
+.wo-b{flex:none;min-width:64px;min-height:56px;border-radius:16px;border:0;background:var(--card);color:var(--ink);font:inherit;font-weight:700;font-size:22px;cursor:pointer;box-shadow:inset 0 0 0 1px var(--line);padding:0 18px}
+.wo-b.prim{flex:1;background:var(--acc);color:#fff;font-size:18px;box-shadow:none}
+.wo-done{text-align:center;margin:auto 0;color:var(--brand)}
+.wo-done h2{font-family:var(--display);margin:8px 0 2px;color:var(--ink)}
+.wo-done p{margin:6px 0;color:var(--muted)}
+.wo-big{font-size:56px !important;color:var(--ink) !important;font-weight:800}
+
+.btn.ghost{background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
