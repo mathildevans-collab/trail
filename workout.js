@@ -84,15 +84,36 @@ var MATCH=[
   [/fl[ée]chisseurs de hanche/,"hipflexor"],[/ischios jambe tendue/,"hamstretch"],[/pigeon/,"pigeon"],[/90\/90/,"seat9090"],[/chevilles/,"anklecircle"],[/[ée]quilibre/,"balance"]
 ];
 function figKey(name){var n=String(name||"").toLowerCase(); for(var i=0;i<MATCH.length;i++)if(MATCH[i][0].test(n))return MATCH[i][1]; return "stand";}
-function pose(q,cls){
-  function seg(pts,w,o){return '<path d="M'+pts.map(function(p){return p[0]+" "+p[1];}).join("L")+'" fill="none" stroke="currentColor" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(o?' opacity="'+o+'"':'')+'/>';}
-  return '<g class="'+cls+'">'+seg([q.p,q.m[0],q.m[1]],4,.45)+seg([q.n,q.b[0],q.b[1]],3.4,.45)+seg([q.n,q.p],5)+seg([q.p,q.l[0],q.l[1]],4.2)+seg([q.n,q.a[0],q.a[1]],3.6)+
-    '<circle cx="'+q.h[0]+'" cy="'+q.h[1]+'" r="6" fill="var(--card,#fff)" stroke="currentColor" stroke-width="3.2"/></g>';
+var HOT={squat:["thigh","glute"],jumpsquat:["thigh","glute","shin"],lunge:["thigh","glute"],sidelunge:["thigh","glute"],lungetwist:["thighL","torso"],
+  bridge:["glute","thighL"],bridge1:["glute","thighL"],hamslide:["glute","thigh"],calf:["shin"],plank:["torso"],plankTap:["torso","arm"],sideplank:["torso"],
+  wallsit:["thigh"],birddog:["torso","glute"],stepup:["thighL","glute"],bulgarian:["thighL","glute"],pistol:["thighL","glute"],skater:["thigh","glute"],
+  pushup:["arm","torso"],climber:["torso","thigh"],hipflexor:["thighM"],hamstretch:["thighL"],calfwall:["shinM"],pigeon:["glute"],seat9090:["glute","thighL"],
+  anklecircle:["shinL"],balance:["thighL","shinL"]};
+var MUS={squat:"Cuisses · fessiers",jumpsquat:"Cuisses · fessiers · mollets",lunge:"Cuisses · fessiers",sidelunge:"Cuisses · fessiers",lungetwist:"Cuisses · tronc",
+  bridge:"Fessiers · ischios",bridge1:"Fessiers · ischios",hamslide:"Ischios · fessiers",calf:"Mollets",plank:"Gainage du tronc",plankTap:"Gainage · épaules",
+  sideplank:"Gainage latéral",wallsit:"Cuisses",birddog:"Dos · fessiers",stepup:"Cuisses · fessiers",bulgarian:"Cuisses · fessiers",pistol:"Cuisses · fessiers",
+  skater:"Jambes · équilibre",pushup:"Pectoraux · bras",climber:"Tronc · jambes",hipflexor:"Étirement : hanche",hamstretch:"Étirement : ischios",
+  calfwall:"Étirement : mollet",pigeon:"Étirement : fessiers",seat9090:"Mobilité : hanches",anklecircle:"Mobilité : chevilles",balance:"Équilibre · chevilles"};
+function pose(q,cls,hot){
+  hot=hot||[]; function on(k){return hot.indexOf(k)>=0;}
+  function seg(a,b,w,col,o){return '<path d="M'+a[0]+' '+a[1]+'L'+b[0]+' '+b[1]+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"'+(o?' opacity="'+o+'"':'')+'/>';}
+  function foot(f,o){return '<path d="M'+f[0]+' '+f[1]+'l7 0" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round"'+(o?' opacity="'+o+'"':'')+'/>';}
+  var C="currentColor", H="var(--acc,#ff4b1f)", g='<g class="'+cls+'">';
+  // membres éloignés (plus clairs), puis tronc, puis membres proches
+  g+=seg(q.p,q.m[0],6.4,C,.4)+seg(q.m[0],q.m[1],5,C,.4)+foot(q.m[1],.4)+seg(q.n,q.b[0],4.4,C,.4)+seg(q.b[0],q.b[1],3.8,C,.4);
+  g+=seg(q.n,q.p,9,on("torso")?H:C);
+  g+=seg(q.p,q.l[0],6.8,on("thigh")||on("thighL")?H:C)+seg(q.l[0],q.l[1],5.4,on("shin")||on("shinL")?H:C)+foot(q.l[1]);
+  if(on("thighM")||on("thigh"))g+=seg(q.p,q.m[0],6.4,H,.8);
+  if(on("shinM")||on("shin"))g+=seg(q.m[0],q.m[1],5,H,.8);
+  g+=seg(q.n,q.a[0],4.8,on("arm")?H:C)+seg(q.a[0],q.a[1],4,on("arm")?H:C);
+  if(on("glute"))g+='<circle cx="'+q.p[0]+'" cy="'+q.p[1]+'" r="5.6" fill="'+H+'"/>';
+  g+='<circle cx="'+q.h[0]+'" cy="'+q.h[1]+'" r="6.6" fill="'+C+'"/></g>';
+  return g;
 }
 function img(name,thumb){
-  var f=FIG[figKey(name)]||FIG.stand, two=!!f.b&&!thumb;
+  var figKey0=figKey(name), f=FIG[figKey0]||FIG.stand, two=!!f.b&&!thumb;
   return '<svg viewBox="0 0 120 76" class="wfig'+(two?' anim':'')+'" role="img" aria-label="'+String(name).replace(/"/g,"")+'"><g class="prop" fill="none" stroke="var(--muted,#999)" stroke-width="2.4" stroke-linecap="round">'+
-    (f.prop?(PROP[f.prop].replace("<rect",'<rect fill="var(--line,#ddd)"')):'')+'</g><path d="M2 72H118" stroke="var(--line,#ccc)" stroke-width="2" stroke-linecap="round"/>'+pose(f.a,"p1")+(two?pose(f.b,"p2"):'')+'</svg>';
+    (f.prop?(PROP[f.prop].replace("<rect",'<rect fill="var(--line,#ddd)"')):'')+'</g><path d="M2 72H118" stroke="var(--line,#ccc)" stroke-width="2" stroke-linecap="round"/>'+pose(f.a,"p1",HOT[figKey0])+(two?pose(f.b,"p2",HOT[figKey0]):'')+'</svg>';
 }
 
 // ---------- construction de la séance ----------
@@ -188,7 +209,7 @@ function render(){
     '<div class="wo-bar"><i style="width:'+Math.round(W.i/(n-1)*100)+'%"></i></div>'+
     '<div class="wo-stage">'+img(s.fig,false)+'</div>'+
     '<h2 class="wo-name">'+esc(rest&&s.t!=="ready"?s.name:s.t==="ready"?s.name:s.name)+'</h2>'+
-    '<p class="wo-sub">'+esc(s.sub||"")+(s.note?' · '+esc(s.note):'')+'</p>'+big+
+    '<p class="wo-sub">'+esc(s.sub||"")+(s.note?' · '+esc(s.note):'')+'</p>'+(s.t==="ex"&&MUS[figKey(s.fig)]?'<p class="wo-mus"><i></i>'+esc(MUS[figKey(s.fig)])+'</p>':'')+big+
     (s.t==="ex"&&nx&&false?'':'')+
     '<div class="wo-ctl"><button class="wo-b" data-wa="prev" aria-label="Précédent">‹</button>'+
       (s.sec?'<button class="wo-b prim" data-wa="pause">'+(W.paused?"Reprendre":"Pause")+'</button>':'<button class="wo-b prim" data-wa="done">Fait ›</button>')+
@@ -196,5 +217,5 @@ function render(){
   paintTime(W.left);
 }
 
-window.WORKOUT={img:img,figKey:figKey,start:start,build:build,minutes:minutes,close:close};
+window.WORKOUT={muscles:function(n){return MUS[figKey(n)]||"";},img:img,figKey:figKey,start:start,build:build,minutes:minutes,close:close};
 })();
