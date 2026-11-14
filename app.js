@@ -392,6 +392,13 @@ var I={
 // ---------- petits blocs ----------
 function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h2>'+title+'</h2></div><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div>';}
 function todoBtn(key,label,store){var st=store||D.todo, on=!!st[key]; return '<button class="todo" data-todo="'+esc(key)+'"'+(store?' data-store="kit"':'')+' aria-pressed="'+on+'"><span class="box">'+(on?I.check:"")+'</span><span class="t">'+label+'</span></button>';}
+function woFor(s,wk){ // séance guidée proposée sur toute séance de renfo ou de mobilité
+  if(!window.WORKOUT)return "";
+  var code=s.renfo||(s.type==="Renfo seul"?renfoOf(wk.ph,wk.n):null);
+  if(code)return woBtns(code);
+  var txt=JSON.stringify(s.steps||"")+" "+(s.txt||"");
+  return (/mobilit/i.test(txt)||s.type==="Récupération"||s.type==="Activation")?woBtns(null):"";
+}
 function woBtns(code,only){ // boutons de lancement de la séance guidée
   if(!window.WORKOUT)return "";
   var m=WORKOUT.minutes(WORKOUT.build("mob",null,RENFO,MOB)), h='<div class="wo-start">';
@@ -496,6 +503,7 @@ function sessionHero(r,pl,wk,s){
   var a=adjFor(pl,wk.n); if(a&&a.mode==="z2"&&(s.tag==="e"||s.tag==="l"))h+='<p><b>Zone 2 stricte cette semaine :</b> reste sous 150 bpm.</p>';
   if(s.race)return h+'<button class="btn" data-go="today-race">'+I.play+' Voir le jour J</button></div>';
   if(isB)h+='<button class="btn" data-race="'+s.bid+'">'+I.play+' Lancer le mode Course</button>';
+  h+=woFor(s,wk);
   h+='<button class="btn'+(dn?" isdone":"")+'" data-done="'+k+'"'+(isB?' style="margin-top:8px"':'')+'>'+I.check+(dn?' Faite · toucher pour annuler':' C’est fait')+'</button>';
   h+='<p class="sub">'+(ac?'Tes chiffres : '+kmS(ac.km)+' km'+(ac.dp?' · +'+ac.dp+' m':'')+(ac.t?' · '+dur(ac.t):'')+'. <button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Corriger</button>':STRAVA?'Le bilan arrive tout seul quand Strava reçoit ta sortie.':'<button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Ajoute tes chiffres</button> pour avoir le bilan du coach.')+'</p>';
   return h+'</div>';
