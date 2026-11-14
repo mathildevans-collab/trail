@@ -9,13 +9,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Cadenzo">
 <title>Cadenzo</title>
-<link rel="manifest" href="manifest.webmanifest?v=29">
-<link rel="icon" href="icon.svg?v=29" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon-180.png?v=29">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="manifest" href="manifest.webmanifest?v=30">
+<link rel="icon" href="icon.svg?v=30" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png?v=30">
+<link rel="preload" href="fonts/hanken-grotesk-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
 <main id="view" aria-live="polite"></main>
@@ -38,11 +36,12 @@
 <input type="file" id="fileJson" accept=".json,application/json" hidden>
 <input type="file" id="fileGarmin" accept=".zip,.json,application/zip,application/json" multiple hidden>
 
-<script src="data.js?v=29"></script>
-<script src="fit.js?v=29"></script>
-<script src="garmin.js?v=29"></script>
-<script src="workout.js?v=29"></script>
-<script src="app.js?v=29"></script>
+<script src="data.js?v=30"></script>
+<script src="fit.js?v=30"></script>
+<script src="safe.js?v=30"></script>
+<script src="garmin.js?v=30"></script>
+<script src="workout.js?v=30"></script>
+<script src="app.js?v=30"></script>
 <script>if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js',{updateViaCache:'none'});</script>
 </body>
 </html>

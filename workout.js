@@ -148,13 +148,14 @@ function total(w){return w.steps.reduce(function(a,s){return a+(s.sec||(s.reps?s
 function minutes(w){return Math.max(1,Math.round(total(w)/60));}
 
 // ---------- lecteur ----------
-var W=null, el=null, tick=null, wake=null, ac=null, ctx={};
+var opener=null, W=null, el=null, tick=null, wake=null, ac=null, ctx={};
 function $(id){return document.getElementById(id);}
 function mmss(s){s=Math.max(0,Math.ceil(s)); return Math.floor(s/60)+":"+(s%60<10?"0":"")+(s%60);}
 function beep(f,d){try{if(!ac)return; var o=ac.createOscillator(), g=ac.createGain(); o.frequency.value=f; o.type="sine"; g.gain.value=.15; o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime+d);}catch(e){}}
 function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}}
 function ensure(){
-  if(el)return el; el=document.createElement("section"); el.id="wo"; el.className="wo"; el.hidden=true; el.setAttribute("aria-label","Séance guidée"); document.body.appendChild(el);
+  if(el)return el; el=document.createElement("section"); el.id="wo"; el.className="wo"; el.hidden=true; el.setAttribute("aria-label","Séance guidée"); el.setAttribute("role","dialog"); el.setAttribute("aria-modal","true"); el.setAttribute("tabindex","-1"); document.body.appendChild(el);
+  el.addEventListener("keydown",function(e){ if(e.key==="Escape"){close();return;} if(e.key!=="Tab")return; var f=[].slice.call(el.querySelectorAll("button:not([disabled])")).filter(function(x){return x.offsetParent!==null;}); if(!f.length)return; var a=document.activeElement; if(a===el||!el.contains(a)){e.preventDefault(); f[0].focus(); return;} if(e.shiftKey&&a===f[0]){e.preventDefault(); f[f.length-1].focus();} else if(!e.shiftKey&&a===f[f.length-1]){e.preventDefault(); f[0].focus();} });
   el.addEventListener("click",function(e){var b=e.target.closest("button"); if(!b)return; var a=b.dataset.wa; if(!a)return;
     if(a==="close")close(); else if(a==="pause")toggle(); else if(a==="next")go(W.i+1); else if(a==="prev")go(W.i-1); else if(a==="done")go(W.i+1);
     else if(a==="mob"){var c=ctx; close(true); start("mob",null,c);} else if(a==="sound"){W.mute=!W.mute; render();}});
@@ -166,16 +167,17 @@ function start(kind,code,c){
   W={w:w,i:0,left:0,end:0,paused:false,t0:Date.now(),mute:false,last:-1,el0:Date.now()};
   try{var AC=window.AudioContext||window.webkitAudioContext; if(AC&&!ac)ac=new AC(); if(ac&&ac.state==="suspended")ac.resume();}catch(e){}
   try{if(navigator.wakeLock)navigator.wakeLock.request("screen").then(function(x){wake=x;}).catch(function(){});}catch(e){}
-  el.hidden=false; document.body.style.overflow="hidden"; var sh=$("sheet"); if(sh&&!sh.hidden&&ctx.closeSheet)ctx.closeSheet();
-  begin(0); clearInterval(tick); tick=setInterval(loop,250);
+  if(el.hidden)opener=document.activeElement; el.hidden=false; document.body.style.overflow="hidden"; var sh=$("sheet"); if(sh&&!sh.hidden&&ctx.closeSheet)ctx.closeSheet();
+  begin(0); try{el.focus({preventScroll:true});}catch(e){} clearInterval(tick); tick=setInterval(loop,250);
 }
 function close(keep){
-  clearInterval(tick); tick=null; if(el)el.hidden=true; if(!keep)document.body.style.overflow=""; try{if(wake){wake.release();wake=null;}}catch(e){} W=null;
+  clearInterval(tick); tick=null; if(el)el.hidden=true; if(!keep)document.body.style.overflow=""; try{if(wake){wake.release();wake=null;}}catch(e){} W=null; if(!keep&&opener&&document.contains(opener)){try{opener.focus({preventScroll:true});}catch(e){}} if(!keep)opener=null;
 }
 function begin(i){
   var s=W.w.steps[i]; W.i=i; W.paused=false; W.last=-1; W.el0=Date.now();
   if(s&&s.sec){W.left=s.sec; W.end=Date.now()+s.sec*1000;} else {W.left=0; W.end=0;}
-  render(); if(s&&!W.mute){if(s.t==="ex")beep(880,.18); }
+  render(); try{if(!el.contains(document.activeElement))el.focus({preventScroll:true}); var lv=$("wo-live"); if(!lv){lv=document.createElement("div"); lv.id="wo-live"; lv.className="sr"; lv.setAttribute("aria-live","polite"); document.body.appendChild(lv);} if(s)lv.textContent=(s.t==="ex"?"Exercice : ":"")+s.name+(s.sec?", "+s.sec+" secondes":s.reps?", "+s.reps+" répétitions":"");}catch(e){}
+  if(s&&!W.mute){if(s.t==="ex")beep(880,.18); }
   if(s&&s.t==="ex")buzz(40);
 }
 function go(i){ if(!W)return; if(i<0)i=0; if(i>=W.w.steps.length){finish();return;} begin(i); }

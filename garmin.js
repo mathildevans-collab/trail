@@ -245,82 +245,82 @@ function zbar(z){if(!z)return ""; var c=["var(--down)","var(--down)","var(--bran
 
 // ---------- rendu ----------
 function empty(busy){
-  return '<div class="card"><h3>Analyse de ta montre</h3><p class="small" style="margin:0 0 10px">Importe l’export de ton compte Garmin pour une analyse poussée : intensité réelle de tes sorties, efficacité, VO2max, charge, FC de repos, VFC, sommeil, sudation et projection sur ta course.</p>'+
+  return '<div class="card"><h2>Analyse de ta montre</h2><p class="small" style="margin:0 0 10px">Importe l’export de ton compte Garmin pour une analyse poussée : intensité réelle de tes sorties, efficacité, VO2max, charge, FC de repos, VFC, sommeil, sudation et projection sur ta course.</p>'+
     '<button class="btn primary" data-act="gimport"'+(busy?' disabled':'')+'>'+(busy?esc(busy):'Importer l’export Garmin')+'</button>'+
     '<p class="small muted" style="margin:10px 0 0">Choisis le .zip reçu de Garmin tel quel, ou les fichiers .json qu’il contient (plusieurs à la fois). Le fichier est lu sur ce téléphone : rien n’est envoyé, seul un résumé par jour est gardé.</p></div>'+
-    '<div class="card"><h3>Obtenir l’export</h3><ol class="small g-ol"><li>Sur garmin.com, connecte-toi à ton compte Garmin.</li><li>Va dans Confidentialité, Gestion des données, « Exporter vos données », puis « Demander l’exportation des données ».</li><li>Garmin envoie un lien par mail (de quelques minutes à 48 h). Télécharge le .zip sur le téléphone, puis importe-le ici.</li></ol></div>';
+    '<div class="card"><h2>Obtenir l’export</h2><ol class="small g-ol"><li>Sur garmin.com, connecte-toi à ton compte Garmin.</li><li>Va dans Confidentialité, Gestion des données, « Exporter vos données », puis « Demander l’exportation des données ».</li><li>Garmin envoie un lien par mail (de quelques minutes à 48 h). Télécharge le .zip sur le téléphone, puis importe-le ici.</li></ol></div>';
 }
 function html(ctx){
   ctx=ctx||{}; if(ctx.busy||!G)return empty(ctx.busy);
   var A=analyse(G,ctx.race), h='', i;
   // en-tête
-  h+='<div class="card"><div class="g-head"><div><h3>Export Garmin</h3><p class="small muted num" style="margin:0">Du '+dateL(A.first)+' au '+dateL(A.ref)+' · '+A.nRun+' sorties course · importé '+dateS(Math.floor((G.imp-new Date().getTimezoneOffset()*6e4)/864e5))+'</p></div></div>'+
+  h+='<div class="card"><div class="g-head"><div><h2>Export Garmin</h2><p class="small muted num" style="margin:0">Du '+dateL(A.first)+' au '+dateL(A.ref)+' · '+A.nRun+' sorties course · importé '+dateS(Math.floor((G.imp-new Date().getTimezoneOffset()*6e4)/864e5))+'</p></div></div>'+
     (A.ref<Math.floor(Date.now()/864e5)-21?'<p class="small" style="margin:8px 0 0"><span class="chip warn">Ancien</span> Cet export date de plus de 3 semaines : demandes-en un nouveau pour une analyse à jour.</p>':'')+
     '<div class="g-actions"><button class="btn sm" data-act="gimport">Importer un nouvel export</button><button class="btn sm danger" data-act="gclear">Effacer</button></div></div>';
   // points clés
   var I=insights(A);
-  if(I.length)h+='<div class="card"><h3>Ce qu’il faut retenir</h3><ul class="g-ins">'+I.map(function(x){return '<li class="'+(x.lvl||"info")+'"><b>'+x.t+'</b><span>'+x.d+'</span></li>';}).join("")+'</ul></div>';
+  if(I.length)h+='<div class="card"><h2>Ce qu’il faut retenir</h2><ul class="g-ins">'+I.map(function(x){return '<li class="'+(x.lvl||"info")+'"><b>'+x.t+'</b><span>'+x.d+'</span></li>';}).join("")+'</ul></div>';
   // projection course
   if(A.race&&(A.projPred||A.projRuns)){var goal=A.race.goal*60;
-    h+='<div class="card"><h3>Projection '+esc(A.race.name)+'</h3><p class="small muted" style="margin:0 0 10px">'+f1(A.race.km)+' km, +'+nb(A.race.dp)+' m, soit '+f1(A.E)+' km-effort (1 km par 100 m de D+). Objectif '+clock(goal).replace(/:\d\d$/,"")+'.</p>'+
+    h+='<div class="card"><h2>Projection '+esc(A.race.name)+'</h2><p class="small muted" style="margin:0 0 10px">'+f1(A.race.km)+' km, +'+nb(A.race.dp)+' m, soit '+f1(A.E)+' km-effort (1 km par 100 m de D+). Objectif '+clock(goal).replace(/:\d\d$/,"")+'.</p>'+
       '<div class="g-proj num">'+(A.projPred?'<div><span>D’après les prédictions Garmin</span><b>'+clock(A.projPred).replace(/:\d\d$/,"")+'</b><em class="'+(A.projPred<=goal+60?"ok":"warn")+'">'+(A.projPred<=goal+60?"dans l’objectif":"+"+hmS(A.projPred-goal)+" sur l’objectif")+'</em></div>':'')+
       (A.projRuns?'<div><span>D’après tes sorties longues</span><b>'+clock(A.projRuns).replace(/:\d\d$/,"")+'</b><em class="'+(A.projRuns<=goal+60?"ok":"warn")+'">'+(A.projRuns<=goal+60?"dans l’objectif":"+"+hmS(A.projRuns-goal)+" sur l’objectif")+'</em></div>':'')+'</div>'+
       '<p class="small muted" style="margin:10px 0 0">Formule de Riegel sur le semi prédit par la montre'+(A.projRuns?', et sur tes '+A.projN+' sorties de plus de 12 km des 5 derniers mois (2e meilleure)':'')+'. Indicatif : le terrain technique, la chaleur et les ravitos ajoutent souvent 5 à 10 %.</p></div>';}
   // course à pied
   var y=A.y;
-  if(!A.nAll)h+='<div class="card"><h3>Course à pied</h3><p class="small muted" style="margin:0">Pas d’activités dans les fichiers importés. Elles sont dans le fichier « summarizedActivities » de l’export : importe le .zip complet pour avoir l’analyse des sorties, de l’intensité et de l’efficacité.</p></div>';
+  if(!A.nAll)h+='<div class="card"><h2>Course à pied</h2><p class="small muted" style="margin:0">Pas d’activités dans les fichiers importés. Elles sont dans le fichier « summarizedActivities » de l’export : importe le .zip complet pour avoir l’analyse des sorties, de l’intensité et de l’efficacité.</p></div>';
   else{
   var mx=1; A.months.forEach(function(m){mx=Math.max(mx,m.km);});
-  h+='<div class="card"><h3>Course à pied · 12 mois</h3><h4 style="margin:6px 0 6px">Kilomètres par mois</h4><div class="wm-bars fm-bars" style="grid-template-columns:repeat(12,1fr)" role="img" aria-label="Kilomètres par mois">';
+  h+='<div class="card"><h2>Course à pied · 12 mois</h2><h3 class="sub" style="margin:6px 0 6px">Kilomètres par mois</h3><div class="wm-bars fm-bars" style="grid-template-columns:repeat(12,1fr)" role="img" aria-label="Kilomètres par mois">';
   A.months.forEach(function(m,k){h+='<div class="wm-col'+(k===11?" today":"")+'"><div class="wm-plot">'+(m.km?'<i class="a" style="height:'+Math.max(4,m.km/mx*100)+'%"></i>':'<i class="rest"></i>')+'</div><b class="fm-l">'+m.l+'</b></div>';});
   h+='</div><p class="small muted num" style="margin:8px 0 0">Maximum : '+Math.round(mx)+' km.</p></div>';}
   // intensité
-  if(A.z8||A.z14){h+='<div class="card"><h3>Intensité réelle</h3><p class="small muted" style="margin:0 0 10px">Temps passé dans chaque zone de fréquence cardiaque'+(A.zones?' (zones de la montre : Z2 dès '+A.zones.f[1]+', Z4 dès '+A.zones.f[3]+' bpm, max '+A.zones.max+')':'')+'.</p>'+
+  if(A.z8||A.z14){h+='<div class="card"><h2>Intensité réelle</h2><p class="small muted" style="margin:0 0 10px">Temps passé dans chaque zone de fréquence cardiaque'+(A.zones?' (zones de la montre : Z2 dès '+A.zones.f[1]+', Z4 dès '+A.zones.f[3]+' bpm, max '+A.zones.max+')':'')+'.</p>'+
     (A.z8?'<p class="small" style="margin:0 0 4px"><b>8 dernières semaines</b></p>'+zbar(A.z8):'')+(A.z14?'<p class="small" style="margin:10px 0 4px"><b>2 dernières semaines</b></p>'+zbar(A.z14):'')+
     '<p class="small muted" style="margin:10px 0 0">Repère pour le trail : environ 80 % du temps en Z1-Z2, le reste surtout en Z4-Z5 lors des séances de qualité.</p>';
-    var lk=Object.keys(A.labels); if(lk.length)h+='<h4 style="margin:14px 0 6px">Effet principal des sorties (mois en cours)</h4><div class="g-chips">'+lk.sort(function(a,b){return A.labels[b]-A.labels[a];}).map(function(k){return '<span class="chip">'+k+' · '+A.labels[k]+'</span>';}).join("")+'</div>';
+    var lk=Object.keys(A.labels); if(lk.length)h+='<h3 class="sub" style="margin:14px 0 6px">Effet principal des sorties (mois en cours)</h3><div class="g-chips">'+lk.sort(function(a,b){return A.labels[b]-A.labels[a];}).map(function(k){return '<span class="chip">'+k+' · '+A.labels[k]+'</span>';}).join("")+'</div>';
     h+='</div>';}
   // efficacité
   if(A.eff.length>=3){var ep=A.eff, mm=roll(ep,3);
-    h+='<div class="card"><h3>Efficacité aérobie</h3><div class="fm-top num"><div><span>Actuelle</span><b style="color:var(--brand)">'+(A.effNow?String(Math.round(A.effNow*100)/100).replace(".",","):"–")+'</b></div><div><span>Vs 4 sem.</span><b>'+(A.effChg==null?"–":(A.effChg>=0?"+":"−")+Math.abs(Math.round(A.effChg))+'<small style="font-size:18px"> %</small>')+'</b></div><div><span>Cadence</span><b>'+(A.cad?Math.round(A.cad):"–")+'</b></div></div>'+
+    h+='<div class="card"><h2>Efficacité aérobie</h2><div class="fm-top num"><div><span>Actuelle</span><b style="color:var(--brand)">'+(A.effNow?String(Math.round(A.effNow*100)/100).replace(".",","):"–")+'</b></div><div><span>Vs 4 sem.</span><b>'+(A.effChg==null?"–":(A.effChg>=0?"+":"−")+Math.abs(Math.round(A.effChg))+'<small style="font-size:18px"> %</small>')+'</b></div><div><span>Cadence</span><b>'+(A.cad?Math.round(A.cad):"–")+'</b></div></div>'+
       chart({series:[{pts:ep,color:"var(--muted)",dots:true},{pts:mm,color:"var(--brand)",w:2.4}],gap:45,x0:A.ref-56,x1:A.ref,label:"Mètres par battement de cœur, 8 semaines"})+
       '<p class="small muted" style="margin:8px 0 0">'+key("var(--brand)","moyenne de 3 sorties",1)+key("var(--muted)","une sortie")+'<br>Mètres parcourus par battement de cœur, à l’allure corrigée de la pente : plus c’est haut, plus ton moteur est efficace. Cadence en pas par minute (8 dernières semaines).</p></div>';}
   // VO2max + prédictions
-  if(A.vo2Now||A.pred){h+='<div class="card"><h3>VO2max et prédictions</h3>';
+  if(A.vo2Now||A.pred){h+='<div class="card"><h2>VO2max et prédictions</h2>';
     if(A.vo2Now){h+='<div class="fm-top num"><div><span>VO2max</span><b style="color:var(--brand)">'+A.vo2Now+'</b></div><div><span>Il y a 8 sem.</span><b>'+A.vo2Old+'</b></div><div><span>Écart</span><b>'+sgn(A.vo2Now-A.vo2Old)+'</b></div></div>';
       if(A.vo2.length>=2)h+=chart({series:[{pts:A.vo2,color:"var(--brand)",w:2.4}],gap:9999,x0:A.ref-56,x1:A.ref,fmt:function(v){return String(Math.round(v));},label:"VO2max"});}
-    if(A.pred){var nm=["5 km","10 km","Semi","Marathon"]; h+='<table class="g-tab num"><thead><tr><th></th><th>Prédit</th><th>Allure</th>'+(A.predOld?'<th>Il y a 8 sem.</th>':'')+'</tr></thead><tbody>'+
+    if(A.pred){var nm=["5 km","10 km","Semi","Marathon"]; h+='<table class="g-tab num"><thead><tr><th><span class="sr">Distance</span></th><th>Prédit</th><th>Allure</th>'+(A.predOld?'<th>Il y a 8 sem.</th>':'')+'</tr></thead><tbody>'+
       A.pred.map(function(t,k){if(!t)return ""; var d=[5,10,21.0975,42.195][k]; return '<tr><td>'+nm[k]+'</td><td><b>'+clock(t)+'</b></td><td>'+pace(t/d)+'</td>'+(A.predOld?'<td>'+(A.predOld[k]?(t<=A.predOld[k]?'<span class="g-up">−':'<span class="g-dn">+')+clock(Math.abs(t-A.predOld[k]))+'</span>':'–')+'</td>':'')+'</tr>';}).join("")+'</tbody></table><p class="small muted" style="margin:6px 0 0">Prédictions route de la montre au '+dateS(A.predN)+'.</p>';}
     h+='</div>';}
   // charge Garmin
   if(A.acu.length>=7){var ld=A.load, st=A.status;
-    h+='<div class="card"><h3>Charge Garmin</h3><div class="fm-top num"><div><span>Aiguë</span><b style="color:var(--acc-ink)">'+(ld?ld.acu:"–")+'</b></div><div><span>Chronique</span><b style="color:var(--brand)">'+(ld&&ld.chr!=null?ld.chr:"–")+'</b></div><div><span>Ratio</span><b>'+(ld&&ld.acwr!=null?f1(ld.acwr):"–")+'</b></div></div>'+
+    h+='<div class="card"><h2>Charge Garmin</h2><div class="fm-top num"><div><span>Aiguë</span><b style="color:var(--acc-ink)">'+(ld?ld.acu:"–")+'</b></div><div><span>Chronique</span><b style="color:var(--brand)">'+(ld&&ld.chr!=null?ld.chr:"–")+'</b></div><div><span>Ratio</span><b>'+(ld&&ld.acwr!=null?f1(ld.acwr):"–")+'</b></div></div>'+
       (ld&&ld.as&&ACWR[ld.as]?'<span class="chip '+ACWR[ld.as][1]+'">Charge '+ACWR[ld.as][0].toLowerCase()+'</span> ':'')+(st?'<span class="chip '+(STATUS_LVL[st]||"")+'">Statut : '+(STATUS[st]||st)+'</span>':'')+
       '<div style="margin-top:10px">'+chart({series:[{pts:A.chr,color:"var(--brand)",w:2.4},{pts:A.acu,color:"var(--acc)",w:1.8,dash:"5 3"}],x0:A.ref-120,x1:A.ref,ylo:0,fmt:function(v){return String(Math.round(v));},label:"Charge aiguë et chronique, 4 mois"})+'</div>'+
       '<p class="small muted" style="margin:8px 0 0">'+key("var(--brand)","chronique (4 sem.)",1)+key("var(--acc)","aiguë (7 j)")+'<br>Ratio aiguë/chronique : 0,8 à 1,3 = progression sûre ; au-delà de 1,5 = risque de blessure.';
     var sc=Object.keys(A.statusCount); if(sc.length)h+=' Statut sur 30 jours : '+sc.sort(function(a,b){return A.statusCount[b]-A.statusCount[a];}).map(function(k){return (STATUS[k]||k).toLowerCase()+' '+A.statusCount[k]+' j';}).join(", ")+'.';
     h+='</p></div>';}
   // récupération
-  if(A.rhr.length>=7||A.hrv.length||A.sleepLast){h+='<div class="card"><h3>Récupération</h3><div class="fm-top num"><div><span>FC repos</span><b style="color:var(--brand)">'+(A.rhrNow?Math.round(A.rhrNow):"–")+'</b></div><div><span>VFC nuit</span><b>'+(A.hrvNow?Math.round(A.hrvNow):"–")+'</b></div><div><span>Disponibilité</span><b>'+(A.tr?Math.round(A.tr):"–")+'</b></div></div>';
-    if(A.rhr.length>=7){h+='<h4 style="margin:6px 0 4px">FC de repos (bpm)</h4>'+chart({series:[{pts:A.rhr,color:"var(--muted)",dots:true,r:1.3,op:.35},{pts:roll(A.rhr,7),color:"var(--brand)",w:2.2}],x0:A.ref-56,x1:A.ref,fmt:function(v){return String(Math.round(v));},label:"Fréquence cardiaque de repos"})+
+  if(A.rhr.length>=7||A.hrv.length||A.sleepLast){h+='<div class="card"><h2>Récupération</h2><div class="fm-top num"><div><span>FC repos</span><b style="color:var(--brand)">'+(A.rhrNow?Math.round(A.rhrNow):"–")+'</b></div><div><span>VFC nuit</span><b>'+(A.hrvNow?Math.round(A.hrvNow):"–")+'</b></div><div><span>Disponibilité</span><b>'+(A.tr?Math.round(A.tr):"–")+'</b></div></div>';
+    if(A.rhr.length>=7){h+='<h3 class="sub" style="margin:6px 0 4px">FC de repos (bpm)</h3>'+chart({series:[{pts:A.rhr,color:"var(--muted)",dots:true,r:1.3,op:.35},{pts:roll(A.rhr,7),color:"var(--brand)",w:2.2}],x0:A.ref-56,x1:A.ref,fmt:function(v){return String(Math.round(v));},label:"Fréquence cardiaque de repos"})+
       '<p class="small muted" style="margin:6px 0 0">Moyenne 7 jours. Habituelle : '+(A.rhrBase?Math.round(A.rhrBase)+' bpm':'–')+'. Une hausse de 4-5 bpm sur plusieurs jours signale fatigue, maladie ou manque de sommeil.</p>';}
-    if(A.hrv.length>=7){h+='<h4 style="margin:14px 0 4px">VFC nocturne (ms)</h4>'+chart({series:[{pts:A.hrv,color:"var(--muted)",dots:true,r:1.3,op:.35},{pts:roll(A.hrv,7),color:"var(--down)",w:2.2}],x0:A.ref-56,x1:A.ref,band:A.hrvBand,fmt:function(v){return String(Math.round(v));},label:"Variabilité de la fréquence cardiaque"})+
+    if(A.hrv.length>=7){h+='<h3 class="sub" style="margin:14px 0 4px">VFC nocturne (ms)</h3>'+chart({series:[{pts:A.hrv,color:"var(--muted)",dots:true,r:1.3,op:.35},{pts:roll(A.hrv,7),color:"var(--down)",w:2.2}],x0:A.ref-56,x1:A.ref,band:A.hrvBand,fmt:function(v){return String(Math.round(v));},label:"Variabilité de la fréquence cardiaque"})+
       '<p class="small muted" style="margin:6px 0 0">Moyenne 7 jours'+(A.hrvBand?', bande verte = ta plage normale selon Garmin':'')+'. Plus haute = mieux récupérée.</p>';}
     h+=tiles([[A.bbh?Math.round(A.bbh):"–","Body Battery max"],[A.str?Math.round(A.str):"–","Stress moyen"],[A.trLast?A.trLast[1]:"–","Dispo. dernière"]]).replace('fm-tiles','fm-tiles g-mt');
     h+='<p class="small muted" style="margin:6px 0 0">Moyennes des 8 dernières semaines. Disponibilité à l’entraînement sur 100.</p></div>';}
   // sommeil
-  h+='<div class="card"><h3>Sommeil · mois en cours</h3>';
+  h+='<div class="card"><h2>Sommeil · mois en cours</h2>';
   if(A.sleep){h+=tiles([[hmS(A.sleep.avg),"Durée moy."],[A.sleep.score?Math.round(A.sleep.score):"–","Score"],[A.sleep.short+'<small> / '+A.sleepN+'</small>',"Nuits &lt; 7 h"],[Math.round(A.sleep.deep*100)+'<small> %</small>',"Profond"],[Math.round(A.sleep.rem*100)+'<small> %</small>',"Paradoxal"],[String(A.sleepN),"Nuits mesurées"]]);
-    if(A.sleepSer.length>=4)h+='<h4 style="margin:14px 0 4px">Heures par nuit, mois en cours</h4>'+chart({series:[{pts:A.sleepSer,color:"var(--muted)",dots:true,r:1.6,op:.5},{pts:roll(A.sleepSer,3),color:"var(--down)",w:2.2}],x0:A.ms,x1:A.ref,ref:8,gap:4,fmt:function(v){return f1(v);},label:"Sommeil du mois"})+'<p class="small muted" style="margin:6px 0 0">Pointillés : 8 h. En période de charge, vise 8 h et plus.</p>';}
+    if(A.sleepSer.length>=4)h+='<h3 class="sub" style="margin:14px 0 4px">Heures par nuit, mois en cours</h3>'+chart({series:[{pts:A.sleepSer,color:"var(--muted)",dots:true,r:1.6,op:.5},{pts:roll(A.sleepSer,3),color:"var(--down)",w:2.2}],x0:A.ms,x1:A.ref,ref:8,gap:4,fmt:function(v){return f1(v);},label:"Sommeil du mois"})+'<p class="small muted" style="margin:6px 0 0">Pointillés : 8 h. En période de charge, vise 8 h et plus.</p>';}
   else h+='<p class="small muted" style="margin:0">'+(A.sleepLast?'Aucune nuit mesurée ce mois-ci (dernière le '+dateL(A.sleepLast)+').':'Aucune nuit dans l’export.')+' Porte la montre la nuit pour suivre sommeil et VFC.</p>';
   h+='</div>';
   // hydratation + quotidien
   var hy=A.sweat;
-  h+='<div class="card"><h3>Sudation et quotidien</h3>'+tiles([[hy?nb(hy)+'<small> ml/h</small>':"–","Sueur en course"],[A.steps?nb(A.steps):"–","Pas par jour"],[A.imWeek!=null?nb(A.imWeek)+'<small> min</small>':"–","Intensité / sem."]]);
+  h+='<div class="card"><h2>Sudation et quotidien</h2>'+tiles([[hy?nb(hy)+'<small> ml/h</small>':"–","Sueur en course"],[A.steps?nb(A.steps):"–","Pas par jour"],[A.imWeek!=null?nb(A.imWeek)+'<small> min</small>':"–","Intensité / sem."]]);
   if(hy){var base=A.sweatLong||hy; h+='<p class="small" style="margin:8px 0 0">Pertes estimées par la montre sur '+A.sweatN+' sorties'+(A.sweatLong?' ('+nb(A.sweatLong)+' ml/h sur celles de plus de 1 h 30)':'')+'. En course longue, bois environ <b>'+nb(Math.round(base*.6/50)*50)+' à '+nb(Math.round(base*.8/50)*50)+' ml par heure</b> (60-80 % des pertes), plus s’il fait chaud. Teste-le en sortie longue.</p>';}
   h+='<p class="small muted" style="margin:8px 0 0">Minutes d’intensité au sens de l’OMS (les minutes vigoureuses comptent double) : objectif 150 par semaine, largement dépassé en préparation trail.</p></div>';
   // autres sports
-  var sk=Object.keys(A.sports).filter(function(k){return !/run/.test(k);}); if(sk.length){h+='<div class="card"><h3>Autres activités · mois en cours</h3><div class="g-chips">'+sk.sort(function(a,b){return A.sports[b]-A.sports[a];}).map(function(k){return '<span class="chip">'+esc(SPORT[k]||k.replace(/_/g," "))+' · '+A.sports[k]+'</span>';}).join("")+'</div></div>';}
+  var sk=Object.keys(A.sports).filter(function(k){return !/run/.test(k);}); if(sk.length){h+='<div class="card"><h2>Autres activités · mois en cours</h2><div class="g-chips">'+sk.sort(function(a,b){return A.sports[b]-A.sports[a];}).map(function(k){return '<span class="chip">'+esc(SPORT[k]||k.replace(/_/g," "))+' · '+A.sports[k]+'</span>';}).join("")+'</div></div>';}
   h+='<p class="small muted" style="margin:4px 4px 16px">Analyse calculée par Cadenzo à partir des fichiers de l’export (VO2max, charge, statut, prédictions et zones sont ceux de la montre). Les données restent sur ce téléphone.</p>';
   return h;
 }
