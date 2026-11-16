@@ -1,6 +1,6 @@
 // Hors ligne : réseau d’abord, copie en cache sinon (indispensable le jour de la course).
-const C = 'thp40-v30';
-const SHELL = ['./', 'index.html', 'style.css?v=30', 'data.js?v=30', 'fit.js?v=30', 'app.js?v=30', 'safe.js?v=30', 'garmin.js?v=30', 'workout.js?v=30', 'icon.svg?v=30', 'icon-192.png?v=30', 'manifest.webmanifest?v=30', 'fonts/bricolage-grotesque-latin-600-normal.woff2', 'fonts/bricolage-grotesque-latin-700-normal.woff2', 'fonts/bricolage-grotesque-latin-800-normal.woff2', 'fonts/hanken-grotesk-latin-400-normal.woff2', 'fonts/hanken-grotesk-latin-500-normal.woff2', 'fonts/hanken-grotesk-latin-600-normal.woff2', 'fonts/hanken-grotesk-latin-700-normal.woff2'];
+const C = 'thp40-v31';
+const SHELL = ['./', 'index.html', 'style.css?v=31', 'data.js?v=31', 'fit.js?v=31', 'app.js?v=31', 'safe.js?v=31', 'garmin.js?v=31', 'workout.js?v=31', 'icon.svg?v=31', 'icon-192.png?v=31', 'manifest.webmanifest?v=31', 'fonts/bricolage-grotesque-latin-600-normal.woff2', 'fonts/bricolage-grotesque-latin-700-normal.woff2', 'fonts/bricolage-grotesque-latin-800-normal.woff2', 'fonts/hanken-grotesk-latin-400-normal.woff2', 'fonts/hanken-grotesk-latin-500-normal.woff2', 'fonts/hanken-grotesk-latin-600-normal.woff2', 'fonts/hanken-grotesk-latin-700-normal.woff2'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(C).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {

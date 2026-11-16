@@ -867,7 +867,7 @@ function openBackups(){
   });
 }
 function sheetAct(a,b){
-  if(!SH)return;
+  if(!SH)return; var U=snapU();
   if(a==="impmerge"||a==="impreplace"){var im=SH.imp; if(!im)return; var mode=a==="impmerge"?"merge":"replace";
     if(mode==="replace"&&!confirm("Remplacer les données de ce téléphone par celles du fichier ?"))return;
     applyState(im.state,im.garmin,mode,"avant import").then(function(ok){ if(!ok)return; closeSheet(); toast(mode==="merge"?"Sauvegarde fusionnée.":"Sauvegarde importée."); if(im.garmin&&mode==="replace")location.reload(); else render();}); return;}
@@ -881,18 +881,18 @@ function sheetAct(a,b){
     if(F.length===1)FIT.download(new Blob([F[0].data],{type:"application/octet-stream"}),F[0].name); else FIT.download(FIT.zip(F),FIT.slug(r.name)+"-semaine-"+SH.w+".zip");
     toast(F.length>1?F.length+" séances prêtes : copie-les dans GARMIN/NewFiles.":"Séance prête : copie-la dans GARMIN/NewFiles."); return;}
   if(a==="savemanual"){var km=num($("mKm").value), dp=num($("mDp").value)||0, t=parseDur($("mT").value); if(!(km>0)){toast("Indique au moins les kilomètres.");return;}
-    D.actual[SH.key]={km:Math.round(km*100)/100,dp:Math.round(dp),t:Math.round(t),src:"manual"}; D.done[SH.key]=1; if(D.undone)delete D.undone[SH.key]; save(); closeSheet(); toast("Chiffres enregistrés."); render(true); return;}
-  if(a==="delmanual"){delete D.actual[SH.key]; save(); closeSheet(); render(true); return;}
+    D.actual[SH.key]={km:Math.round(km*100)/100,dp:Math.round(dp),t:Math.round(t),src:"manual"}; D.done[SH.key]=1; if(D.undone)delete D.undone[SH.key]; save(); closeSheet(); toast("Chiffres enregistrés.",U); render(true); return;}
+  if(a==="delmanual"){delete D.actual[SH.key]; save(); closeSheet(); render(true); toast("Chiffres retirés.",U); return;}
   if(a==="saveses"||a==="delses"||a==="restoreses"){
     var r=raceById(SH.rid), E=D.edits[r.id]||(D.edits[r.id]={}), w=SH.w, ek=w+"-"+SH.k;
-    if(a==="restoreses"){delete E[ek]; save(); closeSheet(); toast("Séance d’origine rétablie."); render(true); return;}
-    if(a==="delses"){if(SH.added)delete E[ek]; else E[ek]={del:true}; delete D.done[sk(r,w,SH.k)]; delete D.actual[sk(r,w,SH.k)]; save(); closeSheet(); toast("Séance supprimée."); render(true); return;}
+    if(a==="restoreses"){delete E[ek]; save(); closeSheet(); toast("Séance d’origine rétablie.",U); render(true); return;}
+    if(a==="delses"){if(SH.added)delete E[ek]; else E[ek]={del:true}; delete D.done[sk(r,w,SH.k)]; delete D.actual[sk(r,w,SH.k)]; save(); closeSheet(); toast("Séance supprimée.",U); render(true); return;}
     var type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:$("eTxt").value.trim(),tag:tagOf(type)};
     o.nut=type==="Récupération"?"rest":nutOfTag(o.tag);
     if(SH.k&&!SH.added){var keep=E[ek]; delete E[ek]; PC={}; var orig=sessByKey(planOf(r).weeks[w-1],SH.k); PC={};
       if(orig){var diff={}; ["dow","type","km","dp","txt"].forEach(function(f){if(o[f]!==orig[f])diff[f]=o[f];}); if(diff.type){diff.tag=o.tag; diff.nut=o.nut;} if(Object.keys(diff).length)E[ek]=diff;} else if(keep)E[ek]=keep;}
     else E[w+"-"+(SH.k||("x"+Date.now().toString(36)))]=o;
-    save(); closeSheet(); toast("Séance enregistrée."); render(true); return;
+    save(); closeSheet(); toast("Séance enregistrée.",U); render(true); return;
   }
   if(a==="gpx"){$("fileGpxRace").click(); return;}
   if(a.indexOf("preset:")===0){var pr=PRESETS.filter(function(x){return x.key===a.slice(7);})[0]; if(!pr)return;
@@ -1112,7 +1112,7 @@ function vFormeStrava(){
   var hv=h; h="";
   // forme / fatigue / fraîcheur
   var S=formeSeries(), pts=S.pts, z=pts[pts.length-1], N=Math.min(pts.length,60), view=pts.slice(pts.length-N);
-  var st=z.z>15?["Très frais","ok","Tu es reposée : bon moment pour une séance de qualité ou une course."]:z.z>5?["Frais","ok","Tu récupères bien, tu peux charger un peu."]:z.z>=-10?["Équilibré","ok","Charge et récupération sont en phase."]:z.z>=-25?["Chargée","warn","Tu accumules de la fatigue : garde les séances faciles vraiment faciles."]:["Surcharge","off","Fatigue très élevée : allège les prochains jours."];
+  var st=z.z>15?["Très frais","ok","Tu es reposée : bon moment pour une séance de qualité ou une course."]:z.z>5?["Frais","ok","Tu récupères bien, tu peux charger un peu."]:z.z>=-10?["Équilibré","ok","Charge et récupération sont en phase."]:z.z>=-25?["Chargée","warn","Tu accumules de la fatigue : garde les séances faciles vraiment faciles."]:["Surcharge","bad","Fatigue très élevée : allège les prochains jours."];
   h+='<div class="card fm"><h2>Forme et fraîcheur</h2><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--acc-ink)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
     '<div class="chip '+st[1]+'">'+st[0]+'</div><p class="small" style="margin:8px 0 8px">'+st[2]+'</p>'+formeSynth(z,pts);
   var W=320, H=150, pl=30, pr=8, pt=8, pb=20, lo=0, hi=0; view.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f,q.a,q.z);});
@@ -1140,10 +1140,10 @@ $("view").addEventListener("click",function(e){
   if(ds.vp){VP=ds.vp; render(true); return;}
   if(ds.fsub){FSUB=ds.fsub; render(true); return;}
   if(ds.day!=null){sel=+ds.day; render(true); return;}
-  if(ds.done){D.undone=D.undone||{}; if(D.done[ds.done]){delete D.done[ds.done]; D.undone[ds.done]=1;} else{D.done[ds.done]=1; delete D.undone[ds.done]; vib(30);} save(); render(true); return;}
+  if(ds.done){var U0=snapU(), was=!!D.done[ds.done]; D.undone=D.undone||{}; if(D.done[ds.done]){delete D.done[ds.done]; D.undone[ds.done]=1;} else{D.done[ds.done]=1; delete D.undone[ds.done]; vib(30);} save(); render(true); toast(was?"Séance décochée.":"Séance validée.",U0); return;}
   if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, o=D.ci[kk]||(D.ci[kk]={}); o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; save(); render(true); return;}
   if(ds.rb){var rk=activeRace().id+":"+ds.w+":rb"; if(ds.rb==="on")delete D.adj[rk]; else D.adj[rk]="off"; save(); render(true); return;}
-  if(ds.adj){var ak=activeRace().id+":"+ds.w; if(ds.adj==="reset")delete D.adj[ak]; else D.adj[ak]=ds.adj; save(); render(true); return;}
+  if(ds.adj){var U1=snapU(), ak=activeRace().id+":"+ds.w; if(ds.adj==="reset")delete D.adj[ak]; else D.adj[ak]=ds.adj; save(); render(true); toast(ds.adj==="reset"?"Ajustement retiré.":"Ajustement appliqué.",U1); return;}
   if(ds.todo!=null){var st=ds.store==="kit"?kitOf(activeRace()):D.todo; st[ds.todo]=!st[ds.todo]; if(!st[ds.todo])delete st[ds.todo]; save(); var kd=$("kitd"),op=kd&&kd.open; render(true); if(op&&$("kitd"))$("kitd").open=true; return;}
   if(ds.act==="pastwk"){planPast=!planPast; render(true); return;}
   if(ds.wk){var w=+ds.wk, ow0=openWk===null?(planCurW||0):openWk; openWk=ow0===w?0:w; render(true); return;}
@@ -1175,7 +1175,7 @@ function act(a,b){
   else if(a==="addrace")editRace(null);
   else if(a==="editrace")editRace(ds.r);
   else if(a==="activate"){D.active=ds.r; save(); goNow(); toast("Tu suis maintenant le plan de "+raceById(ds.r).name+"."); render(true);}
-  else if(a==="resetedits"){var r=activeRace(); if(!confirm("Rétablir toutes les séances d’origine du plan "+r.name+" ?"))return; delete D.edits[r.id]; save(); render(true);}
+  else if(a==="resetedits"){var r=activeRace(); if(!confirm("Rétablir toutes les séances d’origine du plan "+r.name+" ?"))return; var U2=snapU(); delete D.edits[r.id]; save(); render(true); toast("Séances d’origine rétablies.",U2);}
   else if(a==="csv")$("fileCsv").click();
   else if(a==="import")$("fileJson").click();
   else if(a==="export")exportData();
@@ -1201,7 +1201,11 @@ function act(a,b){
 
 // ---------- toast ----------
 var toastT=null;
-function toast(m){var t=$("toast"); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){t.hidden=true;},3200);}
+$("toast").addEventListener("click",function(e){if(e.target.closest(".toast-undo"))undoNow();});
+var UNDO=null, UNDO_KEYS=["done","undone","actual","edits","adj","ci"];
+function snapU(){var o={}; UNDO_KEYS.forEach(function(k){o[k]=JSON.stringify(D[k]||{});}); return o;}
+function undoNow(){ if(!UNDO)return; var u=UNDO; UNDO=null; UNDO_KEYS.forEach(function(k){D[k]=JSON.parse(u[k]);}); MC={}; PC={}; save(); $("toast").hidden=true; render(true); toast("Annulé."); }
+function toast(m,undo){var t=$("toast"); UNDO=undo||null; t.textContent=m; if(undo){var b=document.createElement("button"); b.type="button"; b.className="toast-undo"; b.textContent="Annuler"; t.appendChild(b);} t.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){t.hidden=true; UNDO=null;},undo?6000:3200);}
 
 // ---------- Strava (coupé, gardé pour plus tard) ----------
 var syncing=false;
@@ -1237,7 +1241,7 @@ function stravaAge(){var s=D.sync, t=s.ght||(s.upd?Date.parse(s.upd):0); return 
 function syncNote(){
   if(!STRAVA)return ""; var s=D.sync, t=stravaAge(), old=!t||Date.now()-t>3600*1000||s.gh==="ko"||!!s.err;
   var txt=s.gh==="ko"?"Strava ne répond plus côté GitHub : tes dernières sorties peuvent manquer.":s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
-  return '<p class="syncnote'+(old?" old":"")+'" role="status">'+txt+(old?' <button class="link-btn" data-act="sync">Actualiser</button>':"")+'</p>';
+  return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old?' <button class="link-btn" data-act="sync">Actualiser</button>':"")+'</p>';
 }
 function autoSync(){if(STRAVA&&!syncing&&(Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV()))sync(false);}
 function applyActs(acts){
