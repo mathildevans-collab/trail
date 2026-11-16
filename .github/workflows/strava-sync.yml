@@ -3,6 +3,9 @@ on:
   schedule:
     - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
+  push:  # tout déploiement relance aussi la chaîne si elle s'était arrêtée
+    branches: [main]
+    paths-ignore: ["activities.json", "README.md"]
 permissions:
   contents: write
   actions: write  # pour se relancer toute seule
@@ -67,4 +70,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           sleep 270
-          gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/strava-sync.yml/dispatches" -f ref="${GITHUB_REF_NAME}" || echo "::warning::Relance impossible, le cron prendra le relais."
+          # 4 essais : une panne brève de l'API GitHub ne doit pas casser la chaîne
+          for i in 1 2 3 4; do
+            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/strava-sync.yml/dispatches" -f ref="${GITHUB_REF_NAME}" >/dev/null && exit 0
+            echo "::warning::Relance impossible (essai $i/4)."; sleep $((i*15))
+          done
+          # Échec visible : l'appli affiche alors « Strava ne répond plus côté GitHub »
+          echo "::error::La chaîne de relance est arrêtée. Pour la relancer : Actions › Strava sync › Run workflow."
+          exit 1
