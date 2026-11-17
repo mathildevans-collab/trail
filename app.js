@@ -333,7 +333,7 @@ function adjFor(pl,w){
   var volTxt=ok?"tu as fait "+pc+" % du volume prévu":"", ciTxt=cip.length?"ton check-in indique "+cip.join(" et "):"";
   if(feel2||(ok&&pc>120)){mode="micro"; lead=cap((ok&&pc>120?"volume à "+pc+" %":"")+(ok&&pc>120&&feel2?" et ":"")+(feel2?"fatigue à 5/5 deux semaines de suite":"")+"."); prop="Je te propose une micro-récupération (environ −12 %).";
     effx=["Mardi : footing progressif de 40 min"+(tue?" à la place de « "+tue.type.toLowerCase()+" »":"")+".","Mercredi et samedi : environ −12 %"+(sat?" (samedi "+kmS(sat.km)+" → "+kmS(sat.km*MICRO)+" km)":"")+".","Dimanche (club) : jamais sous le minimum du club (15 km, 2 h, +500 m).","Jeudi : club, inchangé."];}
-  else if((ok&&pc<75)||(ok&&pc<90&&(heavy||bad))||(heavy&&bad)){mode="light"; lead=cap(volTxt+(volTxt&&ciTxt?" et ":"")+ciTxt+"."); prop="Je te propose une semaine allégée (−18 %).";
+  else if((ok&&pc<75)||(ok&&pc<90&&(heavy||bad))||(heavy&&bad)||c.f===5){mode="light"; lead=cap(volTxt+(volTxt&&ciTxt?" et ":"")+ciTxt+"."); prop="Je te propose une semaine allégée (−18 %).";
     effx=["Mardi, mercredi, samedi : −18 % en distance et en dénivelé"+(sat?" (samedi "+kmS(sat.km)+" → "+kmS(sat.km*LIGHT)+" km)":"")+".","Dimanche (club) : jamais sous le minimum du club.","Jeudi : club, inchangé."];}
   else if(ok&&st.fast>=2){mode="z2"; lead=st.fast+" sorties faciles trop rapides la semaine dernière."; prop="Cette semaine, Zone 2 stricte."; effx=["Sorties faciles et longues : sous 150 bpm, même si ça paraît lent.","Marche dès que la FC dépasse 150 bpm dans les côtes.","Le volume ne change pas."];}
   else if(ok||hasCi){mode="normal"; lead=cap(volTxt+(volTxt&&hasCi?", ":"")+(hasCi?"ton check-in est bon":"")+"."); prop="On garde le plan normal."; effx=["Aucun changement cette semaine."];}
@@ -603,7 +603,9 @@ function checkinCard(r,pl,w){
   if(!D.set.checkin)return ""; var ti=planIdx(pl); if(ti<0||w!==nowWeek(pl)||w<2||pl.weeks[w-1].ph==="Affûtage")return "";
   var c=ciOf(r,w), a=adjFor(pl,w), st=D.adj[r.id+":"+w];
   function scale(k,l,lo,hi){var h='<div class="ci-row"><span>'+l+'</span><div class="scale">'; for(var i=1;i<=5;i++)h+='<button data-ci="'+k+'" data-v="'+i+'" aria-pressed="'+(c[k]===i)+'">'+i+'</button>'; return h+'</div><div class="scalelab"><span>'+lo+'</span><span>'+hi+'</span></div></div>';}
-  var h='<div class="card"><h2>Check-in du lundi</h2><p class="small muted" style="margin:0 0 10px">10 secondes. Le coach ajuste la semaine avec tes réponses.</p>'+scale("f","Fatigue","fraîche","épuisée")+scale("s","Sommeil","mauvais","excellent");
+  var dow=((ti%7)+7)%7, full=!!(c.f&&c.s), edit=dow===0||!full, h;
+  if(edit)h='<div class="card"><h2>Check-in du lundi</h2><p class="small muted" style="margin:0 0 10px">'+(dow===0?"10 secondes. Le coach ajuste la semaine avec tes réponses.":"Oublié lundi ? Tu peux le remplir maintenant.")+'</p>'+scale("f","Fatigue","fraîche","épuisée")+scale("s","Sommeil","mauvais","excellent")+(full?'<p class="small ci-ok" style="margin:8px 0 0"><span class="chip ok">✓ Enregistré</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>':(c.f||c.s?'<p class="small muted" style="margin:8px 0 0">Réponds aux deux pour que le coach ajuste.</p>':''));
+  else h='<div class="card"><h2>Check-in de la semaine</h2><p class="small" style="margin:0"><span class="chip ok">✓ Enregistré lundi</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>';
   if(a){var dec=a.mode==="light"||a.mode==="micro", B={normal:["ok","Semaine maintenue"],light:["warn","Semaine allégée proposée"],z2:["warn","Zone 2 stricte"],micro:["warn","Micro-récupération proposée"]}[a.mode];
     if(dec&&st==="on")B=["warn",a.mode==="light"?"Semaine allégée":"Micro-récupération"]; if(dec&&st==="off")B=["ok","Plan normal gardé"];
     h+='<p class="small" style="margin:6px 0 0"><span class="chip '+B[0]+'">'+B[1]+'</span></p><p class="small" style="margin:8px 0 0">'+esc(a.lead+" "+a.prop)+'</p>';
@@ -1150,7 +1152,7 @@ $("view").addEventListener("click",function(e){
   if(ds.fsub){FSUB=ds.fsub; render(true); return;}
   if(ds.day!=null){sel=+ds.day; render(true); return;}
   if(ds.done){var U0=snapU(), was=!!D.done[ds.done]; D.undone=D.undone||{}; if(D.done[ds.done]){delete D.done[ds.done]; D.undone[ds.done]=1;} else{D.done[ds.done]=1; delete D.undone[ds.done]; vib(30);} save(); render(true); toast(was?"Séance décochée.":"Séance validée.",U0); return;}
-  if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, o=D.ci[kk]||(D.ci[kk]={}); o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; save(); render(true); return;}
+  if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, U2=snapU(), o=D.ci[kk]||(D.ci[kk]={}), hadAdj=!!D.adj[kk]; o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; if(hadAdj)delete D.adj[kk]; save(); render(true); toast(hadAdj?"Réponse enregistrée. Proposition recalculée.":"Réponse enregistrée.",U2); return;}
   if(ds.rb){var rk=activeRace().id+":"+ds.w+":rb"; if(ds.rb==="on")delete D.adj[rk]; else D.adj[rk]="off"; save(); render(true); return;}
   if(ds.adj){var U1=snapU(), ak=activeRace().id+":"+ds.w; if(ds.adj==="reset")delete D.adj[ak]; else D.adj[ak]=ds.adj; save(); render(true); toast(ds.adj==="reset"?"Ajustement retiré.":"Ajustement appliqué.",U1); return;}
   if(ds.todo!=null){var st=ds.store==="kit"?kitOf(activeRace()):D.todo; st[ds.todo]=!st[ds.todo]; if(!st[ds.todo])delete st[ds.todo]; save(); var kd=$("kitd"),op=kd&&kd.open; render(true); if(op&&$("kitd"))$("kitd").open=true; return;}
