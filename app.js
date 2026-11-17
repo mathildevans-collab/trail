@@ -1233,7 +1233,9 @@ window.NUMIFY=numify;
 var UNDO=null, UNDO_KEYS=["done","undone","actual","edits","adj","ci"];
 function snapU(){var o={}; UNDO_KEYS.forEach(function(k){o[k]=JSON.stringify(D[k]||{});}); return o;}
 function undoNow(){ if(!UNDO)return; var u=UNDO; UNDO=null; UNDO_KEYS.forEach(function(k){D[k]=JSON.parse(u[k]);}); MC={}; PC={}; save(); $("toast").hidden=true; render(true); toast("Annulé."); }
-function toast(m,undo){var t=$("toast"); UNDO=undo||null; t.textContent=m; if(undo){var b=document.createElement("button"); b.type="button"; b.className="toast-undo"; b.textContent="Annuler"; t.appendChild(b);} t.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){t.hidden=true; UNDO=null;},undo?6000:3200);}
+function toast(m,undo){var t=$("toast"), ms=undo?6000:3200; UNDO=undo||null; var ok=!!undo||/ajout|enregistr|appliqu|mise? à jour|retir|supprim|rétabli|restaur|copi|synchronis/i.test(m);
+  t.innerHTML=(ok?'<span class="t-ic" aria-hidden="true">'+I.check+'</span>':'')+'<span class="t-msg">'+esc(m)+'</span>'+(undo?'<button type="button" class="toast-undo">Annuler</button>':'')+'<i class="t-bar" aria-hidden="true" style="animation-duration:'+ms+'ms"></i>';
+  t.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){t.hidden=true; UNDO=null;},ms);}
 
 // ---------- Strava (coupé, gardé pour plus tard) ----------
 var syncing=false;
