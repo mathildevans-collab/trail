@@ -96,12 +96,12 @@ function raceStartTs(r){var d=new Date(dms(r.date)); return new Date(d.getUTCFul
 function pz(n){return (n<10?"0":"")+n;}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function kmS(x){return String(Math.round(x*10)/10).replace(".",",");}
-function nb(x){return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g," ");}
-function hm(m){m=Math.round(m); var h=Math.floor(m/60); return h+" h "+pz(m-h*60);}
+function nb(x){return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g,"\u00A0");} // espace insécable : un nombre ne se coupe jamais en fin de ligne (U+202F se coupait sur iPhone)
+function hm(m){m=Math.round(m); var h=Math.floor(m/60); return h+"\u00A0h\u00A0"+pz(m-h*60);}
 function hmc(m){m=Math.round(m); var h=Math.floor(m/60); return h+"h"+pz(m-h*60);}
 function hmi(m){m=Math.round(m); var h=Math.floor(m/60); return h+":"+pz(m-h*60);}
 function hms(s){s=Math.max(0,Math.floor(s)); return Math.floor(s/3600)+":"+pz(Math.floor(s/60)%60)+":"+pz(s%60);}
-function dur(sec){var h=Math.floor(sec/3600), m=Math.round((sec%3600)/60); if(m===60){h++;m=0;} return h>0?h+" h "+pz(m):m+" min";}
+function dur(sec){var h=Math.floor(sec/3600), m=Math.round((sec%3600)/60); if(m===60){h++;m=0;} return h>0?h+"\u00A0h\u00A0"+pz(m):m+"\u00A0min";}
 function mmss(x){x=Math.round(x); var m=Math.floor(x/60); return m+":"+pz(x-m*60);}
 function sgn(m){m=Math.round(m); return (m>0?"+":m<0?"−":"±")+Math.abs(m)+" min";}
 function tod(r,min){var t=Math.round(startMin(r)+min); return Math.floor(t/60)%24+":"+pz(t%60);}
@@ -479,7 +479,7 @@ function bindProfile(m){
 }
 
 // ---------- navigation ----------
-var FOLD={}, planCurW=0, tab="today", cur=1, sel=1, browsing=false, openWk=null, planPast=false, prevTab="today", resetArmed=false, editRes=false;
+var FOLD={}, planCurW=0, tab="today", cur=1, sel=1, browsing=false, openWk=null, planPast=false, CV="list", CT="", prevTab="today", resetArmed=false, editRes=false;
 function goNow(){browsing=false; var r=activeRace(), pl=planOf(r); if(!pl)return; var i=planIdx(pl); cur=nowWeek(pl);
   if(i>=0&&i<pl.n*7)sel=i%7; else{var wk=pl.weeks[cur-1]; sel=wk&&wk.s.length?wk.s[0].dow:1;}}
 
@@ -541,7 +541,7 @@ function bilanCard(r,pl,wk,sel,selD){
   var ttl=selD===t?"Bilan du jour":"Bilan de "+DOWL[sel];
   if(s&&ac){
     var rv=review(pl.m,s,ac), b=BADGE[rv.lvl];
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km · prévu '+kmS(s.km)+'</span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m · prévu '+nb(s.dp||0)+'</span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
+    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(s.km)+'</i></i></span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(s.dp||0)+'</i></i></span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
   }
   if(ex){
     var di=iso(selD), hr=0, hn=0; HIST.forEach(function(q){if(q.date===di&&q.hr>0){hr+=q.hr*q.km;hn+=q.km;}}); hr=hn?hr/hn:0;
@@ -683,7 +683,7 @@ function vPlan(){
   var pastN=inPlan?cw-1:(ti>=pl.n*7?pl.n:0), pastDone=0, pastTot=0;
   if(pastN>0){for(var q=1;q<=pastN;q++){var wq=P(pl,q); wq.s.forEach(function(x){if(x.race)return; pastTot++; if(D.done[sk(r,q,x.k)])pastDone++;});}}
   h+='<div class="card" style="padding-top:6px">'; var last="";
-  if(pastN>0)h+='<button class="wk pastbar" data-act="pastwk" aria-expanded="'+planPast+'"><span class="n">↺</span><span><span class="d">Semaines passées · 1 à '+pastN+'</span><span class="small muted num" style="display:block">'+pastDone+' / '+pastTot+' séances faites</span></span><span class="chev">'+(planPast?"⌃":"⌄")+'</span></button>';
+  if(pastN>0)h+='<button class="wk pastbar" data-act="pastwk" aria-expanded="'+planPast+'"><span class="n">↺</span><span class="pb-t"><b>Semaines passées</b><span class="small muted num">'+(pastN>1?'Semaines 1 à '+pastN:'Semaine 1')+' · '+pastDone+' / '+pastTot+' séances faites</span></span><span class="chev">'+(planPast?"⌃":"⌄")+'</span></button>';
   pl.weeks.forEach(function(w0){var wk=P(pl,w0.n), w=wk.n, isCur=w===cw&&ti>=0&&ti<pl.n*7, rw=w===pl.n;
     if(w<=pastN&&!planPast)return;
     if(wk.ph!==last){h+='<span class="eyebrow" style="padding:12px 0 4px">'+wk.ph+'</span>';last=wk.ph;}
@@ -696,11 +696,20 @@ function vPlan(){
 }
 
 // --- Mes courses ---
+function raceRow(r,a,f){var past=daysTo(r)<0, res=D.results[r.id], fin=res&&res.splits&&res.splits[res.splits.length-1], m=model(r);
+  return '<button class="race'+(r.prio==="B"?" b":"")+(past?" past":"")+'" data-opencourse="'+r.id+'"><span class="tag">'+r.prio+'</span><span style="flex:1;min-width:0"><b class="rn">'+esc(r.name)+'</b><br><span class="small muted">'+fmtD(dms(r.date))+' · '+kmS(m.L)+' km · +'+nb(m.dp)+' m</span></span>'+(fin?'<span class="chip ok">'+hmc(fin)+'</span>':a&&r.id===a.id?'<span class="chip">objectif</span>':past?'':'<span class="chip" style="background:none">'+jx(r)+'</span>')+'<span class="chev" aria-hidden="true">›</span></button>';}
 function vCourse(){
-  var a=activeRace(), f=focusRace(), h=header("Ta saison","Mes courses");
-  races().forEach(function(r){var past=daysTo(r)<0, res=D.results[r.id], fin=res&&res.splits&&res.splits[res.splits.length-1], m=model(r);
-    h+='<button class="race'+(r.prio==="B"?" b":"")+(f&&r.id===f.id?" sel":"")+(past?" past":"")+'" data-focus="'+r.id+'"><span class="tag">'+r.prio+'</span><span style="flex:1;min-width:0"><b style="font-family:var(--display);font-size:19px">'+esc(r.name)+'</b><br><span class="small muted">'+fmtD(dms(r.date))+' · '+kmS(m.L)+' km · +'+nb(m.dp)+' m</span></span>'+(fin?'<span class="chip ok">'+hmc(fin)+'</span>':a&&r.id===a.id?'<span class="chip">objectif</span>':past?'':'<span class="chip" style="background:none">'+jx(r)+'</span>')+'</button>';});
-  h+='<button class="race add" data-act="addrace">+ Ajouter une course (trace GPX)</button>';
+  var a=activeRace(), f=focusRace(), h;
+  if(CV!=="detail"||!f){
+    h=header("Ta saison","Mes courses");
+    var all=races(), up=all.filter(function(r){return daysTo(r)>=0;}), pa=all.filter(function(r){return daysTo(r)<0;}).reverse();
+    if(CT!=="up"&&CT!=="past")CT=up.length||!pa.length?"up":"past";
+    h+='<div class="wm-seg fm-sub" role="tablist" aria-label="Courses">'+[["up","À venir",up.length],["past","Passées",pa.length]].map(function(x){return '<button role="tab" data-ctab="'+x[0]+'" aria-selected="'+(CT===x[0])+'">'+x[1]+' <span class="cnt">'+x[2]+'</span></button>';}).join("")+'</div>';
+    var L=CT==="up"?up:pa;
+    h+='<div role="tabpanel">'+(L.length?L.map(function(r){return raceRow(r,a,f);}).join(""):'<p class="muted small" style="margin:8px 4px 16px">'+(CT==="up"?"Aucune course à venir. Ajoute ta prochaine course ci-dessous.":"Aucune course passée pour l’instant.")+'</p>')+'</div>';
+    return h+'<button class="race add" data-act="addrace">+ Ajouter une course (trace GPX)</button>';
+  }
+  h='<button class="back" data-act="courselist">'+I.back+'Mes courses</button><div class="top"><div><span class="eyebrow">Course '+f.prio+' · '+fmtD(dms(f.date))+'</span><h1>'+esc(f.name)+'</h1></div></div>';
   if(!f)return h;
   var m=model(f);
   if(f.prio==="A"&&a&&f.id!==a.id)h+='<div class="banner">Ce n’est pas ton plan en cours (tu suis '+esc(a.name)+'). <button class="btn sm primary" data-act="activate" data-r="'+f.id+'" style="margin-top:8px">Suivre le plan de '+esc(f.name)+'</button></div>';
@@ -897,7 +906,7 @@ function sheetAct(a,b){
   if(a==="gpx"){$("fileGpxRace").click(); return;}
   if(a.indexOf("preset:")===0){var pr=PRESETS.filter(function(x){return x.key===a.slice(7);})[0]; if(!pr)return;
     var nr=JSON.parse(JSON.stringify(pr)); nr.id=uid(); nr.preset=pr.key; delete nr.key; nr.prio=pr.prio||SH.prio||"A"; nr.start=nextMonday(); var nt=nr.note; delete nr.note;
-    D.races.push(nr); D.focus=nr.id; var ca=activeRace(); if(nr.prio==="A"&&(!ca||daysTo(ca)<0))D.active=nr.id;
+    D.races.push(nr); D.focus=nr.id; if(tab==="course")CV="detail"; var ca=activeRace(); if(nr.prio==="A"&&(!ca||daysTo(ca)<0))D.active=nr.id;
     MC={}; PC={}; save(); closeSheet(); toast(nr.name+" ajoutée. "+nt); goNow(); render(true); editRace(nr.id); return;}
   if(a==="saverace"){
     var isB=SH.builtin, r0=SH.id?raceById(SH.id):null;
@@ -909,7 +918,7 @@ function sheetAct(a,b){
       rr.cps=$("rCps").value.split("\n").map(function(l){var mm=/^\s*(\d+(?:[.,]\d+)?)\s*(?:km)?\s*[:\-–·]?\s*(.*)$/.exec(l); return mm?{km:num(mm[1]),n:mm[2].trim()}:null;}).filter(function(c){return c&&c.km>0&&c.km<rr.km;});}
     if(pendingGpx){rr.gpx={name:pendingGpx.name,total:pendingGpx.total,pts:scalePts(pendingGpx.pts,pendingGpx.total,rr.km)}; if(!isB&&pendingGpx.prof)rr.prof=pendingGpx.prof.map(function(p){return [Math.round(p[0]*rr.km/pendingGpx.total*100)/100,p[1]];});}
     var msg="Course mise à jour.";
-    if(!r0){D.races.push(rr); D.focus=rr.id;
+    if(!r0){D.races.push(rr); D.focus=rr.id; if(tab==="course")CV="detail";
       if(rr.prio==="A"){var cur_=activeRace(); if(!cur_||daysTo(cur_)<0||(dms(rr.date)<dms(cur_.date)&&daysTo(rr)>=0)){D.active=rr.id; msg="Course ajoutée : ton plan est prêt.";} else msg="Course ajoutée. Touche « Suivre le plan » pour basculer dessus.";}
       else msg="Course B ajoutée : elle est glissée dans ton plan.";}
     MC={}; PC={}; save(); closeSheet(); toast(msg); goNow(); render(true); return;
@@ -918,7 +927,7 @@ function sheetAct(a,b){
     var x=raceById(SH.id); if(!x)return; if(!confirm("Supprimer "+x.name+" ? Son plan, ses séances cochées et tes modifications seront perdus."))return;
     D.races=D.races.filter(function(y){return y.id!==x.id;}); delete D.edits[x.id]; delete D.results[x.id]; delete D.kit[x.id];
     ["done","actual","ci","adj","todo"].forEach(function(f){Object.keys(D[f]).forEach(function(k){if(k.indexOf(x.id+":")===0)delete D[f][k];});});
-    if(D.race&&D.race.rid===x.id)D.race=null; if(D.active===x.id)D.active=null; if(D.focus===x.id)D.focus=null; activeRace(); focusRace();
+    if(D.race&&D.race.rid===x.id)D.race=null; if(D.active===x.id)D.active=null; if(D.focus===x.id)D.focus=null; CV="list"; activeRace(); focusRace();
     MC={}; PC={}; save(); closeSheet(); toast("Course supprimée."); goNow(); render(true);
   }
 }
@@ -951,7 +960,7 @@ function render(keep){
   window.scrollTo(0,keep?y:0);
 }
 document.addEventListener("toggle",function(e){var d=e.target; if(d&&d.dataset&&d.dataset.fold)FOLD[d.dataset.fold]=d.open;},true);
-function setTab(t){if(t!=="settings")prevTab=t; tab=t; resetArmed=false; editRes=false; if(t==="today"&&!browsing)goNow(); render(); if(t==="plan"){var ce=document.querySelector(".wk.cur"); if(ce)ce.scrollIntoView({block:"center"});}}
+function setTab(t){if(t!=="settings")prevTab=t; if(t==="course")CV="list"; tab=t; resetArmed=false; editRes=false; if(t==="today"&&!browsing)goNow(); render(); if(t==="plan"){var ce=document.querySelector(".wk.cur"); if(ce)ce.scrollIntoView({block:"center"});}}
 
 
 // ---------- Forme : volume + forme/fraîcheur (depuis toutes les sorties Strava lues) ----------
@@ -1058,7 +1067,7 @@ function weekEndCard(r,pl,ti){
   var w=nowWeek(pl), td=ti-(w-1)*7, hr=new Date().getHours(), tw=(td===6&&hr>=17)?w:(td===0&&w>1)?w-1:0; if(!tw)return "";
   var wk=P(pl,tw), t=weekTot(r,wk,6), dn=weekDone(r,wk), ns=nSess(wk), pc=t.pk>0?Math.round(t.ak/t.pk*100):0;
   var badge=t.pk<=0?null:pc>=90&&pc<=115?["ok","Semaine réussie"]:pc>115?["warn","Semaine chargée"]:pc>=75?["warn","Un peu en dessous"]:["off","Semaine allégée"];
-  var h='<div class="card"><div class="verdict"><h2>Bilan de ta semaine '+tw+'</h2>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km · prévu '+kmS(Math.round(t.pk*10)/10)+'</span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m · prévu '+nb(t.pd)+'</span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
+  var h='<div class="card"><div class="verdict"><h2>Bilan de ta semaine '+tw+'</h2>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(Math.round(t.pk*10)/10)+'</i></i></span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(t.pd)+'</i></i></span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
   try{var S=formeSeries(); if(S&&S.pts.length>8){var q=S.pts[S.pts.length-1], q0=S.pts[S.pts.length-8], df=Math.round(q.f-q0.f), dz=Math.round(q.z);
     h+='<p class="small" style="margin:10px 0 0">'+(Math.abs(df)<1?'Forme stable sur la semaine':'Forme '+(df>0?'+':'−')+Math.abs(df)+' sur la semaine')+' · fraîcheur '+(dz>=0?'+':'−')+Math.abs(dz)+'.</p>';}}catch(e){}
   var nx=tw<pl.n?P(pl,tw+1):null;
@@ -1070,7 +1079,7 @@ function weekEndCard(r,pl,ti){
 document.addEventListener("toggle",function(e){var t=e.target; if(t&&t.classList&&t.classList.contains("more"))MOREOPEN=t.open;},true);
 function vForme(){
   var h=header("Ton suivi","Forme")+'<div class="wm-seg fm-sub" role="tablist" aria-label="Source">'+
-    [["strava","Strava","récent"],["garmin","Garmin","export montre"]].map(function(x){return '<button role="tab" data-fsub="'+x[0]+'" aria-selected="'+(FSUB===x[0])+'">'+x[1]+'<small>'+x[2]+'</small></button>';}).join("")+'</div>';
+    [["strava","Strava"],["garmin","Garmin"]].map(function(x){return '<button role="tab" data-fsub="'+x[0]+'" aria-selected="'+(FSUB===x[0])+'">'+x[1]+'</button>';}).join("")+'</div>';
   if(FSUB==="garmin"){var r=activeRace(); return h+(window.GARMIN?GARMIN.html({busy:GBUSY,race:r?{name:r.name,km:+r.km||0,dp:+r.dp||0,goal:goalOf(r)}:null}):'<div class="card"><p class="small muted" style="margin:0">Module Garmin non chargé : recharge la page.</p></div>');}
   return h+vFormeStrava();
 }
@@ -1151,7 +1160,9 @@ $("view").addEventListener("click",function(e){
   if(ds.goto){var p=ds.goto.split("-"); cur=+p[0]; sel=+p[1]; browsing=true; tab="today"; prevTab="today"; render(); return;}
   if(ds.edit){var q=ds.edit.split("-"); editSession(+q[0],q[1]); return;}
   if(ds.sheet){showInfo(ds.sheet); return;}
-  if(ds.focus){D.focus=ds.focus; save(); render(true); return;}
+  if(ds.opencourse){D.focus=ds.opencourse; CV="detail"; save(); render(); window.scrollTo(0,0); return;}
+  if(ds.ctab){CT=ds.ctab; render(true); return;}
+  if(ds.act==="courselist"){CV="list"; render(); window.scrollTo(0,0); return;}
   if(ds.race){openRace(ds.race,!!ds.practice); return;}
   if(ds.fake){D.set.fake=ds.fake; save(); goNow(); toast("Date simulée : "+fmtL(todayUTC()).toLowerCase()); setTab("today"); return;}
   if(ds.act)act(ds.act,b);
@@ -1202,6 +1213,21 @@ function act(a,b){
 // ---------- toast ----------
 var toastT=null;
 $("toast").addEventListener("click",function(e){if(e.target.closest(".toast-undo"))undoNow();});
+// Nombres : chaque nombre (avec son unité) devient un bloc insécable en police à chasse fixe. Un nombre ne se coupe jamais en fin de ligne.
+var NUMRE=/\d{1,2}[\u00a0\u202f ]?h[\u00a0\u202f ]?\d{2}|[+\u2212-]?(?:\d{1,3}(?:[\u00a0\u202f]\d{3})+|\d{1,3}(?: \d{3})+(?!\d)|\d+)(?:[,.:]\d+)*(?:[\u00a0\u202f ]?(?:km\/h|km|min|bpm|kg|°C|[hms%])(?![A-Za-z\u00c0-\u00ff]))?/g;
+var NUMSKIP="script,style,svg,input,textarea,select,option,title,.num-t,.wo-big,[data-nonum]";
+function numify(root){
+  if(!root||root.nodeType!==1&&root.nodeType!==11)return;
+  var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null), nodes=[], n;
+  while((n=w.nextNode())){var pe=n.parentNode; if(!pe||pe.nodeType!==1||!/\d/.test(n.nodeValue))continue; if(pe.closest(NUMSKIP)||pe.classList.contains("num-t"))continue; nodes.push(n);}
+  nodes.forEach(function(t){var v=t.nodeValue, last=0, m, f=null; NUMRE.lastIndex=0;
+    while((m=NUMRE.exec(v))){ if(!f)f=document.createDocumentFragment(); if(m.index>last)f.appendChild(document.createTextNode(v.slice(last,m.index)));
+      var sp=document.createElement("span"); sp.className="num-t"; sp.textContent=m[0].replace(/ /g,"\u00a0"); f.appendChild(sp); last=m.index+m[0].length; if(m[0]==="")NUMRE.lastIndex++; }
+    if(f){ if(last<v.length)f.appendChild(document.createTextNode(v.slice(last))); t.parentNode.replaceChild(f,t); }});
+}
+window.NUMIFY=numify;
+(function(){ var q=[], tm=0, mo=new MutationObserver(function(ms){ ms.forEach(function(r){[].forEach.call(r.addedNodes,function(a){ if(a.nodeType===1&&!a.classList.contains("num-t"))q.push(a); else if(a.nodeType===3&&a.parentNode)q.push(a.parentNode);});}); if(tm)return; tm=requestAnimationFrame(function(){tm=0; mo.disconnect(); var l=q; q=[]; l.forEach(function(e){if(document.contains(e))numify(e);}); mo.observe(document.body,{childList:true,subtree:true});});});
+  mo.observe(document.body,{childList:true,subtree:true}); numify(document.body); })();
 var UNDO=null, UNDO_KEYS=["done","undone","actual","edits","adj","ci"];
 function snapU(){var o={}; UNDO_KEYS.forEach(function(k){o[k]=JSON.stringify(D[k]||{});}); return o;}
 function undoNow(){ if(!UNDO)return; var u=UNDO; UNDO=null; UNDO_KEYS.forEach(function(k){D[k]=JSON.parse(u[k]);}); MC={}; PC={}; save(); $("toast").hidden=true; render(true); toast("Annulé."); }
@@ -1409,7 +1435,7 @@ $("rm").addEventListener("click",function(e){
   else if(a==="gps"){if(gpsWatch!=null){stopGps(); rmRender(); return;} startGps();}
   else if(a==="ff"){RS.shift=(RS.shift||0)+600000; rmTick();}
   else if(a==="close")closeRaceNav();
-  else if(a==="bilan"){var rid=RS.rid, rb=raceById(rid); closeRaceNav(); if(rb.prio==="A")D.active=rid; else D.focus=rid; browsing=false; save(); setTab(rb.prio==="B"?"course":"today");}
+  else if(a==="bilan"){var rid=RS.rid, rb=raceById(rid); closeRaceNav(); if(rb.prio==="A")D.active=rid; else D.focus=rid; browsing=false; save(); setTab(rb.prio==="B"?"course":"today"); if(rb.prio==="B"){CV="detail"; render();}}
 });
 $("rm").addEventListener("pointerdown",function(e){var b=e.target.closest('[data-rm="quit"]'); if(!b)return; b.classList.add("hold"); holdT=setTimeout(function(){b.classList.remove("hold"); closeRaceNav();},950);});
 ["pointerup","pointerleave","pointercancel"].forEach(function(ev){$("rm").addEventListener(ev,function(){clearTimeout(holdT); var q=document.querySelector(".rm-quit.hold"); if(q)q.classList.remove("hold");});});

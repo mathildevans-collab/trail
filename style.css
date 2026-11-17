@@ -1,3 +1,8 @@
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/jetbrains-mono-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:600;font-display:swap;src:url(fonts/bricolage-grotesque-latin-600-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/bricolage-grotesque-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:800;font-display:swap;src:url(fonts/bricolage-grotesque-latin-800-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -12,6 +17,8 @@
   --sun:#e2a72e; --down:#2c6e9b; --acc:#ff4b1f; --acc-ink:#c2330a; --acc-btn:#d63a0c; --acc-btn-ink:#ffffff; --acc-soft:#fde4da;
   --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
   --body:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --veil:rgba(255,255,255,.14);
   color-scheme:light;
 }
@@ -201,7 +208,7 @@ dl.nut dd{margin:2px 0 0}
 .wk.rec .b{background:var(--ok)}
 .wk .k{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 .wk .k small{display:block;font-weight:500;color:var(--muted);font-size:12px}
-.wkx{padding:0 0 10px 44px}
+.wkx{margin:2px 0 10px;padding:4px 6px 4px 14px;background:var(--bg);border-radius:14px}
 .ses{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;text-align:left;font-size:14px;padding:6px 0;min-height:44px}
 .ses .dw{color:var(--muted);width:34px;flex:none}
 .ses .ty{flex:1}
@@ -355,7 +362,7 @@ details summary svg{width:20px;height:20px;flex:none;color:var(--brand)}
 .fm-tiles span{display:block;font-size:12px;color:var(--muted)}
 .fm-tiles b{display:block;font-family:var(--display);font-size:21px;line-height:1.15}.fm-tiles b small{font-size:12px;font-weight:700;color:var(--muted)}
 .fm-bars{gap:3px}.fm-bars .wm-plot{height:90px}.fm-bars .wm-plot i{width:70%}
-.fm-l{font-size:10px!important;font-weight:600;min-width:0!important;width:auto!important;height:14px!important;border-radius:0!important;background:none!important;color:var(--muted)!important;white-space:nowrap}
+.fm-l{font-size:10px!important;font-weight:600;min-width:0!important;width:auto!important;height:14px!important;border-radius:0!important;background:none!important;color:var(--muted)!important;white-space:nowrap;display:block!important;text-align:center;overflow:visible}
 .wm-col.today .fm-l{color:var(--ink)!important}
 .fm-top{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
 .fm-top span{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -375,8 +382,9 @@ details summary svg{width:20px;height:20px;flex:none;color:var(--brand)}
 .chip.acc{background:var(--acc-soft);color:var(--acc-ink)}
 
 /* ---------- Forme : sous-onglets Strava / Garmin ---------- */
-.fm-sub{margin:0 0 12px}
-.fm-sub button{min-height:44px;flex:1;display:flex;flex-direction:column;align-items:center;line-height:1.15;padding:6px 10px}
+.fm-sub{margin:0 0 14px;padding:4px}
+.fm-sub button{min-height:48px;flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;line-height:1.15;padding:6px 10px}
+.fm-sub .cnt{font-size:12px;font-weight:700;background:var(--line);color:var(--ink);border-radius:999px;padding:1px 8px;min-width:22px;text-align:center}
 .fm-sub button small{font-size:11px;font-weight:600;color:var(--muted)}
 .g-head{display:flex;justify-content:space-between;gap:10px}
 .g-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.g-actions .btn{margin:0}
@@ -488,7 +496,7 @@ details.fold>*:last-child{margin-bottom:16px}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .gz-bar i{color:#10201a}}
 :root[data-theme="dark"] .gz-bar i{color:#10201a}
 .gz-bar i[title="Z3"]{color:#10201a}
-.wk.pastbar{background:var(--bg);margin-bottom:6px}.wk.pastbar .chev{margin-left:auto;font-size:18px;color:var(--muted)}
+.wk.pastbar{grid-template-columns:28px 1fr 24px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:8px 0 6px;min-height:56px}.wk.pastbar .n{font-size:22px;text-align:center}.wk.pastbar .pb-t b{display:block;font-size:15px}.wk.pastbar .pb-t .small{display:block}.wk.pastbar .chev{font-size:18px;color:var(--muted);text-align:center}
 .synth{margin:0 0 12px;padding:10px 12px;border-radius:14px;background:var(--brand-soft)}.synth summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 .syncnote{margin:14px 4px 0;font-size:12px;color:var(--muted);text-align:center}.syncnote.old{color:var(--warn)}.link-btn{background:none;border:0;color:var(--brand);font-weight:700;text-decoration:underline;font-size:12px;min-height:44px;min-width:44px;padding:0 8px}
 .tl h2{font-size:16px;margin:0 0 4px}.tl h2 span{color:var(--muted);font-family:var(--body);font-weight:600;font-size:13px;margin-left:6px}
@@ -499,3 +507,19 @@ details.fold>*:last-child{margin-bottom:16px}
 .stat span,.wm-nums span,.wnav span,.wk .d,.wk .k small,.hero .sub,.hero .sub button,.profinfo,.sitem .tx small,.link .tx small,.fm-tiles span,.g-proj span,.tbl th,.rm-hint,.clock small,.bk small,.fm-sub button small,details.fold>summary span,details.more>summary small,.syncnote,.wo-mus{font-size:14px}
 .toast[hidden]{display:none}
 .toast{white-space:nowrap}
+
+/* Chiffres clés en police à chasse fixe : colonnes alignées, aucune coupure au milieu d'un nombre */
+.nw{white-space:nowrap;font-style:normal}
+.stat b,.wm-nums b,.fm-tiles b,.rm-grid b,.count b,.day b,.k-n{font-family:var(--mono);font-weight:700;letter-spacing:-.03em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stat b{font-size:clamp(16px,5.2vw,21px)}.wm-nums b{font-size:clamp(17px,5.6vw,22px)}.fm-tiles b{font-size:clamp(16px,5vw,19px)}.rm-grid b{font-size:clamp(18px,6vw,22px)}.day b{font-size:17px;letter-spacing:-.05em}
+.count b{letter-spacing:-.06em}
+.wo-big,.clock b{font-family:var(--mono);letter-spacing:-.04em}
+.pvu{display:block;font-style:normal}
+
+/* nombres : chasse fixe, jamais coupés */
+.num-t{display:inline!important;font-size:.9em!important;color:inherit!important;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:.9em;letter-spacing:-.02em;font-weight:inherit}
+.wo-big,.count b{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat b,.wm-nums b,.day b{white-space:nowrap}
+@media(max-width:359px){.wm-nums b,.stat b{font-size:19px}}
+
+.race .rn{font-family:var(--display);font-size:19px}.race .chev{color:var(--muted);font-size:22px;flex:none}

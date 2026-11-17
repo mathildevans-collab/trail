@@ -15,7 +15,7 @@ function isoN(n){return isoMs(n*864e5);}
 function pz(n){return (n<10?"0":"")+n;}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function f1(x){return String(Math.round(x*10)/10).replace(".",",");}
-function nb(x){return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g," ");}
+function nb(x){return String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g,"\u00A0");}
 function hmS(sec){sec=Math.round(sec); var h=Math.floor(sec/3600), m=Math.round((sec%3600)/60); if(m===60){h++;m=0;} return h>0?h+" h "+pz(m):m+" min";}
 function clock(sec){sec=Math.round(sec); var h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return (h?h+":"+pz(m):m)+":"+pz(s);}
 function pace(sPerKm){var m=Math.floor(sPerKm/60), s=Math.round(sPerKm%60); if(s===60){m++;s=0;} return m+"’"+pz(s);}
