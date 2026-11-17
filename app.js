@@ -1002,7 +1002,7 @@ function wkSums(n0,count){ // semaines (lundi) se terminant par la semaine de n0
   var w0=weekStart(n0), o=[]; for(var i=count-1;i>=0;i--){var a=w0-7*i, c=sumRuns(a,a+6); c.a=a; o.push(c);} return o;
 }
 function plannedLoad(pl,x){var ed=estDur(pl.m,x); if(!ed)return 0; return runLoad({t:ed,dp:x.dp||0,hr:x.tag==="q"?156:x.tag==="l"?146:140});}
-function projSeries(r){ // forme / fatigue / fraîcheur prévues jusqu’à la veille d’une course, si tu fais le plan
+function projSeries(r,full){ // forme / fatigue / fraîcheur prévues jusqu’à la veille d’une course, si tu fais le plan
   var act=activeRace(); r=r||act; if(!r||!HIST.length)return null; var S=formeSeries(); if(!S)return null;
   var today=Math.round(todayUTC()/864e5), endD=Math.round(dms(r.date)/864e5); if(endD<=today)return null;
   var L={}, pls=[]; if(act)pls.push(planOf(act)); if(r.prio==="A"&&(!act||r.id!==act.id))pls.push(planOf(r));
@@ -1011,15 +1011,22 @@ function projSeries(r){ // forme / fatigue / fraîcheur prévues jusqu’à la v
   var pts=S.pts, iso0=new Date(today*864e5).toISOString().slice(0,10), ran=HIST.some(function(q){return q.date===iso0;});
   var base=pts[pts.length-1], start=today+1;
   if(!ran&&pts.length>1){base=pts[pts.length-2]; start=today;}
+  // réalisme : part de la charge du plan que tu réalises vraiment (mesuré sur les jours écoulés, ramené vers 85 % quand on a peu de recul)
+  var P0=pls[0], p0d=P0?Math.round(P0.weeks[0].start/864e5):today, sa=0, sp=0, n=0, d2, i2;
+  if(P0&&today>p0d){ var A={}; HIST.forEach(function(q){var dd=dayN(q.date); A[dd]=(A[dd]||0)+runLoad(q);});
+    var PL={}; P0.weeks.forEach(function(w0){var wk=P(P0,w0.n); wk.s.forEach(function(x){if(x.race||x.type==="Course B")return; var dd=Math.round(sessDate(P0,wk.n,x)/864e5); PL[dd]=(PL[dd]||0)+plannedLoad(P0,x);});});
+    for(d2=p0d;d2<today;d2++){sp+=PL[d2]||0; sa+=A[d2]||0; n++;} }
+  var ratio=sp>0?sa/sp:null, W0=n/(n+14), kk=ratio==null?0.85:Math.max(0.5,Math.min(1.05,ratio*W0+0.85*(1-W0)));
+  if(full)kk=1;
   var kc=1-Math.exp(-1/42), ka=1-Math.exp(-1/7), f=base.f, a=base.a, out=[];
-  for(var d=start;d<=endD;d++){var l=d<endD?(L[d]||0):0; f+=(l-f)*kc; a+=(l-a)*ka; out.push({d:d,f:f,a:a,z:f-a});}
-  return {pts:pts,prj:out,today:today,endD:endD,race:r,pl:pls[pls.length-1]};
+  for(var d=start;d<=endD;d++){var l=d<endD?(L[d]||0)*(d>=today?kk:1):0; f+=(l-f)*kc; a+=(l-a)*ka; out.push({d:d,f:f,a:a,z:f-a});}
+  return {pts:pts,prj:out,today:today,endD:endD,race:r,pl:pls[pls.length-1],k:kk,ratio:ratio,n:n};
 }
 function capCard(r,tabs){
   var P2=projSeries(r); if(!P2||!P2.prj.length)return "";
-  var pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-1], pk=prj.reduce(function(m,q){return q.f>m.f?q:m;},prj[0]);
+  var P100=projSeries(r,true), e100=P100&&P100.prj[P100.prj.length-1], pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-1], pk=prj.reduce(function(m,q){return q.f>m.f?q:m;},prj[0]);
   var days=P2.endD-P2.today; if(pk.f<last.f)pk=last;
-  var isA=P2.race.prio==="A", m0=model(P2.race), verdict=!isA?(end.z>=-10?["ok","Jambes correctes","Course de préparation : pas d’affûtage prévu, tu y arrives avec "+(end.z>=5?"de la fraîcheur.":"un peu de fatigue, c’est normal.")]:["warn","Jambes chargées","Tu y arrives fatiguée : cours-la tranquille, c’est une course de préparation."]):end.z>=5&&end.z<=25?["ok","Dans la cible","Tu arriverais reposée et en forme : c’est l’objectif de l’affûtage."]:end.z<5?["warn","Pas assez reposée","Le plan te laisse encore de la fatigue le jour J : l’affûtage devra être plus net."]:["warn","Très reposée","Tu risques de perdre un peu de forme : garde quelques séances vives pendant l’affûtage."];
+  var isA=P2.race.prio==="A", rz=end.f>0?end.z/end.f:0, m0=model(P2.race), verdict=!isA?(end.z>=-10?["ok","Jambes correctes","Course de préparation : pas d’affûtage prévu, tu y arrives avec "+(end.z>=5?"de la fraîcheur.":"un peu de fatigue, c’est normal.")]:["warn","Jambes chargées","Tu y arrives fatiguée : cours-la tranquille, c’est une course de préparation."]):rz>=.08&&rz<=.3?["ok","Dans la cible","Tu arriverais reposée et en forme : c’est l’objectif de l’affûtage."]:rz<.08?["warn","Pas assez reposée","Le plan te laisse encore de la fatigue le jour J : l’affûtage devra être plus net."]:["warn","Très reposée","Tu risques de perdre un peu de forme : garde quelques séances vives pendant l’affûtage."];
   var h='<div class="card fm">'+(tabs?'<h2>Projection vers tes courses</h2>'+tabs+'<h3 class="pj-n">'+esc(P2.race.name)+'</h3>':'<h2>'+esc(P2.race.name)+'</h2>')+'<p class="small muted num" style="margin:2px 0 10px">'+(isA?"Objectif":"Course B")+' · '+fmtD(dms(P2.race.date))+' · J−'+days+' · '+kmS(m0.L)+' km · +'+nb(m0.dp)+' m · visé '+hmc(m0.goal)+'</p>';
   h+='<div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(last.f)+'</b></div><div><span>Pic prévu</span><b>'+Math.round(pk.f)+'</b></div><div><span>Fraîcheur J</span><b style="color:var(--down)">'+(end.z>=0?"+":"−")+Math.abs(Math.round(end.z))+'</b></div></div><div class="chip '+verdict[0]+'">'+verdict[1]+'</div><p class="small" style="margin:8px 0 12px">'+verdict[2]+'</p>';
   var N0=P2.today-70, view=pts.filter(function(q){return q.d>=N0;}), W=320,H=150,pl=30,pr=10,pt=10,pb=22, lo=0, hi=0;
@@ -1035,7 +1042,7 @@ function capCard(r,tabs){
   g+='<line x1="'+X(P2.endD).toFixed(1)+'" x2="'+X(P2.endD).toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--acc)" stroke-width="2"/><circle cx="'+X(P2.endD).toFixed(1)+'" cy="'+Y(end.f).toFixed(1)+'" r="3.5" fill="var(--acc)"/>';
   [[N0,"start"],[P2.today,"middle"],[P2.endD,"end"]].forEach(function(p0){var dd=new Date(p0[0]*864e5); g+='<text x="'+X(p0[0]).toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+p0[1]+'" font-size="9" fill="var(--muted)">'+(p0[0]===P2.today?"auj.":dd.getUTCDate()+" "+MON[dd.getUTCMonth()])+'</text>';});
   h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>';
-  return h+'<p class="small muted" style="margin:8px 0 0">Plein : réel · pointillés : prévu. Prévision estimée, si tu fais toutes les séances du plan.'+(isA?' Fraîcheur visée le jour J : +5 à +25.':'')+'</p></div>';
+  return h+'<p class="small muted" style="margin:8px 0 0">Plein : réel · pointillés : prévu.'+'</p><p class="small muted num" style="margin:6px 0 0"><b>Hypothèse réaliste :</b> tu réalises environ '+Math.round(P2.k*100)+' % de la charge du plan'+(P2.ratio!=null&&P2.n>=14?' (mesuré sur tes '+P2.n+' derniers jours de plan)':' (valeur prudente par défaut : pas encore assez de recul, elle se précise chaque semaine)')+'. '+(isA?' Cible le jour J : une fraîcheur de 8 à 30 % de ta forme, soit '+Math.round(end.f*.08)+' à '+Math.round(end.f*.3)+' ici.':'')+' Si tu faisais 100 % du plan : fraîcheur '+(e100?((e100.z>=0?'+':'−')+Math.abs(Math.round(e100.z))):'–')+' le jour J.'+''+'</p></div>';
 }
 function dpCard(){
   var r=activeRace(), n0=Math.round(todayUTC()/864e5), W=wkSums(n0,12), cur=W[W.length-1], mx=1, rk=r&&r.km>0?r.dp/r.km:0;
