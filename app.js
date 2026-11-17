@@ -1015,12 +1015,12 @@ function projSeries(r){ // forme / fatigue / fraîcheur prévues jusqu’à la v
   for(var d=start;d<=endD;d++){var l=d<endD?(L[d]||0):0; f+=(l-f)*kc; a+=(l-a)*ka; out.push({d:d,f:f,a:a,z:f-a});}
   return {pts:pts,prj:out,today:today,endD:endD,race:r,pl:pls[pls.length-1]};
 }
-function capCard(r){
+function capCard(r,tabs){
   var P2=projSeries(r); if(!P2||!P2.prj.length)return "";
   var pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-1], pk=prj.reduce(function(m,q){return q.f>m.f?q:m;},prj[0]);
   var days=P2.endD-P2.today; if(pk.f<last.f)pk=last;
   var isA=P2.race.prio==="A", m0=model(P2.race), verdict=!isA?(end.z>=-10?["ok","Jambes correctes","Course de préparation : pas d’affûtage prévu, tu y arrives avec "+(end.z>=5?"de la fraîcheur.":"un peu de fatigue, c’est normal.")]:["warn","Jambes chargées","Tu y arrives fatiguée : cours-la tranquille, c’est une course de préparation."]):end.z>=5&&end.z<=25?["ok","Dans la cible","Tu arriverais reposée et en forme : c’est l’objectif de l’affûtage."]:end.z<5?["warn","Pas assez reposée","Le plan te laisse encore de la fatigue le jour J : l’affûtage devra être plus net."]:["warn","Très reposée","Tu risques de perdre un peu de forme : garde quelques séances vives pendant l’affûtage."];
-  var h='<div class="card fm"><h2>'+esc(P2.race.name)+'</h2><p class="small muted num" style="margin:2px 0 10px">'+(isA?"Objectif":"Course B")+' · '+fmtD(dms(P2.race.date))+' · J−'+days+' · '+kmS(m0.L)+' km · +'+nb(m0.dp)+' m · visé '+hmc(m0.goal)+'</p>';
+  var h='<div class="card fm">'+(tabs?'<h2>Projection vers tes courses</h2>'+tabs+'<h3 class="pj-n">'+esc(P2.race.name)+'</h3>':'<h2>'+esc(P2.race.name)+'</h2>')+'<p class="small muted num" style="margin:2px 0 10px">'+(isA?"Objectif":"Course B")+' · '+fmtD(dms(P2.race.date))+' · J−'+days+' · '+kmS(m0.L)+' km · +'+nb(m0.dp)+' m · visé '+hmc(m0.goal)+'</p>';
   h+='<div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(last.f)+'</b></div><div><span>Pic prévu</span><b>'+Math.round(pk.f)+'</b></div><div><span>Fraîcheur J</span><b style="color:var(--down)">'+(end.z>=0?"+":"−")+Math.abs(Math.round(end.z))+'</b></div></div><div class="chip '+verdict[0]+'">'+verdict[1]+'</div><p class="small" style="margin:8px 0 12px">'+verdict[2]+'</p>';
   var N0=P2.today-70, view=pts.filter(function(q){return q.d>=N0;}), W=320,H=150,pl=30,pr=10,pt=10,pb=22, lo=0, hi=0;
   view.concat(prj).forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f);}); var sp=(hi-lo)||1; lo-=sp*.06; hi+=sp*.06; sp=hi-lo;
@@ -1100,12 +1100,13 @@ function formeSynth(z,pts){
   var tr=d7>=8?"Ta fraîcheur a gagné "+d7+" points en 7 jours.":d7<=-8?"Ta fraîcheur a perdu "+Math.abs(d7)+" points en 7 jours.":"Ta fraîcheur est stable sur 7 jours.";
   return '<div class="synth"><b>En clair</b><p class="small" style="margin:4px 0 0">'+tr+' <b>À faire :</b> '+esc(reco)+'</p><details style="margin-top:6px"><summary class="small">C’est quoi ces chiffres ?</summary><div class="in"><p class="small muted" style="margin:6px 0 0"><b>Forme</b> : ce que tes dernières semaines ont construit. <b>Fatigue</b> : ce que tu as accumulé ces derniers jours. <b>Fraîcheur</b> = forme − fatigue : positive, tu es reposée ; très négative, il faut lever le pied.</p></div></details></div>';
 }
+var PJ="";
 function projBlock(){
-  var up=races().filter(function(r){return daysTo(r)>0;}), out=up.map(function(r){return capCard(r);}).filter(Boolean);
-  if(!out.length)return "";
-  var h='<h2 class="sub" style="margin:4px 4px 8px">Projection vers tes courses</h2>'+out.slice(0,2).join("");
-  if(out.length>2)h+='<details class="fold more"><summary class="small" style="padding:10px 4px">Voir les '+(out.length-2)+' autre'+(out.length>3?"s":"")+' course'+(out.length>3?"s":"")+'</summary>'+out.slice(2).join("")+'</details>';
-  return h;
+  var up=races().filter(function(r){return daysTo(r)>0&&projSeries(r);});
+  if(!up.length)return "";
+  if(!up.some(function(r){return r.id===PJ;}))PJ=up[0].id;
+  var tabs='<div class="pj-tabs" role="tablist" aria-label="Course">'+up.map(function(r){return '<button type="button" role="tab" data-pj="'+r.id+'" aria-selected="'+(r.id===PJ)+'"><span class="tg">'+r.prio+'</span>'+esc(r.name)+'</button>';}).join("")+'</div>';
+  return capCard(raceById(PJ),tabs);
 }
 function vFormeStrava(){
   var h="", n0=Math.round(todayUTC()/864e5);
@@ -1146,7 +1147,7 @@ function vFormeStrava(){
   [0,Math.floor((N-1)/2),N-1].forEach(function(k,j){var dd=new Date(view[k].d*864e5); g+='<text x="'+X(k).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+(j===0?"start":j===2?"end":"middle")+'" font-size="9" fill="var(--muted)">'+dd.getUTCDate()+" "+MON[dd.getUTCMonth()]+'</text>';});
   h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--acc);margin-left:10px"></i>fatigue <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>'+
     '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></div>';
-  return projBlock()+hv+h+dpCard();
+  return hv+projBlock()+h+dpCard();
 }
 
 // ---------- interactions ----------
@@ -1159,6 +1160,7 @@ $("view").addEventListener("click",function(e){
   if(ds.wm){WM=ds.wm; render(true); return;}
   if(ds.vp){VP=ds.vp; render(true); return;}
   if(ds.fsub){FSUB=ds.fsub; render(true); return;}
+  if(ds.pj){PJ=ds.pj; render(true); return;}
   if(ds.day!=null){sel=+ds.day; render(true); return;}
   if(ds.done){var U0=snapU(), was=!!D.done[ds.done]; D.undone=D.undone||{}; if(D.done[ds.done]){delete D.done[ds.done]; D.undone[ds.done]=1;} else{D.done[ds.done]=1; delete D.undone[ds.done]; vib(30);} save(); render(true); toast(was?"Séance décochée.":"Séance validée.",U0); return;}
   if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, U2=snapU(), o=D.ci[kk]||(D.ci[kk]={}), hadAdj=!!D.adj[kk]; o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; if(hadAdj)delete D.adj[kk]; save(); render(true); toast(hadAdj?"Réponse enregistrée. Proposition recalculée.":"Réponse enregistrée.",U2); return;}
