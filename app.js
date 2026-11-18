@@ -68,7 +68,7 @@ function save(){
   try{ if(cur&&cur!==s&&parseKey(KEY)){try{localStorage.setItem(KEY+".prev",cur);}catch(e){}}
     localStorage.setItem(KEY,s); if(localStorage.getItem(KEY)!==s)throw new Error("verif"); SEEN=s;
   }catch(e){toast("Mémoire du téléphone pleine : données non enregistrées. Exporte une sauvegarde."); return false;}
-  snapSoon(s); return true;
+  snapSoon(s); gsyncSoon(); return true;
 }
 var snapT=null;
 function snapSoon(s){ if(!window.SAFE)return; clearTimeout(snapT); snapT=setTimeout(function(){
@@ -756,6 +756,7 @@ function vSettings(){
   if(a){var ad=dms(a.date), cf=fakeDate(), pst=planOf(a).start, opts=[["Préparer",Math.max(pst+8*DAY+DAY,Math.min(realToday(),ad-30*DAY))],["Affûter",ad-4*DAY],["Courir",ad],["Récupérer",ad+DAY]];
     h+=group("Date simulée",'<div class="spad"><div class="seg">'+opts.map(function(x){var j=Math.round((ad-x[1])/DAY); return '<button data-fake="'+iso(x[1])+'" aria-pressed="'+(cf===iso(x[1]))+'"><b>'+x[0]+'</b><span>'+fmtD(x[1])+' · '+(j>0?"J-"+j:j===0?"jour J":"J+"+(-j))+'</span></button>';}).join("")+'</div><div class="fields" style="margin-top:10px"><label class="field">Autre date<input type="date" id="fake" value="'+esc(D.set.fake||"")+'"></label></div><button class="btn sm" data-act="unfake"'+(D.set.fake?"":" disabled")+'>Revenir à la vraie date</button></div>');}
   h+=group("Montre",sitem("watch","Préparer la montre","Toutes tes courses à venir pour l’écran de suivi en direct",null,' data-act="watchexp"'));
+  h+=group("Synchronisation",GS?sitem("sync",GS.err?"Synchro à vérifier":"Synchro entre appareils active",GS.err?esc(GS.err):(GS.t?"Dernière synchro "+ago(GS.t):"En attente de la première synchro"),null,' data-act="gmanage"',GS.err?"danger":""):sitem("sync","Mêmes données partout","Les mêmes données sur ton téléphone et ton ordinateur, chiffrées, sans compte",null,' data-act="gsetup"'));
   h+=group("Données",sitem("down","Exporter mes données","Fichier complet : plan, séances, Garmin. "+lastExportTxt(),null,' data-act="export"')+sitem("up","Importer une sauvegarde","Fusionner ou remplacer, avec copie de sécurité avant",null,' data-act="import"')+sitem("down","Copies automatiques","Revenir à une version précédente de ce téléphone",null,' data-act="backups"')+
     sitem("trash",resetArmed?"Toucher encore pour tout effacer":"Tout effacer","Séances cochées, chiffres, check-ins, modifications du plan (les courses restent)","",' data-act="reset"',"danger"));
   return h+'<p class="foot">Plan trail · v3 · données gardées sur ce téléphone</p>';
@@ -879,6 +880,11 @@ function openBackups(){
 }
 function sheetAct(a,b){
   if(!SH)return; var U=snapU();
+  if(a==="gstart"){gStart();return;} if(a==="gcode"){gJoin();return;}
+  if(a==="gnow"){b.disabled=true; gsync("manuel",true).then(function(){gManageSheet();});return;}
+  if(a==="gshow"){$("gcodebox").hidden=false; $("gcodeta").value=CSYNC.makeCode(GS); $("gcodeta").focus(); $("gcodeta").select(); return;}
+  if(a==="gcopy"){var ta=$("gcodeta"); ta.select(); try{navigator.clipboard.writeText(ta.value).then(function(){toast("Code copié.");},function(){document.execCommand("copy"); toast("Code copié.");});}catch(e){document.execCommand("copy"); toast("Code copié.");} return;}
+  if(a==="gout"){if(!confirm("Déconnecter cet appareil ? Tes données restent ici et dans le dépôt GitHub."))return; GS=null; try{localStorage.removeItem(GKEY);}catch(e){} closeSheet(); toast("Appareil déconnecté."); render(true); return;}
   if(a==="impmerge"||a==="impreplace"){var im=SH.imp; if(!im)return; var mode=a==="impmerge"?"merge":"replace";
     if(mode==="replace"&&!confirm("Remplacer les données de ce téléphone par celles du fichier ?"))return;
     applyState(im.state,im.garmin,mode,"avant import").then(function(ok){ if(!ok)return; closeSheet(); toast(mode==="merge"?"Sauvegarde fusionnée.":"Sauvegarde importée."); if(im.garmin&&mode==="replace")location.reload(); else render();}); return;}
@@ -1210,6 +1216,8 @@ function act(a,b){
   else if(a==="csv")$("fileCsv").click();
   else if(a==="import")$("fileJson").click();
   else if(a==="export")exportData();
+  else if(a==="gsetup")gSetupSheet();
+  else if(a==="gmanage")gManageSheet();
   else if(a==="backups")openBackups();
   else if(a==="gimport"){if(!GBUSY)$("fileGarmin").click();}
   else if(a==="gclear"){if(!confirm("Effacer l’export Garmin de ce téléphone ?"))return; GARMIN.clear(); render(true);}
@@ -1501,6 +1509,84 @@ function checkUpdate(){
       navigator.serviceWorker?navigator.serviceWorker.getRegistration().then(function(g){return g&&g.update();}):0]).then(go,go);
   }).catch(function(){});
 }
+
+// ---------- synchro entre appareils (données chiffrées, sans compte ; voir csync.js) ----------
+var GKEY="cadenzo-gsync", GS=null, GBUSY2=false, GT=null, ADOPT=false, GTRY=0;
+try{var g0=JSON.parse(localStorage.getItem(GKEY)||"null"); if(g0&&g0.id&&g0.key)GS=g0;}catch(e){}
+function gsave(){try{localStorage.setItem(GKEY,JSON.stringify(GS));}catch(e){}}
+function normShared(st){var c=JSON.parse(JSON.stringify(st)), v=SAFE.validate(c); return CSYNC.shared(v.ok?v.state:c);}
+function gsyncSoon(){ if(!GS||ADOPT||!window.CSYNC)return; clearTimeout(GT); GT=setTimeout(function(){gsync("auto");},4000); }
+function gAdopt(target){ // applique l’état partagé en gardant ce qui est propre à cet appareil (thème, chrono de course, onglet…)
+  var keep={sync:D.sync,race:D.race,practice:D.practice,focus:D.focus,rev:D.rev};
+  var snapP=window.SAFE?SAFE.snap("avant synchro",JSON.stringify(D)):Promise.resolve();
+  var nd=Object.assign({},target,keep); nd.set=Object.assign({},D.set,target.set||{});
+  ADOPT=true; try{ D=assignState(blank(),nd); MC={}; PC={}; if(!raceById(D.focus))D.focus=D.active; save(); } finally{ADOPT=false;}
+  return snapP;
+}
+function gsync(why,manual){
+  if(!GS||!GS.id||!window.CSYNC||!window.SAFE||!(window.crypto&&crypto.subtle))return Promise.resolve();
+  if(GBUSY2)return Promise.resolve(); if(navigator.onLine===false)return Promise.resolve();
+  GBUSY2=true; GTRY=0; var changed=false;
+  function push(L,parent){var doc=CSYNC.wrapDoc(L,GS.dev,parent), lh=CSYNC.hashOf(L);
+    return CSYNC.putRemote(GS,doc).then(function(){return CSYNC.getRemote(GS);}).then(function(chk){ // relecture : une écriture croisée d’un autre appareil est détectée
+      var cv=chk.doc&&chk.doc.state&&SAFE.validate(chk.doc.state); if(!cv||!cv.ok||CSYNC.hashOf(CSYNC.shared(cv.state))!==lh)throw Object.assign(new Error("écriture croisée"),{code:"conflict"});
+      GS.last=lh; });}
+  function once(){
+    return CSYNC.getRemote(GS).then(function(rem){
+      var L=normShared(D), R=null, parent="";
+      var st=rem.doc&&rem.doc.app==="cadenzo"&&rem.doc.state, v=st&&SAFE.validate(st);
+      if(!v||!v.ok)throw Object.assign(new Error("Le fichier en ligne n’est pas une sauvegarde Cadenzo valide : rien n’a été modifié."),{code:"data"});
+      R=CSYNC.shared(v.state);
+      var d=CSYNC.decide(L,R,GS.last,CSYNC.hashOf,rem.doc.parent||"");
+      if(d.act==="same"){GS.last=d.lh; return;}
+      if(d.act==="push")return push(L,CSYNC.hashOf(R));
+      var target=d.act==="pull"?R:CSYNC.shared(SAFE.merge(L,R).state);
+      changed=true;
+      return gAdopt(target).then(function(){ var T=normShared(D); if(d.act==="pull"){GS.last=CSYNC.hashOf(T); return;} return push(T,CSYNC.hashOf(R)); });
+    }).catch(function(e){
+      if(e&&e.code==="conflict"&&GTRY++<2)return once(); throw e; });
+  }
+  return once().then(function(){GS.t=Date.now(); GS.err=""; gsave(); if(changed)toast("Données mises à jour depuis ton autre appareil.");
+    else if(manual)toast("Synchronisé.");}).catch(function(e){
+    var offline=e&&e.name==="TypeError", m=offline?"Pas de connexion : nouvel essai plus tard.":(e&&e.message)||"Échec de la synchro";
+    GS.err=offline||(e&&e.code==="net")?"":m; gsave(); if(manual)toast(m);
+  }).then(function(){GBUSY2=false; if(changed||tab==="settings")render(true);});
+}
+function gDevice(){var u=navigator.userAgent||""; return /iPhone|iPad/.test(u)?"iPhone":/Android/.test(u)?"Android":"ordinateur";}
+function gSetupSheet(msg){
+  openSheet('<h2>Mêmes données partout</h2><p class="small muted">Tes données sont <b>chiffrées sur ton appareil</b> avant d’être déposées en ligne : le service de stockage ne voit qu’un fichier illisible. Le code de liaison contient la clé : c’est lui seul qui permet de les lire.</p>'+
+  '<details open><summary>Premier appareil</summary><div class="in"><p class="small muted">Active la synchro ici, puis copie le code pour ton autre appareil.</p><button class="btn primary" data-sact="gstart" style="width:100%">Activer la synchro</button></div></details>'+
+  '<details><summary>Deuxième appareil</summary><div class="in"><p class="small muted">Colle ici le code de liaison affiché sur le premier appareil (Réglages › Synchro › Afficher le code).</p>'+
+  '<div class="fields"><label class="field">Code de liaison<input id="gcodein" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="cdz2.…"></label></div>'+
+  '<button class="btn primary" data-sact="gcode" style="width:100%">Lier cet appareil</button></div></details>'+
+  '<p class="small" id="gerr" role="alert" style="color:var(--bad);margin-top:10px">'+esc(msg||"")+'</p>');
+}
+function gManageSheet(showCode){
+  openSheet('<h2>Synchro entre appareils</h2><p class="small muted">Cet appareil : '+esc(GS.dev||"?")+'.<br>'+(GS.err?'<span style="color:var(--bad)">'+esc(GS.err)+'</span>':GS.t?'Dernière synchro '+ago(GS.t)+'.':'En attente de la première synchro.')+'</p>'+
+  '<p class="small muted">Ça se synchronise tout seul à l’ouverture de l’appli et quelques secondes après chaque modification. Le thème, le chrono de course et l’onglet ouvert restent propres à chaque appareil.</p>'+
+  '<button class="btn primary" data-sact="gnow" style="width:100%;margin:8px 0">Synchroniser maintenant</button>'+
+  '<button class="btn ghost" data-sact="gshow" style="width:100%;margin:0 0 8px">Afficher le code de liaison (autre appareil)</button>'+
+  '<div id="gcodebox"'+(showCode?'':' hidden')+'><p class="small muted">Copie ce code et colle-le sur ton autre appareil. Ne le partage avec personne : il permet de lire tes données.</p><textarea id="gcodeta" readonly rows="4" aria-label="Code de liaison" style="width:100%;font-family:var(--mono);font-size:12px">'+(showCode?esc(CSYNC.makeCode(GS)):'')+'</textarea><button class="btn ghost" data-sact="gcopy" style="width:100%;margin-top:6px">Copier</button></div>'+
+  '<button class="btn ghost" data-sact="gout" style="width:100%;margin-top:8px;color:var(--bad)">Déconnecter cet appareil</button>');
+}
+function gStart(){
+  var err=$("gerr"); function say(m){if(err)err.textContent=m;}
+  if(!(window.crypto&&crypto.subtle)){say("Le chiffrement n’est pas disponible ici (ouvre l’appli en https)."); return;}
+  var cfg=CSYNC.newConfig(); cfg.dev=gDevice(); cfg.t=0; cfg.err=""; say("Activation…");
+  var L=normShared(D); cfg.last=CSYNC.hashOf(L);
+  CSYNC.create(cfg,CSYNC.wrapDoc(L,cfg.dev,"")).then(function(){GS=cfg; gsave(); gManageSheet(true); render(true); toast("Synchro activée. Copie le code pour ton autre appareil.");})
+   .catch(function(e){say(e&&e.name==="TypeError"?"Impossible de joindre le service de stockage (réseau ou blocage du navigateur).":(e&&e.message)||"Échec");});
+}
+function gJoin(){
+  var err=$("gerr"); function say(m){if(err)err.textContent=m;}
+  var p=CSYNC.parseCode($("gcodein").value); if(!p){say("Code de liaison invalide : copie-le en entier depuis l’autre appareil."); return;}
+  var cfg={id:p.id,key:p.key,dev:gDevice(),last:"",t:0,err:""}; say("Liaison…");
+  CSYNC.getRemote(cfg).then(function(){GS=cfg; gsave(); closeSheet(); toast("Appareil lié. Première synchro…"); return gsync("liaison",true).then(function(){render(true);});})
+   .catch(function(e){say(e&&e.name==="TypeError"?"Impossible de joindre le service de stockage.":(e&&e.message)||"Échec");});
+}
+document.addEventListener("visibilitychange",function(){if(!document.hidden)gsync("retour");});
+window.addEventListener("online",function(){gsync("en ligne");});
+setTimeout(function(){gsync("ouverture");},2200); setInterval(function(){if(!document.hidden)gsync("minuteur");},120000);
 window.addEventListener("storage",function(e){ if(e.key!==KEY||!e.newValue||e.newValue===SEEN)return; // autre fenêtre : fusion sans perte
   try{var v=SAFE.validate(JSON.parse(e.newValue)); if(!v.ok)return; D=assignState(blank(),SAFE.merge(D,v.state).state); MC={}; PC={}; SEEN=e.newValue; if(save())render(true);}catch(x){}});
 if(window.SAFE){SAFE.persist(); setTimeout(function(){snapSoon(JSON.stringify(D));},1500);
