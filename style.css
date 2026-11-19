@@ -543,3 +543,40 @@ details.fold>*:last-child{margin-bottom:16px}
 .pj-tabs button[aria-selected="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
 .pj-tabs .tg{font-size:11px;font-weight:800;opacity:.75}
 .pj-n{font-size:17px;margin:0 0 2px}
+
+/* ===== fiches d’exercices (exo.js) ===== */
+.ex2{border-top:1px solid var(--line)}
+.ex2:first-child{border-top:0}
+.ex2>summary.ex{border-top:0;cursor:pointer;list-style:none;align-items:center;min-height:52px;padding:6px 0}
+.ex2>summary.ex::-webkit-details-marker{display:none}
+.ex2>summary.ex>span:last-child{position:relative;padding-right:18px}
+.ex2>summary.ex>span:last-child::after{content:"";position:absolute;right:2px;top:50%;width:7px;height:7px;margin-top:-6px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .15s}
+.ex2[open]>summary.ex>span:last-child::after{transform:rotate(-135deg);margin-top:-2px}
+.ex2 summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
+.ex .exi{width:56px;height:44px}
+.ex .exi .wfig{height:100%;width:100%}
+.xf{margin:2px 0 14px;padding:12px 14px 14px;border-radius:16px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;line-height:1.45}
+.xf p{margin:4px 0}
+.xf-z{color:var(--brand)}
+.xf-z b{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+.xf-fig{background:var(--card);border-radius:14px;padding:6px 8px;margin:8px 0 10px;box-shadow:inset 0 0 0 1px var(--line)}
+.xf-fig .wfig{max-height:200px}
+.xf h5{font-family:var(--display);font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:12px 0 4px}
+.xf ol,.xf ul{margin:4px 0;padding-left:20px}
+.xf li{margin:3px 0}
+.xf dl{margin:10px 0 0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.xf dt{font-weight:700;color:var(--muted)}
+.xf dd{margin:0}
+.xf-x li::marker{color:var(--acc)}
+.xf-v{margin-top:10px !important;padding:8px 10px;border-radius:10px;background:var(--brand-soft)}
+.wfig.pair{max-height:none}
+.wo-stage .wfig.pair{max-height:30dvh}
+.wo-ring{width:140px;height:140px}
+.wo-t{font-size:42px}
+.wo-reps b{font-size:60px}
+.wo-tb{align-self:center;margin:0 0 8px;min-height:44px;padding:0 16px;border-radius:12px;border:0;background:var(--card);color:var(--brand);font:inherit;font-weight:700;font-size:14px;cursor:pointer;box-shadow:inset 0 0 0 1px var(--line)}
+.wo-tech{margin:0 0 10px;padding:10px 14px;border-radius:14px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;line-height:1.45;text-align:left}
+.wo-tech p{margin:4px 0}.wo-tech ol{margin:4px 0;padding-left:20px}.wo-tech li{margin:3px 0}
+@media(prefers-reduced-motion:reduce){.ex2>summary.ex>span:last-child::after{transition:none}}
+
+.ex2>summary.ex .exn{flex:1 1 0;min-width:0}.ex2>summary.ex .exn>span:last-child{min-width:0;overflow-wrap:anywhere}

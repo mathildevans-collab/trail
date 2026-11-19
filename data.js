@@ -29,7 +29,18 @@ var NOTES={
 26:"Semaine de course. Confirme le jour exact du départ sur le site de l’organisateur."};
 
 // ---------- exercices (à la maison, sans matériel) ----------
-var MOB=[["Fléchisseurs de hanche (fente basse)","2 × 45 s par côté"],["Ischios jambe tendue","2 × 45 s par côté"],["Mollets contre un mur","2 × 45 s, genou tendu puis fléchi"],["Pigeon (fessiers)","2 × 45 s par côté"],["Rotations de hanches 90/90","8 par côté"],["Fente avec rotation du buste","5 par côté"],["Cercles de chevilles","10 dans chaque sens"],["Équilibre sur une jambe, yeux fermés","45 s par jambe"]];
+var MOBS={
+hanches:{name:"Hanches et bassin",goal:"Libère les hanches avant une sortie longue ou après le renfo.",ex:[["Fléchisseurs de hanche (fente basse)","2 × 40 s par côté"],["Fente avec rotation du buste","5 par côté"],["Balancier de jambe avant-arrière","10 par jambe"],["Balancier de jambe latéral","10 par jambe"],["Fente latérale lente (adducteurs)","6 par côté"],["Squat profond tenu","40 s"],["Bascule du bassin","10"]]},
+chevilles:{name:"Chevilles et mollets",goal:"Pour les chevilles raides, les montées et les terrains techniques.",ex:[["Cercles de chevilles","10 dans chaque sens"],["Genou vers le mur","10 par côté"],["Mollet contre un mur, jambe tendue","2 × 40 s par côté"],["Mollet contre un mur, genou fléchi","2 × 40 s par côté"],["Marche sur les talons","30 s"],["Équilibre sur une jambe, yeux fermés","40 s par jambe"]]},
+ischios:{name:"Ischios et chaîne arrière",goal:"Détend l’arrière des cuisses après les séances de côtes et de vitesse.",ex:[["Charnière de hanche","10"],["Ischios jambe tendue sur une marche","2 × 40 s par jambe"],["Ischios allongé, jambe en l’air","2 × 40 s par jambe"],["Chien tête en bas, pédalage","45 s"],["Genoux sur la poitrine","8"]]},
+genoux:{name:"Genoux et cuisses",goal:"Pour les genoux sensibles après les descentes.",ex:[["Quadriceps debout","2 × 40 s par jambe"],["Squat profond tenu","40 s"],["Genou vers le mur","8 par côté"],["Marche sur les talons","30 s"],["Balancier de jambe avant-arrière","10 par jambe"],["Équilibre sur une jambe, yeux fermés","40 s par jambe"]]},
+dos:{name:"Dos et bassin",goal:"Relâche le dos après une longue sortie ou une journée assise.",ex:[["Chat-vache","10"],["Rotation du buste en quatre pattes","8 par côté"],["Posture de l’enfant","45 s"],["Sphinx","40 s"],["Genoux sur la poitrine","8"],["Bascule du bassin","10"]]},
+complet:{name:"Mobilité complète",goal:"Une routine d’ensemble : hanches, mollets, chevilles, dos.",ex:[["Fléchisseurs de hanche (fente basse)","2 × 40 s par côté"],["Fente avec rotation du buste","5 par côté"],["Ischios jambe tendue sur une marche","2 × 40 s par jambe"],["Mollet contre un mur, jambe tendue","2 × 40 s par côté"],["Cercles de chevilles","10 dans chaque sens"],["Chat-vache","10"],["Équilibre sur une jambe, yeux fermés","40 s par jambe"]]}
+};
+var MOB=MOBS.complet.ex;
+// séance de mobilité associée à chaque séance de renfo
+var MOBFOR={A1:"hanches",A2:"hanches",B1:"chevilles",B2:"ischios",C1:"genoux",C2:"chevilles",D:"dos"};
+var MOBROT=["hanches","chevilles","ischios","dos","genoux"];
 var RENFO={
 A1:{name:"Renfo A1 · Fondations",tours:"3 tours, 45 s de repos entre les exercices. Aucun matériel.",ex:[["Squat poids du corps, descente en 3 s","15"],["Fente arrière","10 par jambe"],["Pont fessier une jambe","12 par jambe"],["Montées de mollets sur une marche","15, genou tendu"],["Planche","40 s"],["Gainage latéral","30 s par côté"]]},
 A2:{name:"Renfo A2 · Fondations",tours:"3 tours, 45 s de repos entre les exercices. Aucun matériel.",ex:[["Chaise murale","45 s"],["Fente latérale","10 par côté"],["Pont fessier, pieds sur une chaise","12"],["Mollets une jambe","12 par jambe"],["Bird dog (gainage dos)","10 par côté"],["Planche","40 s"]]},

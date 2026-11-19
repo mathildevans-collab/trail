@@ -421,18 +421,25 @@ function woFor(s,wk){ // séance guidée proposée sur toute séance de renfo ou
   var code=s.renfo||(s.type==="Renfo seul"?renfoOf(wk.ph,wk.n):null);
   if(code)return woBtns(code);
   var txt=JSON.stringify(s.steps||"")+" "+(s.txt||"");
-  return (/mobilit/i.test(txt)||s.type==="Récupération"||s.type==="Activation")?woBtns(null):"";
+  return (/mobilit/i.test(txt)||s.type==="Récupération"||s.type==="Activation")?woBtns(null,0,MOBROT[(wk.n+(s.dow||0))%MOBROT.length]):"";
 }
 var WOM={};
-function woMin(kind,code){var k=kind+(code||""); if(WOM[k]==null)WOM[k]=window.WORKOUT?WORKOUT.minutes(WORKOUT.build(kind,code||null,RENFO,MOB)):(kind==="mob"?17:32); return WOM[k];} // une seule source : la durée du lecteur guidé
-function woBtns(code,only){ // boutons de lancement de la séance guidée
+function woMin(kind,code){var k=kind+(code||""); if(WOM[k]==null)WOM[k]=window.WORKOUT?WORKOUT.minutes(WORKOUT.build(kind,code||null,RENFO,MOB,MOBS)):(kind==="mob"?12:32); return WOM[k];} // une seule source : la durée du lecteur guidé
+function mobOf(code){return MOBS[(code&&MOBFOR[code])||code]||MOBS.complet;}
+function woBtns(code,only,mob){ // boutons de lancement : renfo guidé + la mobilité qui lui correspond
   if(!window.WORKOUT)return "";
-  var m=WORKOUT.minutes(WORKOUT.build("mob",null,RENFO,MOB)), h='<div class="wo-start">';
-  if(code)h+='<button class="btn" data-wo="renfo:'+code+'">▶ Renfo guidé · '+WORKOUT.minutes(WORKOUT.build("renfo",code,RENFO,MOB))+' min</button>';
-  if(!only)h+='<button class="btn'+(code?' ghost':'')+'" data-wo="mob">▶ Mobilité guidée · '+m+' min</button>';
+  var mc=mob||(code&&MOBFOR[code])||"complet", h='<div class="wo-start">';
+  if(code)h+='<button class="btn" data-wo="renfo:'+code+'">▶ Renfo guidé · '+woMin("renfo",code)+' min</button>';
+  if(!only)h+='<button class="btn'+(code?' ghost':'')+'" data-wo="mob:'+mc+'">▶ '+esc(MOBS[mc].name)+' · '+woMin("mob",mc)+' min</button>';
   return h+'</div>';
 }
-function exHTML(list){return list.map(function(e){return '<div class="ex"><span class="exn">'+(window.WORKOUT?'<span class="exi">'+WORKOUT.img(e[0],true)+'</span>':'')+'<span>'+esc(e[0])+'</span></span><span>'+esc(e[1])+'</span></div>';}).join("");}
+function exHTML(list){ // chaque exercice s’ouvre sur sa fiche : dessin en 2 étapes, départ, exécution, respiration, erreurs
+  return list.map(function(e){
+    var id=window.EXO&&EXO.find(e[0]), thumb='<span class="exi">'+(id?EXO.one(id,true):"")+'</span>';
+    if(!id)return '<div class="ex"><span class="exn">'+thumb+'<span>'+esc(e[0])+'</span></span><span>'+esc(e[1])+'</span></div>';
+    return '<details class="ex2"><summary class="ex"><span class="exn">'+thumb+'<span>'+esc(e[0])+'</span></span><span>'+esc(e[1])+'</span></summary>'+EXO.sheet(id)+'</details>';
+  }).join("");
+}
 function nutHTML(k){var n=NUT[k]; if(!n)return ""; var h='<dl class="nut"><dt>'+esc(n.t)+'</dt><dd>Glucides ≈ '+n.c+' g sur la journée ('+n.cg+'). Protéines ≈ '+n.p+' g, en 4 prises de 25 à 30 g.</dd>';
   if(n.pre)h+='<dt>Avant</dt><dd>'+esc(n.pre)+'</dd>'; if(n.dur)h+='<dt>Pendant</dt><dd>'+esc(n.dur)+'</dd>'; if(n.post)h+='<dt>Après</dt><dd>'+esc(n.post)+'</dd>'; return h+'<dt>Astuce</dt><dd>'+esc(n.tip)+'</dd></dl>';}
 var LOK={"Endurance + renfo":1,"Sortie longue":1,"Sortie club · dimanche":1,"Jour 2 du bloc":1,"Tempo long":1,"Fartlek nature":1,"Progressif":1,"Footing":1};
@@ -534,7 +541,7 @@ function sessionHero(r,pl,wk,s){
   h+='<p class="sub">'+(ac?'Tes chiffres : '+kmS(ac.km)+' km'+(ac.dp?' · +'+ac.dp+' m':'')+(ac.t?' · '+dur(ac.t):'')+'. <button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Corriger</button>':STRAVA?'Le bilan arrive tout seul quand Strava reçoit ta sortie.':'<button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Ajoute tes chiffres</button> pour avoir le bilan du coach.')+'</p>';
   return h+'</div>';
 }
-function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h2 style="font-size:26px;margin:6px 0 8px">Repos</h2>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+'<details><summary>'+I.leaf+' Routine de mobilité</summary><div class="in">'+woBtns(null)+exHTML(MOB)+'</div></details></div>';}
+function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h2 style="font-size:26px;margin:6px 0 8px">Repos</h2>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+(function(){var mc=MOBROT[(wk.n+dow)%MOBROT.length], M=MOBS[mc]; return '<details><summary>'+I.leaf+' '+esc(M.name)+' · '+woMin("mob",mc)+' min</summary><div class="in"><p class="muted small">'+esc(M.goal)+'</p>'+woBtns(null,0,mc)+exHTML(M.ex)+'</div></details>';})()+'</div>';}
 function bilanCard(r,pl,wk,sel,selD){
   var t=todayUTC(); if(!wk||selD>t)return "";
   var s=sessAt(wk,sel), ac=s?D.actual[sk(r,wk.n,s.k)]:null, ex=!s&&D.extra?D.extra[iso(selD)]:null;
@@ -745,7 +752,7 @@ function vSettings(){
   var h='<button class="back" data-go="back">'+I.back+'Retour</button><h1 style="font-size:30px;margin-bottom:16px">Réglages</h1>';
   h+=group("Apparence",'<div class="spad"><div class="opts" role="radiogroup" aria-label="Thème" style="margin:0">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div><p class="muted xs" style="margin:8px 0 0">'+(th==="auto"?"Suit le téléphone (en ce moment : "+(sysDark()?"sombre":"clair")+").":"Choisi à la main.")+'</p></div>');
   h+=group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer un CSV","Export Garmin Connect ou Strava (activities.csv). Les sorties sont rangées dans ton plan.",null,' data-act="csv"'));
-  h+=group("Profil",sitem("heart","Zones de fréquence cardiaque","Z2 135-150 · Z3 153-167 · Z4 169-180 bpm",null,' data-sheet="zones"')+sitem("dumb","Renfo et mobilité","Les 7 programmes, à la maison",null,' data-sheet="guide"')+sitem("flag","Course principale",a?esc(a.name)+" · "+fmtD(dms(a.date))+" · objectif "+hm(goalOf(a)):"aucune",null,' data-go="course"'));
+  h+=group("Profil",sitem("heart","Zones de fréquence cardiaque","Z2 135-150 · Z3 153-167 · Z4 169-180 bpm",null,' data-sheet="zones"')+sitem("dumb","Renfo et mobilité","7 séances de renfo, 6 de mobilité",null,' data-sheet="guide"')+sitem("flag","Course principale",a?esc(a.name)+" · "+fmtD(dms(a.date))+" · objectif "+hm(goalOf(a)):"aucune",null,' data-go="course"'));
   h+=group("Coach",swItem("cycle","Suivi du cycle","Adapte les conseils pendant les règles","cycle",D.cycle.on)+
     (D.cycle.on?'<div class="spad"><div class="fields"><label class="field">Début des dernières règles<input type="date" id="cydate" value="'+esc(D.cycle.start||"")+'"></label><label class="field">Durée du cycle<select id="cylen">'+(function(){var o="";for(var i=21;i<=38;i++)o+='<option value="'+i+'"'+((D.cycle.len||28)===i?" selected":"")+'>'+i+' jours</option>';return o;})()+'</select></label></div><p class="muted xs" style="margin:0">Mets la date à jour à chaque cycle. Ces données restent sur ce téléphone.</p></div>':'')+
     swItem("bell","Check-in du lundi","Fatigue et sommeil pour ajuster la semaine","checkin",D.set.checkin)+
@@ -777,15 +784,15 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
   if(b.dataset.sact)sheetAct(b.dataset.sact,b);});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
-document.addEventListener("click",function(e){var b=e.target.closest("[data-wo]"); if(!b||!window.WORKOUT)return; e.preventDefault(); var v=b.dataset.wo.split(":"); WORKOUT.start(v[0],v[1]||null,{RENFO:RENFO,MOB:MOB,closeSheet:closeSheet});});
+document.addEventListener("click",function(e){var b=e.target.closest("[data-wo]"); if(!b||!window.WORKOUT)return; e.preventDefault(); var v=b.dataset.wo.split(":"); WORKOUT.start(v[0],v[1]||null,{RENFO:RENFO,MOB:MOB,MOBS:MOBS,MOBFOR:MOBFOR,closeSheet:closeSheet});});
 function showInfo(key){
   var p=key.split(":"), h="";
-  if(p[0]==="renfo"){var R0=RENFO[p[1]]; h='<h2>'+esc(R0.name)+'</h2><p class="small muted">'+esc(R0.tours)+'</p>'+woBtns(p[1])+exHTML(R0.ex)+'<h4 style="font-family:var(--display);margin:14px 0 4px">Mobilité après la séance</h4>'+exHTML(MOB.slice(0,4));}
+  if(p[0]==="renfo"){var R0=RENFO[p[1]]; h='<h2>'+esc(R0.name)+'</h2><p class="small muted">'+esc(R0.tours)+'</p>'+woBtns(p[1])+exHTML(R0.ex)+(function(){var M=mobOf(p[1]); return '<h4 style="font-family:var(--display);margin:14px 0 4px">Mobilité après la séance · '+esc(M.name)+'</h4><p class="muted small">'+esc(M.goal)+'</p>'+exHTML(M.ex);})();}
   else if(p[0]==="nut")h='<h2>Nutrition du jour</h2>'+nutHTML(p[1]);
   else if(p[0]==="loops"){var r=activeRace(), pl=planOf(r), q=p[1].split("-"), s=sessByKey(P(pl,+q[0]),q[1]); if(!s)return;
     h='<h2>Où courir près de chez toi</h2><p class="small muted">Les boucles les plus proches de '+kmS(s.km)+' km'+(s.dp>=100?' et +'+s.dp+' m':'')+'.</p>'+bestLoops(s).map(loopHTML).join("")+(s.km>16.5?'<p class="small muted" style="margin-top:8px">Pour atteindre '+kmS(s.km)+' km, enchaîne deux boucles voisines, ou ajoute des allers-retours de côtes de 500 m (+73 m).</p>':'')+'<p class="muted xs" style="margin-top:8px">Distances et dénivelés tels que publiés par chaque site. Vérifie le tracé avant de partir.</p>';}
   else if(key==="zones")h='<h2>Zones de fréquence cardiaque</h2><table class="tbl num"><tr><th>Zone</th><th>bpm</th><th>Usage</th></tr><tr><td>Z1</td><td>&lt; 127</td><td>Récupération</td></tr><tr><td>Z2</td><td>135-150</td><td>Endurance, sorties longues</td></tr><tr><td>Z3</td><td>153-167</td><td>Allure course, tempo</td></tr><tr><td>Z4</td><td>169-180</td><td>Seuil, côtes</td></tr><tr><td>Z5</td><td>&gt; 180</td><td>Court et très dur</td></tr></table><p class="muted xs" style="margin:8px 0 0">Basées sur une FC max de 196 bpm.</p>';
-  else if(key==="guide")h='<h2>Renfo et mobilité</h2><details open><summary>'+I.leaf+' Mobilité · '+woMin("mob")+' min</summary><div class="in">'+woBtns(null)+exHTML(MOB)+'</div></details>'+["A1","A2","B1","B2","C1","C2","D"].map(function(k){var R0=RENFO[k]; return '<details><summary>'+I.dumb+' '+esc(R0.name)+' · '+woMin("renfo",k)+' min</summary><div class="in"><p class="muted small">'+esc(R0.tours)+'</p>'+woBtns(k,1)+exHTML(R0.ex)+'</div></details>';}).join("");
+  else if(key==="guide")h='<h2>Renfo et mobilité</h2><p class="muted small">Touche un exercice pour voir le dessin en deux étapes, la position de départ, l’exécution et les erreurs à éviter.</p><h4 style="font-family:var(--display);margin:12px 0 4px">Mobilité · 6 séances</h4>'+["hanches","chevilles","ischios","genoux","dos","complet"].map(function(k){var M=MOBS[k]; return '<details><summary>'+I.leaf+' '+esc(M.name)+' · '+woMin("mob",k)+' min</summary><div class="in"><p class="muted small">'+esc(M.goal)+'</p>'+woBtns(null,0,k)+exHTML(M.ex)+'</div></details>';}).join("")+'<h4 style="font-family:var(--display);margin:14px 0 4px">Renforcement · 7 séances</h4>'+["A1","A2","B1","B2","C1","C2","D"].map(function(k){var R0=RENFO[k]; return '<details><summary>'+I.dumb+' '+esc(R0.name)+' · '+woMin("renfo",k)+' min</summary><div class="in"><p class="muted small">'+esc(R0.tours)+'</p>'+woBtns(k,1)+exHTML(R0.ex)+'</div></details>';}).join("");
   else if(key==="judge")h='<h2>Comment le coach juge</h2><ul class="pts"><li>Distance : en cible entre 90 et 115 % du prévu.</li><li>Dénivelé : en cible au-dessus de 75 % du prévu.</li><li>Sorties faciles : trop rapides si l’allure par km-effort (1 km + 100 m de D+) dépasse celle de l’objectif.</li><li>Séance du club : enregistrée, jamais jugée.</li><li>Chaque semaine : volume, sorties trop rapides et check-in donnent une proposition d’ajustement, que tu acceptes ou non.</li><li>Quand tu modifies une séance, le coach compare tes chiffres à ta version.</li></ul>';
   openSheet(h);
 }
