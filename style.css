@@ -580,3 +580,18 @@ details.fold>*:last-child{margin-bottom:16px}
 @media(prefers-reduced-motion:reduce){.ex2>summary.ex>span:last-child::after{transition:none}}
 
 .ex2>summary.ex .exn{flex:1 1 0;min-width:0}.ex2>summary.ex .exn>span:last-child{min-width:0;overflow-wrap:anywhere}
+
+/* projection : lecture en clair */
+.fm-sub3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:-6px 0 10px;font-size:12px}
+.fm-sub3 span{display:block;line-height:1.25}
+.pj-key{display:grid;gap:5px;margin:8px 0 0}
+.pj-key>div{display:flex;align-items:center;gap:10px;line-height:1.35}.pj-key p{margin:0}
+.pj-key b{font-weight:700}
+.pj-key i{flex:none;display:inline-block;align-self:center}
+.pj-key .k-l{width:18px;height:4px;border-radius:2px}
+.pj-key .k-f{width:18px;height:10px;border-radius:3px;opacity:.35}
+.pj-how{margin-top:10px}
+.pj-how>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--brand);font-weight:700;list-style:none}
+.pj-how>summary::-webkit-details-marker{display:none}
+.pj-how>summary::after{content:"";width:7px;height:7px;margin:-3px 0 0 8px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.pj-how[open]>summary::after{transform:rotate(-135deg);margin-top:3px}

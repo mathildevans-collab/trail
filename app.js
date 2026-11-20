@@ -1037,25 +1037,61 @@ function projSeries(r,full){ // forme / fatigue / fraîcheur prévues jusqu’à
 }
 function capCard(r,tabs){
   var P2=projSeries(r); if(!P2||!P2.prj.length)return "";
-  var P100=projSeries(r,true), e100=P100&&P100.prj[P100.prj.length-1], pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-1], pk=prj.reduce(function(m,q){return q.f>m.f?q:m;},prj[0]);
+  var P100=projSeries(r,true), e100=P100&&(P100.prj[P100.prj.length-2]||P100.prj[P100.prj.length-1]), pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-2]||prj[prj.length-1], // état le matin de la course = après la charge de la veille
+   pk=prj.reduce(function(m,q){return q.f>m.f?q:m;},prj[0]);
   var days=P2.endD-P2.today; if(pk.f<last.f)pk=last;
   var isA=P2.race.prio==="A", rz=end.f>0?end.z/end.f:0, m0=model(P2.race), verdict=!isA?(end.z>=-10?["ok","Jambes correctes","Course de préparation : pas d’affûtage prévu, tu y arrives avec "+(end.z>=5?"de la fraîcheur.":"un peu de fatigue, c’est normal.")]:["warn","Jambes chargées","Tu y arrives fatiguée : cours-la tranquille, c’est une course de préparation."]):rz>=.08&&rz<=.3?["ok","Dans la cible","Tu arriverais reposée et en forme : c’est l’objectif de l’affûtage."]:rz<.08?["warn","Pas assez reposée","Le plan te laisse encore de la fatigue le jour J : l’affûtage devra être plus net."]:["warn","Très reposée","Tu risques de perdre un peu de forme : garde quelques séances vives pendant l’affûtage."];
   var h='<div class="card fm">'+(tabs?'<h2>Projection vers tes courses</h2>'+tabs+'<h3 class="pj-n">'+esc(P2.race.name)+'</h3>':'<h2>'+esc(P2.race.name)+'</h2>')+'<p class="small muted num" style="margin:2px 0 10px">'+(isA?"Objectif":"Course B")+' · '+fmtD(dms(P2.race.date))+' · J−'+days+' · '+kmS(m0.L)+' km · +'+nb(m0.dp)+' m · visé '+hmc(m0.goal)+'</p>';
-  h+='<div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(last.f)+'</b></div><div><span>Pic prévu</span><b>'+Math.round(pk.f)+'</b></div><div><span>Fraîcheur J</span><b style="color:var(--down)">'+(end.z>=0?"+":"−")+Math.abs(Math.round(end.z))+'</b></div></div><div class="chip '+verdict[0]+'">'+verdict[1]+'</div><p class="small" style="margin:8px 0 12px">'+verdict[2]+'</p>';
-  var N0=P2.today-70, view=pts.filter(function(q){return q.d>=N0;}), W=320,H=150,pl=30,pr=10,pt=10,pb=22, lo=0, hi=0;
-  view.concat(prj).forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f);}); var sp=(hi-lo)||1; lo-=sp*.06; hi+=sp*.06; sp=hi-lo;
-  function X(d){return pl+(W-pl-pr)*(d-N0)/(P2.endD-N0);} function Y(v){return pt+(H-pt-pb)*(1-(v-lo)/sp);}
-  function path(a,f,from){return a.map(function(q,k){return (k||!from?(k?"L":"M"):"M")+X(q.d).toFixed(1)+" "+Y(q[f]).toFixed(1);}).join("");}
-  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Forme réelle et prévue jusqu’à la course">', step=Math.max(10,Math.ceil(sp/4/10)*10), t0=Math.ceil(lo/step)*step;
-  for(var tv=t0;tv<=hi;tv+=step)g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(tv).toFixed(1)+'" y2="'+Y(tv).toFixed(1)+'" stroke="var(--line)" stroke-width="'+(tv===0?1.4:.6)+'"'+(tv===0?' stroke-dasharray="2 3"':'')+'/><text x="'+(pl-5)+'" y="'+(Y(tv)+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+tv+'</text>';
-  g+='<line x1="'+X(P2.today).toFixed(1)+'" x2="'+X(P2.today).toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--muted)" stroke-width=".8" stroke-dasharray="2 3"/>';
-  var jf=[last].concat(prj);
-  g+='<path d="'+path(view,"z",1)+'" fill="none" stroke="var(--down)" stroke-width="1.6"/><path d="'+path(jf,"z",1)+'" fill="none" stroke="var(--down)" stroke-width="1.6" stroke-dasharray="4 3"/>';
-  g+='<path d="'+path(view,"f",1)+'" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-linejoin="round"/><path d="'+path(jf,"f",1)+'" fill="none" stroke="var(--brand)" stroke-width="2.4" stroke-dasharray="5 3" stroke-linejoin="round"/>';
-  g+='<line x1="'+X(P2.endD).toFixed(1)+'" x2="'+X(P2.endD).toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--acc)" stroke-width="2"/><circle cx="'+X(P2.endD).toFixed(1)+'" cy="'+Y(end.f).toFixed(1)+'" r="3.5" fill="var(--acc)"/>';
-  [[N0,"start"],[P2.today,"middle"],[P2.endD,"end"]].forEach(function(p0){var dd=new Date(p0[0]*864e5); g+='<text x="'+X(p0[0]).toFixed(1)+'" y="'+(H-6)+'" text-anchor="'+p0[1]+'" font-size="9" fill="var(--muted)">'+(p0[0]===P2.today?"auj.":dd.getUTCDate()+" "+MON[dd.getUTCMonth()])+'</text>';});
-  h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>';
-  return h+'<p class="small muted" style="margin:8px 0 0">Plein : réel · pointillés : prévu.'+'</p><p class="small muted num" style="margin:6px 0 0"><b>Hypothèse réaliste :</b> tu réalises environ '+Math.round(P2.k*100)+' % de la charge du plan'+(P2.ratio!=null&&P2.n>=14?' (mesuré sur tes '+P2.n+' derniers jours de plan)':' (valeur prudente par défaut : pas encore assez de recul, elle se précise chaque semaine)')+'. '+(isA?' Cible le jour J : une fraîcheur de 8 à 30 % de ta forme, soit '+Math.round(end.f*.08)+' à '+Math.round(end.f*.3)+' ici.':'')+' Si tu faisais 100 % du plan : fraîcheur '+(e100?((e100.z>=0?'+':'−')+Math.abs(Math.round(e100.z))):'–')+' le jour J.'+''+'</p></div>';
+  var okE=end.z>=0, pkIsEnd=pk.d===end.d, pkIsNow=pk===last, dPk=new Date(pk.d*864e5);
+  h+='<div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(last.f)+'</b></div><div><span>Pic</span><b>'+Math.round(pk.f)+'</b></div><div><span>Jour J</span><b style="color:'+(okE?'var(--brand)':'var(--acc-ink)')+'">'+(okE?"+":"−")+Math.abs(Math.round(end.z))+'</b></div></div>'+
+   '<div class="fm-sub3 small muted num"><span>aujourd’hui</span><span>'+(pkIsNow?"maintenant":pkIsEnd?"le jour J":"vers le "+dPk.getUTCDate()+" "+MON[dPk.getUTCMonth()])+'</span><span>'+(okE?"reposée":"fatiguée")+'</span></div>'+
+   '<div class="chip '+verdict[0]+'">'+verdict[1]+'</div><p class="small" style="margin:8px 0 10px">'+verdict[2]+'</p>';
+  // ----- graphique : forme (ce que tu as construit) et fatigue (ce que tu as accumulé) ; l’écart colorié = reposée (vert) ou fatiguée (orange) -----
+  var N0=P2.today-70, view=pts.filter(function(q){return q.d>=N0;}), W=340,H=196,pl=8,pr=10,pt=30,pb=50, hi=0, ph0=H-pb+22;
+  // la fatigue varie d’un jour à l’autre : on la lisse sur 5 jours pour que la courbe se lise (les chiffres affichés, eux, restent exacts)
+  var prjD=prj.length>1?prj.slice(0,-1):prj, raw=view.filter(function(q){return q.d<prj[0].d;}).concat(prjD), SM={}, endS;
+  raw.forEach(function(q,k){var s=0,n=0,m; for(m=-2;m<=2;m++){var r0=raw[k+m]; if(r0){s+=r0.a;n++;}} SM[q.d]=s/n;});
+  function sm(q){return {d:q.d,f:q.f,a:SM[q.d],z:q.f-SM[q.d]};}
+  view=view.map(sm); var prjS=prjD.map(sm), lastS=sm(last), jfS=[lastS].concat(prjS); endS=prjS[prjS.length-1];
+  view.concat(prjS).forEach(function(q){hi=Math.max(hi,q.f,q.a);}); hi*=1.1; if(hi<10)hi=10;
+  function X(d){return pl+(W-pl-pr)*(d-N0)/(P2.endD-N0);} function Y(v){return pt+(H-pt-pb)*(1-v/hi);}
+  function path(arr,f){return arr.map(function(q,k){return (k?"L":"M")+X(q.d).toFixed(1)+" "+Y(q[f]).toFixed(1);}).join("");}
+  var ser=view.filter(function(q){return q.d<prj[0].d;}).concat(prjS), runs=[], cur=null;
+  function pushPt(up,lo,s){ if(!cur||cur.s!==s){cur={s:s,u:[],l:[]}; runs.push(cur);} cur.u.push(up); cur.l.push(lo); }
+  ser.forEach(function(q,k){ var s=q.z>=0?1:-1, p=ser[k-1];
+    if(p&&((p.z>=0?1:-1)!==s)){ var t=p.z/(p.z-q.z), dx=p.d+(q.d-p.d)*t, yv=p.f+(q.f-p.f)*t; pushPt([dx,yv],[dx,yv],p.z>=0?1:-1); cur=null; }
+    pushPt([q.d,q.f],[q.d,q.a],s); });
+  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Forme et fatigue, réelles puis prévues jusqu’à la course : le jour J, tu es '+(okE?"reposée":"fatiguée")+'.">';
+  runs.forEach(function(r0){ if(r0.u.length<2)return; var d0=r0.u.map(function(p,k){return (k?"L":"M")+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1);}).join("")+r0.l.slice().reverse().map(function(p){return "L"+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1);}).join("")+"Z";
+    g+='<path d="'+d0+'" fill="'+(r0.s>0?"var(--brand)":"var(--acc)")+'" opacity="'+(r0.s>0?".2":".26")+'"/>'; });
+  // repères : début de mois
+  var dm=new Date(N0*864e5), mk=Date.UTC(dm.getUTCFullYear(),dm.getUTCMonth()+1,1)/864e5, lastLab=-99;
+  for(;mk<P2.endD-8;){ var md=new Date(mk*864e5), xm=X(mk); g+='<line x1="'+xm.toFixed(1)+'" x2="'+xm.toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--line)" stroke-width=".6"/>';
+    if(xm-lastLab>34){ g+='<text x="'+xm.toFixed(1)+'" y="'+(H-pb+13)+'" text-anchor="middle" font-size="9.5" style="fill:var(--muted)">'+MON[md.getUTCMonth()]+'</text>'; lastLab=xm; }
+    mk=Date.UTC(md.getUTCFullYear(),md.getUTCMonth()+1,1)/864e5; }
+  g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'" stroke="var(--line)" stroke-width="1"/>';
+  var jf=jfS;
+  g+='<path d="'+path(view,"a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linejoin="round"/><path d="'+path(jf,"a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-dasharray="4 3"/>';
+  g+='<path d="'+path(view,"f")+'" fill="none" stroke="var(--brand)" stroke-width="2.8" stroke-linejoin="round"/><path d="'+path(jf,"f")+'" fill="none" stroke="var(--brand)" stroke-width="2.8" stroke-dasharray="5 3" stroke-linejoin="round"/>';
+  // aujourd’hui
+  var xt=X(P2.today), xe=X(P2.endD), near=xe-xt<78;
+  g+='<line x1="'+xt.toFixed(1)+'" x2="'+xt.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="'+xt.toFixed(1)+'" cy="'+Y(last.f).toFixed(1)+'" r="4" fill="var(--brand)" stroke="var(--card,#fff)" stroke-width="1.6"/>'+
+     '<text x="'+xt.toFixed(1)+'" y="11" text-anchor="'+(near?"end":"middle")+'" font-size="10" font-weight="700" style="fill:var(--muted)">Aujourd’hui</text>';
+  // pic de forme
+  if(!pkIsNow&&!pkIsEnd){ var xp=X(pk.d); g+='<circle cx="'+xp.toFixed(1)+'" cy="'+Y(pk.f).toFixed(1)+'" r="4" fill="var(--brand)" stroke="var(--card,#fff)" stroke-width="1.6"/><text x="'+xp.toFixed(1)+'" y="'+(Y(pk.f)-11).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--brand);stroke:var(--card,#fff);stroke-width:3px;paint-order:stroke">Pic</text>'; }
+  // course
+  g+='<line x1="'+xe.toFixed(1)+'" x2="'+xe.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--acc)" stroke-width="2"/><circle cx="'+xe.toFixed(1)+'" cy="'+Y(endS.f).toFixed(1)+'" r="4" fill="var(--brand)" stroke="var(--card,#fff)" stroke-width="1.6"/><circle cx="'+xe.toFixed(1)+'" cy="'+Y(endS.a).toFixed(1)+'" r="4" fill="var(--acc)" stroke="var(--card,#fff)" stroke-width="1.6"/>'+
+     '<text x="'+xe.toFixed(1)+'" y="'+(near?22:11)+'" text-anchor="end" font-size="10" font-weight="700" style="fill:var(--acc-ink)">Course</text>';
+  // bande des phases du plan
+  try{ var pls=P2.pl, segs=[]; pls.weeks.forEach(function(w0){ var wk=P(pls,w0.n), s0=Math.round(w0.start/864e5), e0=s0+7; if(e0<=N0||s0>=P2.endD+1)return; var ph=wk.ph; if(segs.length&&segs[segs.length-1].ph===ph)segs[segs.length-1].e=Math.min(e0,P2.endD); else segs.push({ph:ph,s:Math.max(s0,N0),e:Math.min(e0,P2.endD)}); });
+    segs.forEach(function(sg,k){ var x1=X(sg.s), x2=X(sg.e), w1=x2-x1; if(w1<2)return; g+='<rect x="'+x1.toFixed(1)+'" y="'+ph0+'" width="'+Math.max(0,w1-1.5).toFixed(1)+'" height="16" rx="4" fill="var(--brand)" opacity="'+(sg.ph==="Affûtage"?.9:(k%2?".22":".12"))+'"/>';
+      if(w1>34)g+='<text x="'+(x1+w1/2).toFixed(1)+'" y="'+(ph0+11.5)+'" text-anchor="middle" font-size="9" font-weight="700" style="fill:'+(sg.ph==="Affûtage"?"var(--card,#fff)":"var(--ink)")+'">'+esc(sg.ph.length>12&&w1<80?sg.ph.slice(0,10)+".":sg.ph)+'</text>'; }); }catch(e){}
+  h+=g+'</svg>';
+  h+='<div class="pj-key small"><div><i class="k-l" style="background:var(--brand)"></i><p><b>Forme</b> : ce que tu as construit</p></div><div><i class="k-l" style="background:var(--acc)"></i><p><b>Fatigue</b> : ce que tu as accumulé cette semaine</p></div><div><i class="k-f" style="background:var(--brand)"></i><p>Zone verte : tu es <b>reposée</b></p></div><div><i class="k-f" style="background:var(--acc)"></i><p>Zone orange : tu es <b>fatiguée</b></p></div></div>';
+  var story=(pkIsNow?"Ta forme est à son maximum aujourd’hui":pkIsEnd?"Ta forme continue de monter jusqu’à la course":"Ta forme monte jusqu’au "+dPk.getUTCDate()+" "+MON[dPk.getUTCMonth()]+" (pic à "+Math.round(pk.f)+")")+(pkIsEnd?". ":", puis "+(isA?"l’affûtage fait retomber la fatigue. ":"elle se maintient. "))+"Le jour J, tu es "+(okE?"reposée":"fatiguée")+" ("+(okE?"+":"−")+Math.abs(Math.round(end.z))+").";
+  h+='<p class="small" style="margin:10px 0 0">'+story+'</p><p class="small muted" style="margin:4px 0 0">Trait plein : ce qui est fait. Pointillés : prévu si tu suis le plan. Bande du bas : les phases du plan (la dernière, foncée, est l’affûtage).</p>';
+  h+='<details class="pj-how"><summary class="small">Comment c’est calculé ?</summary><div class="in"><p class="small muted num" style="margin:6px 0 0"><b>Hypothèse réaliste :</b> tu réalises environ '+Math.round(P2.k*100)+' % de la charge du plan'+(P2.ratio!=null&&P2.n>=14?' (mesuré sur tes '+P2.n+' derniers jours de plan)':' (valeur prudente par défaut : pas encore assez de recul, elle se précise chaque semaine)')+'. '+(isA?'Cible le jour J : une fraîcheur de 8 à 30 % de ta forme, soit '+Math.round(end.f*.08)+' à '+Math.round(end.f*.3)+' ici. ':'')+'Si tu faisais 100 % du plan : fraîcheur '+(e100?((e100.z>=0?'+':'−')+Math.abs(Math.round(e100.z))):'–')+' le jour J.</p><p class="small muted" style="margin:6px 0 0">La courbe de fatigue est lissée sur 5 jours pour la lisibilité. Forme = moyenne de ta charge sur ~6 semaines. Fatigue = moyenne sur ~1 semaine. Fraîcheur = forme − fatigue.</p></div></details></div>';
+  return h;
 }
 function dpCard(){
   var r=activeRace(), n0=Math.round(todayUTC()/864e5), W=wkSums(n0,12), cur=W[W.length-1], mx=1, rk=r&&r.km>0?r.dp/r.km:0;

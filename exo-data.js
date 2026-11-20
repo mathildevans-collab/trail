@@ -54,10 +54,10 @@ A("jumpsquat",{n:"Squat sauté",l1:"Réception basse",l2:"Impulsion",
 A("jumplunge",{n:"Fente sautée",l1:"Fente basse",l2:"Changement en l’air",
  A:{anc:["l2",70],H:"auto",t:180,a:[-30,70],b:[-30,70],l:[88,0,90],m:[-22,-103,20],hot:["thigh","glute"]},
  B:{x:58,H:40,t:180,a:[30,-40],b:[-40,40],l:[40,-20,60],m:[-40,-70,40],hot:["thigh"],ar:[[28,50,28,32,0]]}});
-A("pushup",{n:"Pompes sur appui",l1:"Bras tendus",l2:"Poitrine vers l’appui",
+A("pushup",{n:"Pompes sur appui",l1:"Bras tendus",l2:"Poitrine à l’appui",
  A:{H:23.7,anc:["a2",88],t:123,hd:120,a:[0,"g+"],b:[0,"g+"],l:[-57,-57,20],m:[-57,-57,20],sup:{a:17,b:17},hot:["arm"],props:[["couch",86,22]]},
  B:{H:18.5,anc:["a2",88],t:112,hd:108,a:[-50,"g+"],b:[-50,"g+"],l:[-68,-68,20],m:[-68,-68,20],sup:{a:17,b:17},hot:["arm"],props:[["couch",86,22]],ar:[[60,44,60,54,0]]}});
-A("pistol",{n:"Squat vers la chaise",l1:"Debout",l2:"Assise sur la chaise",
+A("pistol",{n:"Squat vers la chaise",l1:"Debout",l2:"Assis sur la chaise",
  A:{anc:["l2",60],H:"auto",t:180,a:[90,90],b:[90,90],l:[0,0,90],m:[70,60,90],props:[["chair",30,1]]},
  B:{anc:["l2",60],H:22,t:150,a:[90,90],b:[90,90],l:[70,-22,90],m:[90,90,90],hot:["thigh","glute"],props:[["chair",30,1]],ar:[[76,40,76,56,0]]}});
 A("calfstep",{n:"Mollets sur marche",l1:"Talons bas",l2:"Sur la pointe",
