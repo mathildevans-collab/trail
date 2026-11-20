@@ -1176,6 +1176,11 @@ function vFormeStrava(){
 }
 
 // ---------- interactions ----------
+// barre d’onglets : un peu plus petite quand on descend, normale quand on remonte
+(function(){var nav=$("tabs"), last=window.scrollY||0;
+  function mini(on){nav.classList.toggle("mini",on);}
+  window.addEventListener("scroll",function(){var y=window.scrollY||0, d=y-last; if(y<40)mini(false); else if(d>8)mini(true); else if(d<-8)mini(false); if(Math.abs(d)>8||y<40)last=y;},{passive:true});
+})();
 $("tabs").addEventListener("click",function(e){var b=e.target.closest("button[data-t]"); if(!b)return; if(b.dataset.t==="today")browsing=false; setTab(b.dataset.t);});
 $("view").addEventListener("click",function(e){
   var swi=e.target.closest("[data-sw]"); if(swi){toggleSw(swi.dataset.sw); return;}
