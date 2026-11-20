@@ -1545,7 +1545,7 @@ function checkUpdate(){
 
 // ---------- synchro entre appareils (données chiffrées, sans compte ; voir csync.js) ----------
 var GKEY="cadenzo-gsync", GS=null, GBUSY2=false, GT=null, ADOPT=false, GTRY=0;
-try{var g0=JSON.parse(localStorage.getItem(GKEY)||"null"); if(g0&&g0.id&&g0.key)GS=g0;}catch(e){}
+try{var g0=JSON.parse(localStorage.getItem(GKEY)||"null"); if(g0&&g0.id&&g0.key&&g0.sb)GS=g0;}catch(e){} // sans .sb : ancienne liaison jsonblob, à refaire
 function gsave(){try{localStorage.setItem(GKEY,JSON.stringify(GS));}catch(e){}}
 function normShared(st){var c=JSON.parse(JSON.stringify(st)), v=SAFE.validate(c); return CSYNC.shared(v.ok?v.state:c);}
 function gsyncSoon(){ if(!GS||ADOPT||!window.CSYNC)return; clearTimeout(GT); GT=setTimeout(function(){gsync("auto");},4000); }
@@ -1590,7 +1590,7 @@ function gSetupSheet(msg){
   openSheet('<h2>Mêmes données partout</h2><p class="small muted">Tes données sont <b>chiffrées sur ton appareil</b> avant d’être déposées en ligne : le service de stockage ne voit qu’un fichier illisible. Le code de liaison contient la clé : c’est lui seul qui permet de les lire.</p>'+
   '<details open><summary>Premier appareil</summary><div class="in"><p class="small muted">Active la synchro ici, puis copie le code pour ton autre appareil.</p><button class="btn primary" data-sact="gstart" style="width:100%">Activer la synchro</button></div></details>'+
   '<details><summary>Deuxième appareil</summary><div class="in"><p class="small muted">Colle ici le code de liaison affiché sur le premier appareil (Réglages › Synchro › Afficher le code).</p>'+
-  '<div class="fields"><label class="field">Code de liaison<input id="gcodein" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="cdz2.…"></label></div>'+
+  '<div class="fields"><label class="field">Code de liaison<input id="gcodein" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="cdz3.…"></label></div>'+
   '<button class="btn primary" data-sact="gcode" style="width:100%">Lier cet appareil</button></div></details>'+
   '<p class="small" id="gerr" role="alert" style="color:var(--bad);margin-top:10px">'+esc(msg||"")+'</p>');
 }
@@ -1613,7 +1613,7 @@ function gStart(){
 function gJoin(){
   var err=$("gerr"); function say(m){if(err)err.textContent=m;}
   var p=CSYNC.parseCode($("gcodein").value); if(!p){say("Code de liaison invalide : copie-le en entier depuis l’autre appareil."); return;}
-  var cfg={id:p.id,key:p.key,dev:gDevice(),last:"",t:0,err:""}; say("Liaison…");
+  var cfg={id:p.id,key:p.key,sb:1,dev:gDevice(),last:"",t:0,err:""}; say("Liaison…");
   CSYNC.getRemote(cfg).then(function(){GS=cfg; gsave(); closeSheet(); toast("Appareil lié. Première synchro…"); return gsync("liaison",true).then(function(){render(true);});})
    .catch(function(e){say(e&&e.name==="TypeError"?"Impossible de joindre le service de stockage.":(e&&e.message)||"Échec");});
 }

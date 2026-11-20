@@ -1,10 +1,13 @@
 // Cadenzo · synchro entre appareils, sans compte.
 // Les données sont CHIFFRÉES sur l’appareil (AES-GCM, clé aléatoire de 256 bits) avant d’être déposées
-// sur un stockage JSON anonyme. Le service ne voit qu’un fichier illisible ; la clé n’existe que dans
-// le « code de liaison » que tu copies toi-même d’un appareil à l’autre.
+// sur Supabase (table cadenzo_sync, accessible seulement par les fonctions cadenzo_get / cadenzo_put).
+// Supabase ne voit qu’un fichier illisible ; la clé n’existe que dans le « code de liaison »
+// que tu copies toi-même d’un appareil à l’autre.
 (function(root){
 "use strict";
-var BLOB="https://jsonblob.com/api/jsonBlob";
+// Projet Supabase : l’URL et la clé publishable (anon) sont publiques par nature ; ne jamais mettre la clé service_role ici.
+var SB_URL="https://psotpksrdlkivauxdiad.supabase.co";
+var SB_KEY="sb_publishable_TE_8fhfqw-Y4bPFX60uoTA_UD3K2wrC";
 // Clés propres à chaque appareil : jamais synchronisées.
 var LOCAL_KEYS={sync:1,rev:1,saved:1,focus:1,race:1,practice:1,set:1};
 var SHARED_SET={gel:1,water:1,vib:1,checkin:1};
@@ -55,42 +58,44 @@ function decrypt(cfg,env){
 }
 
 // ---------- code de liaison ----------
-function newConfig(){return {id:"",key:urlB64(rnd(32))};}
-function makeCode(cfg){return "cdz2."+urlB64(new TextEncoder().encode(JSON.stringify({i:cfg.id,k:cfg.key})));}
+function newConfig(){return {id:urlB64(rnd(24)),key:urlB64(rnd(32)),sb:1};}
+function makeCode(cfg){return "cdz3."+urlB64(new TextEncoder().encode(JSON.stringify({i:cfg.id,k:cfg.key})));}
 function parseCode(s){
-  s=String(s||"").replace(/\s+/g,""); if(s.indexOf("cdz2.")!==0)return null;
-  try{var o=JSON.parse(new TextDecoder().decode(unUrlB64(s.slice(5)))); if(o&&/^[\w-]{6,80}$/.test(o.i)&&/^[\w-]{40,50}$/.test(o.k))return {id:o.i,key:o.k};}catch(e){}
+  s=String(s||"").replace(/\s+/g,""); if(s.indexOf("cdz3.")!==0)return null;
+  try{var o=JSON.parse(new TextDecoder().decode(unUrlB64(s.slice(5)))); if(o&&/^[\w-]{20,80}$/.test(o.i)&&/^[\w-]{40,50}$/.test(o.k))return {id:o.i,key:o.k,sb:1};}catch(e){}
   return null;
 }
 
 // ---------- stockage ----------
 function net(status){
-  if(status===404)return fail("gone","Les données en ligne ont disparu (le service les efface après 75 jours sans visite). Reconnecte les appareils.");
+  if(status===401||status===403)return fail("svc","Supabase refuse la clé de l’appli (clé publishable ou droits des fonctions).");
+  if(status===404)return fail("svc","Fonctions de synchro absentes sur Supabase (script SQL pas lancé ?).");
   if(status===429)return fail("net","Trop de requêtes, nouvel essai plus tard.");
   return fail("net","Le service de stockage ne répond pas ("+status+").");
 }
-var HD={"Content-Type":"application/json","Accept":"application/json"};
-function create(cfg,doc){
-  return encrypt(cfg,doc).then(function(env){return fetch(BLOB,{method:"POST",headers:HD,body:JSON.stringify(env)});}).then(function(r){
-    if(!r.ok)throw net(r.status);
-    var loc=r.headers.get("Location")||r.headers.get("location")||r.headers.get("X-Jsonblob")||"", m=/([\w-]{6,80})\/?$/.exec(loc);
-    if(!m)throw fail("svc","Ce service de stockage n’autorise pas la synchro depuis l’appli. Utilise l’export / import de sauvegarde en attendant.");
-    cfg.id=m[1]; return cfg.id;
-  });
-}
-function getRemote(cfg){
-  return fetch(BLOB+"/"+cfg.id,{headers:{"Accept":"application/json"},cache:"no-store"}).then(function(r){
-    if(!r.ok)throw net(r.status); return r.json();
-  }).then(function(env){return decrypt(cfg,env);}).then(function(doc){return {doc:doc};});
+function rpc(fn,args){
+  if(!SB_URL||!SB_KEY)return Promise.reject(fail("svc","Synchro pas encore configurée dans l’appli (projet Supabase manquant)."));
+  var h={"Content-Type":"application/json","Accept":"application/json","apikey":SB_KEY};
+  if(!/^sb_/.test(SB_KEY))h.Authorization="Bearer "+SB_KEY; // ancienne clé anon (JWT)
+  return fetch(SB_URL.replace(/\/+$/,"")+"/rest/v1/rpc/"+fn,{method:"POST",headers:h,body:JSON.stringify(args),cache:"no-store"}).then(function(r){
+    if(!r.ok)throw net(r.status); return r.text();
+  }).then(function(t){return t?JSON.parse(t):null;});
 }
 function putRemote(cfg,doc){
-  var body=null; return encrypt(cfg,doc).then(function(env){body=JSON.stringify(env);
-    if(body.length>1500000)throw fail("size","Données trop volumineuses pour la synchro (trace GPX trop lourde ?).");
-    return fetch(BLOB+"/"+cfg.id,{method:"PUT",headers:HD,body:body});
-  }).then(function(r){if(!r.ok)throw net(r.status); return true;});
+  return encrypt(cfg,doc).then(function(env){
+    if(JSON.stringify(env).length>1500000)throw fail("size","Données trop volumineuses pour la synchro (trace GPX trop lourde ?).");
+    return rpc("cadenzo_put",{p_id:cfg.id,p_env:env});
+  }).then(function(){return true;});
+}
+function create(cfg,doc){ if(!cfg.id)cfg.id=urlB64(rnd(24)); return putRemote(cfg,doc).then(function(){return cfg.id;}); }
+function getRemote(cfg){
+  return rpc("cadenzo_get",{p_id:cfg.id}).then(function(env){
+    if(env==null)throw fail("gone","Rien en ligne pour ce code de liaison. Reconnecte les appareils.");
+    return decrypt(cfg,env);
+  }).then(function(doc){return {doc:doc};});
 }
 function wrapDoc(sh,dev,parent){return {app:"cadenzo",kind:"sync",format:2,mt:new Date().toISOString(),device:dev||"",parent:parent||"",state:sh};}
 
-var API_={stable:stable,shared:shared,hashOf:hashOf,decide:decide,newConfig:newConfig,makeCode:makeCode,parseCode:parseCode,create:create,getRemote:getRemote,putRemote:putRemote,wrapDoc:wrapDoc,encrypt:encrypt,decrypt:decrypt};
+var API_={stable:stable,shared:shared,hashOf:hashOf,decide:decide,newConfig:newConfig,makeCode:makeCode,parseCode:parseCode,create:create,getRemote:getRemote,putRemote:putRemote,wrapDoc:wrapDoc,configured:function(){return !!(SB_URL&&SB_KEY);},encrypt:encrypt,decrypt:decrypt};
 if(typeof module!=="undefined"&&module.exports)module.exports=API_; else root.CSYNC=API_;
 })(typeof window!=="undefined"?window:globalThis);
