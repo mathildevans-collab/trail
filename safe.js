@@ -69,7 +69,15 @@ function merge(local,incoming){
     else if(a.src==="manual"&&b.src!=="manual"){s.actual[k]=a; bump("chiffres réalisés");}
     else kept++;
   });
-  ["ci","adj","edits","todo","results"].forEach(function(m){
+  // check-ins : fusion réponse par réponse (une fiche à moitié remplie ou annulée ne masque plus celle de l’autre appareil)
+  Object.keys(n.ci||{}).forEach(function(k){
+    var a=n.ci[k], b=s.ci[k];
+    if(!isObj(b)){s.ci[k]=a; bump("check-ins"); return;}
+    if(!isObj(a)){kept++; return;}
+    var got=false; Object.keys(a).forEach(function(f){ if(a[f]&&!b[f]){b[f]=a[f]; got=true;} });
+    if(got)bump("check-ins"); else kept++;
+  });
+  ["adj","edits","todo","results"].forEach(function(m){
     Object.keys(n[m]||{}).forEach(function(k){ if(!(k in s[m])){s[m][k]=n[m][k]; bump({ci:"check-ins",adj:"ajustements",edits:"séances modifiées",todo:"listes cochées",results:"résultats"}[m]);} else kept++; });
   });
   // sorties hors plan : calculées depuis Strava, on ne garde que ce qui manque
