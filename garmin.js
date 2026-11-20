@@ -325,5 +325,5 @@ function html(ctx){
   return h;
 }
 function clear(){G=null; try{localStorage.removeItem(KEY);}catch(e){}}
-window.GARMIN={importFiles:importFiles,html:html,clear:clear,has:function(){return !!G;},dbg:function(){return {G:G,analyse:analyse,insights:insights};}};
+window.GARMIN={importFiles:importFiles,html:html,clear:clear,has:function(){return !!G;},data:function(){return G;},dbg:function(){return {G:G,analyse:analyse,insights:insights};}};
 })();

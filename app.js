@@ -527,7 +527,6 @@ function sessionHero(r,pl,wk,s){
   var tags=[]; if(isB)tags.push("Course B"); if(s.adjusted&&wk.adjLabel)tags.push(wk.adjLabel); if(s.rbd)tags.push("Ajustée : "+kmS(s.rbFrom)+" → "+kmS(s.km)+" km"); if(s.edited)tags.push(s.added?"Ajoutée par toi":"Modifiée par toi"); if(s.club)tags.push("Club : 15 km, 2 h, +500 m min.");
   if(tags.length)h+='<div class="tagline">'+tags.map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join("")+'</div>';
   h+='<div class="facts num">'+(s.km?'<span>'+kmS(s.km)+' km</span>':'')+(s.dp?'<span>+'+nb(s.dp)+' m</span>':'')+(z?'<span>'+esc(z)+'</span>':'')+(ed&&s.type.indexOf("Club")<0?'<span>≈ '+dur(ed)+'</span>':'')+'</div>';
-  if(WHY[s.type])h+='<div class="why"><b>Pourquoi :</b> '+esc(WHY[s.type])+'</div>';
   if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<details><summary>Consignes complètes</summary><div class="in"><p>'+esc(s.txt)+'</p></div></details>':'');
   else if(s.txt)h+='<p>'+esc(s.txt)+'</p>';
   var a=adjFor(pl,wk.n); if(a&&a.mode==="z2"&&(s.tag==="e"||s.tag==="l"))h+='<p><b>Zone 2 stricte cette semaine :</b> reste sous 150 bpm.</p>';
@@ -613,7 +612,7 @@ function checkinCard(r,pl,w){
     h+='<p class="small" style="margin:6px 0 0"><span class="chip '+B[0]+'">'+B[1]+'</span></p><p class="small" style="margin:8px 0 0">'+esc(a.lead+" "+a.prop)+'</p>';
     if(dec&&st!=="on"&&st!=="off")h+='<div class="row" style="margin-top:8px"><button class="btn primary sm" data-adj="on" data-w="'+w+'">Appliquer</button><button class="btn sm" data-adj="off" data-w="'+w+'">Garder le plan</button></div>';
     else if(dec)h+='<div class="row" style="margin-top:8px"><button class="btn sm" data-adj="'+(st==="on"?"off":"reset")+'" data-w="'+w+'">'+(st==="on"?"Annuler l’ajustement":"Revoir la proposition")+'</button></div>';
-    h+='<details style="margin-top:6px"><summary class="small">Pourquoi</summary><div class="in"><ul class="pts">'+a.reasons.map(function(x){return '<li><b>'+esc(x.k)+'</b> · '+esc(x.v)+'<br><span class="muted">'+esc(x.r)+'</span></li>';}).join("")+'</ul><h4>Ce que ça change</h4><ul class="pts">'+a.eff.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul></div></details>';}
+  }
   return h+'</div>';
 }
 
@@ -1004,62 +1003,87 @@ function projSeries(r,full){ // forme / fatigue / fraîcheur prévues jusqu’à
   for(var d=start;d<=endD;d++){var l=d<endD?(L[d]||0)*(d>=today?kk:1):0; f+=(l-f)*kc; a+=(l-a)*ka; out.push({d:d,f:f,a:a,z:f-a});}
   return {pts:pts,prj:out,today:today,endD:endD,race:r,pl:pls[pls.length-1],k:kk,ratio:ratio,n:n};
 }
+// ---------- Projection : vue « Semaines » (barres) et vue « Fraîcheur » (courbe), avec l’export Garmin quand il est là ----------
+function pjToggle(){return '<div class="wm-seg fm-sub" role="tablist" aria-label="Affichage">'+[["sem","Semaines"],["fra","Forme et fraîcheur"]].map(function(x){return '<button type="button" role="tab" data-pjv="'+x[0]+'" aria-selected="'+(PJV===x[0])+'">'+x[1]+'</button>';}).join("")+'</div>';}
+function gRec(a,b){ // moyennes Garmin sur les jours n = a..b (VFC, sommeil, repos) ; null si rien
+  var G=window.GARMIN&&GARMIN.data&&GARMIN.data(); if(!G)return null; var h=[],sl=[],rh=[],band=null,n,r;
+  for(n=a;n<=b;n++){r=G.days[new Date(n*864e5).toISOString().slice(0,10)]; if(!r)continue; if(r.hrv>0)h.push(r.hrv); if(r.sl>0)sl.push(r.sl); if(r.rhr>0)rh.push(r.rhr); if(r.hrvb)band=r.hrvb;}
+  function av(x){return x.length?x.reduce(function(u,v){return u+v;},0)/x.length:null;}
+  if(!h.length&&!sl.length)return null; var o={hrv:av(h),sl:av(sl),rhr:av(rh),band:band}; o.low=!!(o.hrv&&band&&o.hrv<band[0]); o.short=!!(o.sl&&o.sl<6.5*3600); return o;
+}
+function garminLine(){ // une phrase sur les 7 derniers jours Garmin importés
+  var G=window.GARMIN&&GARMIN.data&&GARMIN.data(); if(!G||!G.last)return ""; var ln=dayN(G.last), r=gRec(ln-6,ln); if(!r)return "";
+  var old=Math.round(todayUTC()/864e5)-ln, bits=[];
+  if(r.hrv)bits.push("VFC "+Math.round(r.hrv)+(r.band?" ("+r.band[0]+"–"+r.band[1]+")":""));
+  if(r.sl)bits.push("sommeil "+Math.floor(r.sl/3600)+" h "+String(Math.round(r.sl%3600/60)).padStart(2,"0"));
+  if(r.rhr)bits.push("FC repos "+Math.round(r.rhr));
+  var warn=r.low?"VFC basse : fraîcheur probablement plus basse.":r.short?"Sommeil court : ménage-toi.":"";
+  return '<p class="small" style="margin:10px 0 0"><b>Garmin</b> · '+bits.join(" · ")+(warn?' — '+warn:'')+(old>9?' <span class="muted">(export ancien)</span>':'')+'</p>';
+}
+var PHO={"Base":.14,"Construction":.3,"Spécifique":.5,"Affûtage":.9};
+function semBody(P2,isA){
+  var pl=P2.pl, today=P2.today, ws=pl.weeks, W=340,H=190,l0=6,r0=6,pt=24,pb=56, nw=ws.length, bw=(W-l0-r0)/nw, rows=[], mx=1, curI=-1, sa=0, sp=0, np=0, hasG=false;
+  ws.forEach(function(w0,i){var wk=P(pl,w0.n), s0=Math.round(w0.start/864e5), c=sumRuns(s0,s0+6), a=c.km+c.dp/100, p=wk.km+wk.dp/100, st=s0+6<today?"past":s0<=today?"cur":"fut", gr=st==="fut"?null:gRec(s0,s0+6);
+    if(st==="cur")curI=i; if(st==="past"){sa+=a;sp+=p;np++;} if(gr)hasG=true; mx=Math.max(mx,a,p); rows.push({n:w0.n,s:s0,a:a,p:p,km:wk.km,dp:wk.dp,ph:wk.ph,st:st,g:gr});});
+  var pk=rows.reduce(function(m,q){return q.p>m.p?q:m;},rows[0]), ratio=sp>0?sa/sp:null, vd;
+  if(today<rows[0].s)vd=["off","Le plan n’a pas démarré","Début le "+fmtD(rows[0].s*864e5)+"."];
+  else if(ratio==null)vd=["off","Première semaine en cours","Verdict dès la fin de la semaine."];
+  else var tx=Math.round(ratio*100)+" % du prévu ("+np+" sem. terminée"+(np>1?"s":"")+")"; vd=ratio>=1.08?["ok","Au-dessus du plan",tx]:ratio>=.85?["ok","Dans le plan",tx]:["warn","En retard sur le plan",tx+". Reprends le plan là où il en est."];
+  var Y=function(v){return pt+(H-pt-pb)*(1-v/(mx*1.08));}, base=H-pb;
+  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Charge de chaque semaine du plan : ce que tu as fait contre ce qui est prévu, jusqu’à la course.">';
+  rows.forEach(function(q,i){var x=l0+i*bw+1.2, w=bw-2.4;
+    g+='<rect x="'+x.toFixed(1)+'" y="'+Y(q.p).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(base-Y(q.p)).toFixed(1)+'" rx="2.5" '+(q.st==="past"?'fill="none" stroke="var(--brand)" stroke-width="1.2" stroke-dasharray="2 2"':'fill="var(--brand)" fill-opacity=".18"')+'/>';
+    if(q.st!=="fut"&&q.a>0)g+='<rect x="'+x.toFixed(1)+'" y="'+Y(q.a).toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(base-Y(q.a)).toFixed(1)+'" rx="2.5" fill="var(--brand)"/>';
+    if(q.g)g+='<circle cx="'+(x+w/2).toFixed(1)+'" cy="'+(base+9)+'" r="3.2" fill="'+(q.g.low||q.g.short?"var(--acc)":"var(--brand)")+'"/>';});
+  if(curI>=0){var xc=l0+curI*bw; g+='<rect x="'+(xc-.5).toFixed(1)+'" y="'+(pt-6)+'" width="'+(bw+1).toFixed(1)+'" height="'+(base-pt+6)+'" rx="4" fill="none" stroke="var(--acc)" stroke-width="1.6"/><text x="'+Math.min(W-34,Math.max(34,xc+bw/2)).toFixed(1)+'" y="11" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--acc-ink)">Aujourd’hui</text>';}
+  g+='<line x1="'+l0+'" x2="'+(W-r0)+'" y1="'+base+'" y2="'+base+'" stroke="var(--line)"/>';
+  var segs=[]; rows.forEach(function(q,i){if(segs.length&&segs[segs.length-1].ph===q.ph)segs[segs.length-1].e=i+1; else segs.push({ph:q.ph,s:i,e:i+1});});
+  segs.forEach(function(sg){var x1=l0+sg.s*bw+1, x2=l0+sg.e*bw-1, ph0=base+18; g+='<rect x="'+x1.toFixed(1)+'" y="'+ph0+'" width="'+(x2-x1).toFixed(1)+'" height="15" rx="4" fill="var(--brand)" opacity="'+(PHO[sg.ph]||.2)+'"/>';
+    if(x2-x1>40)g+='<text x="'+((x1+x2)/2).toFixed(1)+'" y="'+(ph0+11)+'" text-anchor="middle" font-size="9" font-weight="700" style="fill:'+(sg.ph==="Affûtage"?"var(--card,#fff)":"var(--ink)")+'">'+esc(sg.ph)+'</text>';});
+  var ip=rows.indexOf(pk); g+='<text x="'+(l0+ip*bw+bw/2).toFixed(1)+'" y="'+(Y(pk.p)-5).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-weight="700" style="fill:var(--brand)">pic</text>';
+  g+='<text x="'+l0+'" y="'+(H-3)+'" font-size="9.5" style="fill:var(--muted)">'+fmtD(rows[0].s*864e5)+'</text><text x="'+(W-r0)+'" y="'+(H-3)+'" text-anchor="end" font-size="9.5" font-weight="700" style="fill:var(--acc-ink)">⚑ '+fmtD(dms(P2.race.date))+'</text></svg>';
+  var h='<div class="chip '+vd[0]+'">'+vd[1]+'</div><p class="small" style="margin:8px 0 10px">'+vd[2]+'</p>'+g;
+  h+='<div class="pj-key small"><div><i class="k-f" style="background:var(--brand);opacity:1"></i><p>Fait</p></div><div><i class="k-f" style="border:1.4px dashed var(--brand);background:none;opacity:1"></i><p>Prévu, semaine passée</p></div><div><i class="k-f" style="background:var(--brand);opacity:.25"></i><p>À venir</p></div>'+(hasG?'<div><i class="k-f" style="background:var(--acc);opacity:1;width:10px;border-radius:50%"></i><p>VFC ou sommeil bas</p></div>':'')+'</div>'+garminLine();
+  return h;
+}
 function capCard(r,tabs){
   var P2=projSeries(r); if(!P2||!P2.prj.length)return "";
   var pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-2]||prj[prj.length-1], // état le matin de la course = après la charge de la veille
    pk=prj.reduce(function(m,q){return q.f>m.f?q:m;},prj[0]);
   var days=P2.endD-P2.today; if(pk.f<last.f)pk=last;
   var isA=P2.race.prio==="A", rz=end.f>0?end.z/end.f:0, m0=model(P2.race), verdict=!isA?(end.z>=-10?["ok","Jambes correctes","Course de préparation : pas d’affûtage prévu, tu y arrives avec "+(end.z>=5?"de la fraîcheur.":"un peu de fatigue, c’est normal.")]:["warn","Jambes chargées","Tu y arrives fatiguée : cours-la tranquille, c’est une course de préparation."]):rz>=.08&&rz<=.3?["ok","Dans la cible","Tu arriverais reposée et en forme : c’est l’objectif de l’affûtage."]:rz<.08?["warn","Pas assez reposée","Le plan te laisse encore de la fatigue le jour J : l’affûtage devra être plus net."]:["warn","Très reposée","Tu risques de perdre un peu de forme : garde quelques séances vives pendant l’affûtage."];
-  var h='<div class="card fm">'+(tabs?'<h2>Projection vers tes courses</h2>'+tabs+'<h3 class="pj-n">'+esc(P2.race.name)+'</h3>':'<h2>'+esc(P2.race.name)+'</h2>')+'<p class="small muted num" style="margin:2px 0 10px">'+(isA?"Objectif":"Course B")+' · '+fmtD(dms(P2.race.date))+' · J−'+days+' · '+kmS(m0.L)+' km · +'+nb(m0.dp)+' m · visé '+hmc(m0.goal)+'</p>';
+  var h='<div class="card fm">'+(tabs?'<h2>Projection vers tes courses</h2>'+tabs:'<h2>'+esc(P2.race.name)+'</h2>')+'';
+  h+=pjToggle(); if(PJV==='sem')return h+semBody(P2,isA)+'</div>';
   var okE=end.z>=0, pkIsEnd=pk.d===end.d, pkIsNow=pk===last, dPk=new Date(pk.d*864e5);
   h+='<div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(last.f)+'</b></div><div><span>Pic</span><b>'+Math.round(pk.f)+'</b></div><div><span>Jour J</span><b style="color:'+(okE?'var(--brand)':'var(--acc-ink)')+'">'+(okE?"+":"−")+Math.abs(Math.round(end.z))+'</b></div></div>'+
    '<div class="fm-sub3 small muted num"><span>aujourd’hui</span><span>'+(pkIsNow?"maintenant":pkIsEnd?"le jour J":"vers le "+dPk.getUTCDate()+" "+MON[dPk.getUTCMonth()])+'</span><span>'+(okE?"reposée":"fatiguée")+'</span></div>'+
    '<div class="chip '+verdict[0]+'">'+verdict[1]+'</div><p class="small" style="margin:8px 0 10px">'+verdict[2]+'</p>';
-  // ----- graphique : forme (ce que tu as construit) et fatigue (ce que tu as accumulé) ; l’écart colorié = reposée (vert) ou fatiguée (orange) -----
-  var N0=P2.today-70, view=pts.filter(function(q){return q.d>=N0;}), W=340,H=196,pl=8,pr=10,pt=30,pb=50, hi=0, ph0=H-pb+22;
-  // la fatigue varie d’un jour à l’autre : on la lisse sur 5 jours pour que la courbe se lise (les chiffres affichés, eux, restent exacts)
-  var prjD=prj.length>1?prj.slice(0,-1):prj, raw=view.filter(function(q){return q.d<prj[0].d;}).concat(prjD), SM={}, endS;
-  raw.forEach(function(q,k){var s=0,n=0,m; for(m=-2;m<=2;m++){var r0=raw[k+m]; if(r0){s+=r0.a;n++;}} SM[q.d]=s/n;});
-  function sm(q){return {d:q.d,f:q.f,a:SM[q.d],z:q.f-SM[q.d]};}
-  view=view.map(sm); var prjS=prjD.map(sm), lastS=sm(last), jfS=[lastS].concat(prjS); endS=prjS[prjS.length-1];
-  view.concat(prjS).forEach(function(q){hi=Math.max(hi,q.f,q.a);}); hi*=1.1; if(hi<10)hi=10;
-  function X(d){return pl+(W-pl-pr)*(d-N0)/(P2.endD-N0);} function Y(v){return pt+(H-pt-pb)*(1-v/hi);}
-  function path(arr,f){return arr.map(function(q,k){return (k?"L":"M")+X(q.d).toFixed(1)+" "+Y(q[f]).toFixed(1);}).join("");}
-  var ser=view.filter(function(q){return q.d<prj[0].d;}).concat(prjS), runs=[], cur=null;
-  function pushPt(up,lo,s){ if(!cur||cur.s!==s){cur={s:s,u:[],l:[]}; runs.push(cur);} cur.u.push(up); cur.l.push(lo); }
-  ser.forEach(function(q,k){ var s=q.z>=0?1:-1, p=ser[k-1];
-    if(p&&((p.z>=0?1:-1)!==s)){ var t=p.z/(p.z-q.z), dx=p.d+(q.d-p.d)*t, yv=p.f+(q.f-p.f)*t; pushPt([dx,yv],[dx,yv],p.z>=0?1:-1); cur=null; }
-    pushPt([q.d,q.f],[q.d,q.a],s); });
-  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Forme et fatigue, réelles puis prévues jusqu’à la course : le jour J, tu es '+(okE?"reposée":"fatiguée")+'.">';
-  runs.forEach(function(r0){ if(r0.u.length<2)return; var d0=r0.u.map(function(p,k){return (k?"L":"M")+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1);}).join("")+r0.l.slice().reverse().map(function(p){return "L"+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1);}).join("")+"Z";
-    g+='<path d="'+d0+'" fill="'+(r0.s>0?"var(--brand)":"var(--acc)")+'" opacity="'+(r0.s>0?".2":".26")+'"/>'; });
-  // repères : début de mois
+  // ----- graphique : une seule courbe, la fraîcheur (forme − fatigue), lissée sur 5 jours -----
+  var N0=P2.today-42, W=340,H=200,pl=8,pr=10,pt=28,pb=34, prjD=prj.length>1?prj.slice(0,-1):prj, raw=pts.filter(function(q){return q.d>=N0-3&&q.d<prj[0].d;}).concat(prjD), ser=[];
+  raw.forEach(function(q,k){var s0=0,n=0,m; for(m=-2;m<=2;m++){var r0=raw[k+m]; if(r0){s0+=r0.z;n++;}} if(q.d>=N0)ser.push({d:q.d,z:s0/n});});
+  var tl=end.f*.08, th=end.f*.3, lo=-5, hi=10; ser.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.z);}); if(isA)hi=Math.max(hi,th); lo*=1.15; hi*=1.1;
+  function X(d){return pl+(W-pl-pr)*(d-N0)/(P2.endD-N0);} function Y(v){return pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));}
+  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Fraîcheur réelle puis prévue jusqu’à la course : le jour J, tu es '+(okE?"reposée":"fatiguée")+'.">';
+  if(isA)g+='<rect x="'+X(P2.endD-21).toFixed(1)+'" y="'+Y(th).toFixed(1)+'" width="'+(X(P2.endD)-X(P2.endD-21)).toFixed(1)+'" height="'+(Y(tl)-Y(th)).toFixed(1)+'" rx="5" fill="var(--ok)" opacity=".22"/><text x="'+(X(P2.endD)-4).toFixed(1)+'" y="'+(Y(th)-5).toFixed(1)+'" text-anchor="end" font-size="10" font-weight="700" style="fill:var(--ok)">cible jour J</text>';
+  var runs=[], cur=null;
+  ser.forEach(function(q,k){var sg=q.z>=0?1:-1, p=ser[k-1];
+    if(p&&((p.z>=0?1:-1)!==sg)){var t=p.z/(p.z-q.z), dx=p.d+(q.d-p.d)*t; cur.p.push([dx,0]); cur=null; }
+    if(!cur){cur={s:sg,p:[]}; runs.push(cur); if(p)cur.p.push([p.d+(q.d-p.d)*(p.z/(p.z-q.z)),0]);}
+    cur.p.push([q.d,q.z]);});
+  runs.forEach(function(r0){ if(r0.p.length<2)return; var d0=r0.p.map(function(p,k){return (k?"L":"M")+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1);}).join("")+"L"+X(r0.p[r0.p.length-1][0]).toFixed(1)+" "+Y(0).toFixed(1)+"L"+X(r0.p[0][0]).toFixed(1)+" "+Y(0).toFixed(1)+"Z";
+    g+='<path d="'+d0+'" fill="'+(r0.s>0?"var(--brand)":"var(--acc)")+'" opacity="'+(r0.s>0?".25":".28")+'"/>'; });
   var dm=new Date(N0*864e5), mk=Date.UTC(dm.getUTCFullYear(),dm.getUTCMonth()+1,1)/864e5, lastLab=-99;
-  for(;mk<P2.endD-8;){ var md=new Date(mk*864e5), xm=X(mk); g+='<line x1="'+xm.toFixed(1)+'" x2="'+xm.toFixed(1)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--line)" stroke-width=".6"/>';
-    if(xm-lastLab>34){ g+='<text x="'+xm.toFixed(1)+'" y="'+(H-pb+13)+'" text-anchor="middle" font-size="9.5" style="fill:var(--muted)">'+MON[md.getUTCMonth()]+'</text>'; lastLab=xm; }
-    mk=Date.UTC(md.getUTCFullYear(),md.getUTCMonth()+1,1)/864e5; }
-  g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'" stroke="var(--line)" stroke-width="1"/>';
-  var jf=jfS;
-  g+='<path d="'+path(view,"a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-linejoin="round"/><path d="'+path(jf,"a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-dasharray="4 3"/>';
-  g+='<path d="'+path(view,"f")+'" fill="none" stroke="var(--brand)" stroke-width="2.8" stroke-linejoin="round"/><path d="'+path(jf,"f")+'" fill="none" stroke="var(--brand)" stroke-width="2.8" stroke-dasharray="5 3" stroke-linejoin="round"/>';
-  // aujourd’hui
-  var xt=X(P2.today), xe=X(P2.endD), near=xe-xt<78;
-  g+='<line x1="'+xt.toFixed(1)+'" x2="'+xt.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><circle cx="'+xt.toFixed(1)+'" cy="'+Y(last.f).toFixed(1)+'" r="4" fill="var(--brand)" stroke="var(--card,#fff)" stroke-width="1.6"/>'+
-     '<text x="'+xt.toFixed(1)+'" y="11" text-anchor="'+(near?"end":"middle")+'" font-size="10" font-weight="700" style="fill:var(--muted)">Aujourd’hui</text>';
-  // pic de forme
-  if(!pkIsNow&&!pkIsEnd){ var xp=X(pk.d); g+='<circle cx="'+xp.toFixed(1)+'" cy="'+Y(pk.f).toFixed(1)+'" r="4" fill="var(--brand)" stroke="var(--card,#fff)" stroke-width="1.6"/><text x="'+xp.toFixed(1)+'" y="'+(Y(pk.f)-11).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--brand);stroke:var(--card,#fff);stroke-width:3px;paint-order:stroke">Pic</text>'; }
-  // course
-  g+='<line x1="'+xe.toFixed(1)+'" x2="'+xe.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--acc)" stroke-width="2"/><circle cx="'+xe.toFixed(1)+'" cy="'+Y(endS.f).toFixed(1)+'" r="4" fill="var(--brand)" stroke="var(--card,#fff)" stroke-width="1.6"/><circle cx="'+xe.toFixed(1)+'" cy="'+Y(endS.a).toFixed(1)+'" r="4" fill="var(--acc)" stroke="var(--card,#fff)" stroke-width="1.6"/>'+
-     '<text x="'+xe.toFixed(1)+'" y="'+(near?22:11)+'" text-anchor="end" font-size="10" font-weight="700" style="fill:var(--acc-ink)">Course</text>';
-  // bande des phases du plan
-  try{ var pls=P2.pl, segs=[]; pls.weeks.forEach(function(w0){ var wk=P(pls,w0.n), s0=Math.round(w0.start/864e5), e0=s0+7; if(e0<=N0||s0>=P2.endD+1)return; var ph=wk.ph; if(segs.length&&segs[segs.length-1].ph===ph)segs[segs.length-1].e=Math.min(e0,P2.endD); else segs.push({ph:ph,s:Math.max(s0,N0),e:Math.min(e0,P2.endD)}); });
-    segs.forEach(function(sg,k){ var x1=X(sg.s), x2=X(sg.e), w1=x2-x1; if(w1<2)return; g+='<rect x="'+x1.toFixed(1)+'" y="'+ph0+'" width="'+Math.max(0,w1-1.5).toFixed(1)+'" height="16" rx="4" fill="var(--brand)" opacity="'+(sg.ph==="Affûtage"?.9:(k%2?".22":".12"))+'"/>';
-      if(w1>34)g+='<text x="'+(x1+w1/2).toFixed(1)+'" y="'+(ph0+11.5)+'" text-anchor="middle" font-size="9" font-weight="700" style="fill:'+(sg.ph==="Affûtage"?"var(--card,#fff)":"var(--ink)")+'">'+esc(sg.ph.length>12&&w1<80?sg.ph.slice(0,10)+".":sg.ph)+'</text>'; }); }catch(e){}
+  for(;mk<P2.endD-8;){ var md=new Date(mk*864e5), xm=X(mk); if(xm-lastLab>38){ g+='<text x="'+xm.toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" font-size="9.5" style="fill:var(--muted)">'+MON[md.getUTCMonth()]+'</text>'; lastLab=xm; } mk=Date.UTC(md.getUTCFullYear(),md.getUTCMonth()+1,1)/864e5; }
+  g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(0).toFixed(1)+'" y2="'+Y(0).toFixed(1)+'" stroke="var(--muted)" stroke-width="1"/><text x="'+(pl+2)+'" y="'+(Y(0)-5).toFixed(1)+'" font-size="10" style="fill:var(--muted)">reposée ↑</text><text x="'+(pl+2)+'" y="'+(Y(0)+13).toFixed(1)+'" font-size="10" style="fill:var(--muted)">fatiguée ↓</text>';
+  function pth(a){return a.map(function(q,k){return (k?"L":"M")+X(q.d).toFixed(1)+" "+Y(q.z).toFixed(1);}).join("");}
+  var done=ser.filter(function(q){return q.d<=P2.today;}), plan=ser.filter(function(q){return q.d>=P2.today;});
+  g+='<path d="'+pth(done)+'" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linejoin="round"/><path d="'+pth(plan)+'" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-dasharray="5 3" stroke-linejoin="round"/>';
+  var xt=X(P2.today), xe=X(P2.endD), endP=ser[ser.length-1];
+  g+='<line x1="'+xt.toFixed(1)+'" x2="'+xt.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><text x="'+xt.toFixed(1)+'" y="11" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--muted)">Aujourd’hui</text>'+
+     '<line x1="'+xe.toFixed(1)+'" x2="'+xe.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--acc)" stroke-width="2"/><circle cx="'+X(endP.d).toFixed(1)+'" cy="'+Y(endP.z).toFixed(1)+'" r="4.5" fill="var(--ink)" stroke="var(--card,#fff)" stroke-width="2"/><text x="'+xe.toFixed(1)+'" y="11" text-anchor="end" font-size="10" font-weight="700" style="fill:var(--acc-ink)">Course</text>';
   h+=g+'</svg>';
-  h+='<div class="pj-key small"><div><i class="k-l" style="background:var(--brand)"></i><p><b>Forme</b> : ce que tu as construit</p></div><div><i class="k-l" style="background:var(--acc)"></i><p><b>Fatigue</b> : ce que tu as accumulé cette semaine</p></div><div><i class="k-f" style="background:var(--brand)"></i><p>Zone verte : tu es <b>reposée</b></p></div><div><i class="k-f" style="background:var(--acc)"></i><p>Zone orange : tu es <b>fatiguée</b></p></div></div>';
-  var story=(pkIsNow?"Ta forme est à son maximum aujourd’hui":pkIsEnd?"Ta forme continue de monter jusqu’à la course":"Ta forme monte jusqu’au "+dPk.getUTCDate()+" "+MON[dPk.getUTCMonth()]+" (pic à "+Math.round(pk.f)+")")+(pkIsEnd?". ":", puis "+(isA?"l’affûtage fait retomber la fatigue. ":"elle se maintient. "))+"Le jour J, tu es "+(okE?"reposée":"fatiguée")+" ("+(okE?"+":"−")+Math.abs(Math.round(end.z))+").";
-  h+='<p class="small" style="margin:10px 0 0">'+story+'</p><p class="small muted" style="margin:4px 0 0">Trait plein : ce qui est fait. Pointillés : prévu si tu suis le plan. Bande du bas : les phases du plan (la dernière, foncée, est l’affûtage).</p>';
-  h+='<details class="pj-how"><summary class="small">Comment c’est calculé ?</summary><div class="in"><p class="small muted num" style="margin:6px 0 0">'+(P2.n>0&&P2.ratio!=null?'Sur tes '+P2.n+' derniers jours de plan, tu as fait <b>'+Math.round(P2.ratio*100)+' %</b> de la charge prévue. La prévision en tient compte : elle suit le plan à hauteur de <b>'+Math.round(P2.k*100)+' %</b> (jamais plus de 100 %). ':'La prévision part de tes sorties réelles jusqu’à aujourd’hui, puis suit le plan. ')+(isA?'Cible le jour J : une fraîcheur de 8 à 30 % de ta forme, soit '+Math.round(end.f*.08)+' à '+Math.round(end.f*.3)+' ici.':'')+'</p><p class="small muted" style="margin:6px 0 0">La courbe de fatigue est lissée sur 5 jours pour la lisibilité. Forme = moyenne de ta charge sur ~6 semaines. Fatigue = moyenne sur ~1 semaine. Fraîcheur = forme − fatigue.</p></div></details></div>';
+  h+='<div class="pj-key small"><div><i class="k-f" style="background:var(--brand)"></i><p>Reposée</p></div><div><i class="k-f" style="background:var(--acc)"></i><p>Fatiguée</p></div>'+(isA?'<div><i class="k-f" style="background:var(--ok)"></i><p>Cible jour J</p></div>':'')+'</div>'+garminLine();
+  h+='</div>';
   return h;
 }
 function dpCard(){
@@ -1125,7 +1149,7 @@ function formeSynth(z,pts){
   var tr=d7>=8?"Ta fraîcheur a gagné "+d7+" points en 7 jours.":d7<=-8?"Ta fraîcheur a perdu "+Math.abs(d7)+" points en 7 jours.":"Ta fraîcheur est stable sur 7 jours.";
   return '<div class="synth"><b>En clair</b><p class="small" style="margin:4px 0 0">'+tr+' <b>À faire :</b> '+esc(reco)+'</p><details style="margin-top:6px"><summary class="small">C’est quoi ces chiffres ?</summary><div class="in"><p class="small muted" style="margin:6px 0 0"><b>Forme</b> : ce que tes dernières semaines ont construit. <b>Fatigue</b> : ce que tu as accumulé ces derniers jours. <b>Fraîcheur</b> = forme − fatigue : positive, tu es reposée ; très négative, il faut lever le pied.</p></div></details></div>';
 }
-var PJ="";
+var PJ="", PJV="sem";
 function projBlock(){
   var up=races().filter(function(r){return daysTo(r)>0&&projSeries(r);});
   if(!up.length)return "";
@@ -1186,6 +1210,7 @@ $("view").addEventListener("click",function(e){
   if(ds.vp){VP=ds.vp; render(true); return;}
   if(ds.fsub){FSUB=ds.fsub; render(true); return;}
   if(ds.pj){PJ=ds.pj; render(true); return;}
+  if(ds.pjv){PJV=ds.pjv; render(true); return;}
   if(ds.day!=null){sel=+ds.day; render(true); return;}
   if(ds.done){var U0=snapU(), was=!!D.done[ds.done]; D.undone=D.undone||{}; if(D.done[ds.done]){delete D.done[ds.done]; D.undone[ds.done]=1;} else{D.done[ds.done]=1; delete D.undone[ds.done]; vib(30);} save(); render(true); toast(was?"Séance décochée.":"Séance validée.",U0); return;}
   if(ds.ci){var r=activeRace(), kk=r.id+":"+cur, U2=snapU(), o=D.ci[kk]||(D.ci[kk]={}), hadAdj=!!D.adj[kk]; o[ds.ci]=o[ds.ci]===+ds.v?0:+ds.v; if(hadAdj)delete D.adj[kk]; save(); render(true); toast(hadAdj?"Réponse enregistrée. Proposition recalculée.":"Réponse enregistrée.",U2); return;}
