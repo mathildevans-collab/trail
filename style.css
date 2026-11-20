@@ -256,9 +256,6 @@ svg text{font-family:var(--body);font-size:10px;fill:var(--muted)}
 .sw[data-on="true"]{background:var(--brand)}
 .sw[data-on="true"]::after{transform:translateX(20px)}
 .sitem[aria-disabled="true"]{opacity:.5;cursor:default}
-.pv{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 14px 14px}
-.pv div{border-radius:12px;padding:10px;font-size:12px;font-weight:700;border:2px solid var(--line)}
-.pv i{display:block;height:6px;border-radius:9px;margin-top:6px}
 .foot{text-align:center;color:var(--muted);font-size:12px;margin:8px 0 4px}
 
 /* toast */
@@ -414,6 +411,7 @@ details summary svg{width:20px;height:20px;flex:none;color:var(--brand)}
 .pv .tr u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55;text-decoration:none}
 .pv b{text-align:right;font-weight:700}
 details.more{margin-top:12px;border-top:1px solid var(--line);padding-top:4px}
+details.more:first-child{margin-top:0;border-top:0;padding-top:0}
 details.more>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;font-weight:700;min-height:44px}
 details.more>summary::-webkit-details-marker{display:none}
 details.more>summary small{display:block;font-weight:500;color:var(--muted);font-size:12px}
@@ -609,6 +607,7 @@ details.fold>*:last-child{margin-bottom:16px}
 .phlab .on{color:var(--ink);font-weight:700}
 
 /* Aujourd’hui : plus d’orange */
-.hero .facts span{background:var(--acc-soft);color:var(--acc-ink);border-radius:999px;padding:4px 12px}
-.day.today{background:var(--acc-btn);color:var(--acc-btn-ink)}.day.today b{color:var(--acc-btn-ink)}.day.today.has i{background:var(--acc-btn-ink)}
+.hero .facts>span{background:color-mix(in srgb,currentColor 12%,transparent);color:inherit;border-radius:999px;padding:4px 12px 4px 10px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.hero .facts>span::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--acc);flex:none}
+.day.today{background:var(--brand-soft);color:var(--ink)}.day.today b{color:var(--ink)}.day.today.has i{background:var(--brand)}
 .hero .eyebrow{opacity:1}.hero .eyebrow::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);margin-right:8px;vertical-align:1px}

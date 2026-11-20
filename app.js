@@ -748,7 +748,7 @@ function selMin(id,list,val){return '<select id="'+id+'" aria-label="'+(id==="ge
 function vSettings(){
   var th=D.set.theme, a=activeRace();
   var h='<button class="back" data-go="back">'+I.back+'Retour</button><h1 style="font-size:30px;margin-bottom:16px">Réglages</h1>';
-  h+=group("Apparence",'<div class="spad"><div class="opts" role="radiogroup" aria-label="Thème" style="margin:0">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div><p class="muted xs" style="margin:8px 0 0">'+(th==="auto"?"Suit le téléphone (en ce moment : "+(sysDark()?"sombre":"clair")+").":"Choisi à la main.")+'</p></div>');
+  h+=group("Apparence",'<div class="spad"><div class="opts" role="radiogroup" aria-label="Thème" style="margin:0">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>');
   h+=group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer un CSV","Export Garmin Connect ou Strava (activities.csv). Les sorties sont rangées dans ton plan.",null,' data-act="csv"'));
   h+=group("Entraînement",sitem("dumb","Renfo et mobilité","7 séances de renfo, 6 de mobilité",null,' data-sheet="guide"'));
   h+=group("Coach",swItem("cycle","Suivi du cycle","Adapte les conseils pendant les règles","cycle",D.cycle.on)+
@@ -1046,6 +1046,27 @@ function semBody(P2,isA){
   h+='<div class="pj-key small"><div><i class="k-f" style="background:var(--brand);opacity:1"></i><p>Fait</p></div><div><i class="k-f" style="border:1.4px dashed var(--brand);background:none;opacity:1"></i><p>Prévu, semaine passée</p></div><div><i class="k-f" style="background:var(--brand);opacity:.25"></i><p>À venir</p></div>'+(hasG?'<div><i class="k-f" style="background:var(--acc);opacity:1;width:10px;border-radius:50%"></i><p>VFC ou sommeil bas</p></div>':'')+'</div>'+garminLine();
   return h;
 }
+// Forme / fatigue / fraîcheur (Banister) : contenu de l’onglet « Forme et fraîcheur » de la projection,
+// ou carte seule quand aucune course à venir n’a de projection.
+function fitBody(card){
+  var h="";
+  var S=formeSeries(), pts=S.pts, z=pts[pts.length-1], N=Math.min(pts.length,60), view=pts.slice(pts.length-N);
+  var st=z.z>15?["Très frais","ok","Tu es reposée : bon moment pour une séance de qualité ou une course."]:z.z>5?["Frais","ok","Tu récupères bien, tu peux charger un peu."]:z.z>=-10?["Équilibré","ok","Charge et récupération sont en phase."]:z.z>=-25?["Chargée","warn","Tu accumules de la fatigue : garde les séances faciles vraiment faciles."]:["Surcharge","bad","Fatigue très élevée : allège les prochains jours."];
+  h+='<div class="card fm"><h2>Forme et fraîcheur</h2><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--acc-ink)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
+    '<div class="chip '+st[1]+'">'+st[0]+'</div><p class="small" style="margin:8px 0 8px">'+st[2]+'</p>'+formeSynth(z,pts);
+  var W=320, H=150, pl=30, pr=8, pt=8, pb=20, lo=0, hi=0; view.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f,q.a,q.z);});
+  var span=hi-lo||1; lo-=span*.06; hi+=span*.06; span=hi-lo;
+  function X(k){return pl+(W-pl-pr)*k/Math.max(1,N-1);} function Y(v){return pt+(H-pt-pb)*(1-(v-lo)/span);}
+  function path(f){return view.map(function(q,k){return (k?"L":"M")+X(k).toFixed(1)+" "+Y(q[f]).toFixed(1);}).join("");}
+  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Courbes de forme, fatigue et fraîcheur sur '+N+' jours">';
+  var step=Math.max(10,Math.ceil(span/4/10)*10), t0=Math.ceil(lo/step)*step;
+  for(var tv=t0;tv<=hi;tv+=step)g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(tv).toFixed(1)+'" y2="'+Y(tv).toFixed(1)+'" stroke="var(--line)" stroke-width="'+(tv===0?1.4:.6)+'"'+(tv===0?' stroke-dasharray="2 3"':'')+'/><text x="'+(pl-5)+'" y="'+(Y(tv)+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+tv+'</text>';
+  g+='<path d="'+path("f")+'" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><path d="'+path("a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-dasharray="5 3"/><path d="'+path("z")+'" fill="none" stroke="var(--down)" stroke-width="1.8"/>';
+  [0,Math.floor((N-1)/2),N-1].forEach(function(k,j){var dd=new Date(view[k].d*864e5); g+='<text x="'+X(k).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+(j===0?"start":j===2?"end":"middle")+'" font-size="9" fill="var(--muted)">'+dd.getUTCDate()+" "+MON[dd.getUTCMonth()]+'</text>';});
+  h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--acc);margin-left:10px"></i>fatigue <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>'+
+    '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></div>';
+  return card?h:h.replace('<div class="card fm"><h2>Forme et fraîcheur</h2>',"").replace(/<\/div>$/,""); // dans la projection : sans carte ni titre
+}
 function capCard(r,tabs){
   var P2=projSeries(r); if(!P2||!P2.prj.length)return "";
   var pts=P2.pts, prj=P2.prj, last=pts[pts.length-1], end=prj[prj.length-2]||prj[prj.length-1], // état le matin de la course = après la charge de la veille
@@ -1053,38 +1074,7 @@ function capCard(r,tabs){
   var days=P2.endD-P2.today; if(pk.f<last.f)pk=last;
   var isA=P2.race.prio==="A", rz=end.f>0?end.z/end.f:0, m0=model(P2.race), verdict=!isA?(end.z>=-10?["ok","Jambes correctes","Course de préparation : pas d’affûtage prévu, tu y arrives avec "+(end.z>=5?"de la fraîcheur.":"un peu de fatigue, c’est normal.")]:["warn","Jambes chargées","Tu y arrives fatiguée : cours-la tranquille, c’est une course de préparation."]):rz>=.08&&rz<=.3?["ok","Dans la cible","Tu arriverais reposée et en forme : c’est l’objectif de l’affûtage."]:rz<.08?["warn","Pas assez reposée","Le plan te laisse encore de la fatigue le jour J : l’affûtage devra être plus net."]:["warn","Très reposée","Tu risques de perdre un peu de forme : garde quelques séances vives pendant l’affûtage."];
   var h='<div class="card fm">'+(tabs?'<h2>Projection vers tes courses</h2>'+tabs:'<h2>'+esc(P2.race.name)+'</h2>')+'';
-  h+=pjToggle(); if(PJV==='sem')return h+semBody(P2,isA)+'</div>';
-  var okE=end.z>=0, pkIsEnd=pk.d===end.d, pkIsNow=pk===last, dPk=new Date(pk.d*864e5);
-  h+='<div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(last.f)+'</b></div><div><span>Pic</span><b>'+Math.round(pk.f)+'</b></div><div><span>Jour J</span><b style="color:'+(okE?'var(--brand)':'var(--acc-ink)')+'">'+(okE?"+":"−")+Math.abs(Math.round(end.z))+'</b></div></div>'+
-   '<div class="fm-sub3 small muted num"><span>aujourd’hui</span><span>'+(pkIsNow?"maintenant":pkIsEnd?"le jour J":"vers le "+dPk.getUTCDate()+" "+MON[dPk.getUTCMonth()])+'</span><span>'+(okE?"reposée":"fatiguée")+'</span></div>'+
-   '<div class="chip '+verdict[0]+'">'+verdict[1]+'</div><p class="small" style="margin:8px 0 10px">'+verdict[2]+'</p>';
-  // ----- graphique : une seule courbe, la fraîcheur (forme − fatigue), lissée sur 5 jours -----
-  var N0=P2.today-42, W=340,H=200,pl=8,pr=10,pt=28,pb=34, prjD=prj.length>1?prj.slice(0,-1):prj, raw=pts.filter(function(q){return q.d>=N0-3&&q.d<prj[0].d;}).concat(prjD), ser=[];
-  raw.forEach(function(q,k){var s0=0,n=0,m; for(m=-2;m<=2;m++){var r0=raw[k+m]; if(r0){s0+=r0.z;n++;}} if(q.d>=N0)ser.push({d:q.d,z:s0/n});});
-  var tl=end.f*.08, th=end.f*.3, lo=-5, hi=10; ser.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.z);}); if(isA)hi=Math.max(hi,th); lo*=1.15; hi*=1.1;
-  function X(d){return pl+(W-pl-pr)*(d-N0)/(P2.endD-N0);} function Y(v){return pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));}
-  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Fraîcheur réelle puis prévue jusqu’à la course : le jour J, tu es '+(okE?"reposée":"fatiguée")+'.">';
-  if(isA)g+='<rect x="'+X(P2.endD-21).toFixed(1)+'" y="'+Y(th).toFixed(1)+'" width="'+(X(P2.endD)-X(P2.endD-21)).toFixed(1)+'" height="'+(Y(tl)-Y(th)).toFixed(1)+'" rx="5" fill="var(--ok)" opacity=".22"/><text x="'+(X(P2.endD)-4).toFixed(1)+'" y="'+(Y(th)-5).toFixed(1)+'" text-anchor="end" font-size="10" font-weight="700" style="fill:var(--ok)">cible jour J</text>';
-  var runs=[], cur=null;
-  ser.forEach(function(q,k){var sg=q.z>=0?1:-1, p=ser[k-1];
-    if(p&&((p.z>=0?1:-1)!==sg)){var t=p.z/(p.z-q.z), dx=p.d+(q.d-p.d)*t; cur.p.push([dx,0]); cur=null; }
-    if(!cur){cur={s:sg,p:[]}; runs.push(cur); if(p)cur.p.push([p.d+(q.d-p.d)*(p.z/(p.z-q.z)),0]);}
-    cur.p.push([q.d,q.z]);});
-  runs.forEach(function(r0){ if(r0.p.length<2)return; var d0=r0.p.map(function(p,k){return (k?"L":"M")+X(p[0]).toFixed(1)+" "+Y(p[1]).toFixed(1);}).join("")+"L"+X(r0.p[r0.p.length-1][0]).toFixed(1)+" "+Y(0).toFixed(1)+"L"+X(r0.p[0][0]).toFixed(1)+" "+Y(0).toFixed(1)+"Z";
-    g+='<path d="'+d0+'" fill="'+(r0.s>0?"var(--brand)":"var(--acc)")+'" opacity="'+(r0.s>0?".25":".28")+'"/>'; });
-  var dm=new Date(N0*864e5), mk=Date.UTC(dm.getUTCFullYear(),dm.getUTCMonth()+1,1)/864e5, lastLab=-99;
-  for(;mk<P2.endD-8;){ var md=new Date(mk*864e5), xm=X(mk); if(xm-lastLab>38){ g+='<text x="'+xm.toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" font-size="9.5" style="fill:var(--muted)">'+MON[md.getUTCMonth()]+'</text>'; lastLab=xm; } mk=Date.UTC(md.getUTCFullYear(),md.getUTCMonth()+1,1)/864e5; }
-  g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(0).toFixed(1)+'" y2="'+Y(0).toFixed(1)+'" stroke="var(--muted)" stroke-width="1"/><text x="'+(pl+2)+'" y="'+(Y(0)-5).toFixed(1)+'" font-size="10" style="fill:var(--muted)">reposée ↑</text><text x="'+(pl+2)+'" y="'+(Y(0)+13).toFixed(1)+'" font-size="10" style="fill:var(--muted)">fatiguée ↓</text>';
-  function pth(a){return a.map(function(q,k){return (k?"L":"M")+X(q.d).toFixed(1)+" "+Y(q.z).toFixed(1);}).join("");}
-  var done=ser.filter(function(q){return q.d<=P2.today;}), plan=ser.filter(function(q){return q.d>=P2.today;});
-  g+='<path d="'+pth(done)+'" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-linejoin="round"/><path d="'+pth(plan)+'" fill="none" stroke="var(--ink)" stroke-width="2.6" stroke-dasharray="5 3" stroke-linejoin="round"/>';
-  var xt=X(P2.today), xe=X(P2.endD), endP=ser[ser.length-1];
-  g+='<line x1="'+xt.toFixed(1)+'" x2="'+xt.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/><text x="'+xt.toFixed(1)+'" y="11" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--muted)">Aujourd’hui</text>'+
-     '<line x1="'+xe.toFixed(1)+'" x2="'+xe.toFixed(1)+'" y1="'+(pt-4)+'" y2="'+(H-pb)+'" stroke="var(--acc)" stroke-width="2"/><circle cx="'+X(endP.d).toFixed(1)+'" cy="'+Y(endP.z).toFixed(1)+'" r="4.5" fill="var(--ink)" stroke="var(--card,#fff)" stroke-width="2"/><text x="'+xe.toFixed(1)+'" y="11" text-anchor="end" font-size="10" font-weight="700" style="fill:var(--acc-ink)">Course</text>';
-  h+=g+'</svg>';
-  h+='<div class="pj-key small"><div><i class="k-f" style="background:var(--brand)"></i><p>Reposée</p></div><div><i class="k-f" style="background:var(--acc)"></i><p>Fatiguée</p></div>'+(isA?'<div><i class="k-f" style="background:var(--ok)"></i><p>Cible jour J</p></div>':'')+'</div>'+garminLine();
-  h+='</div>';
-  return h;
+  h+=pjToggle(); return h+(PJV==='sem'?semBody(P2,isA):fitBody(false))+'</div>';
 }
 function dpCard(){
   var r=activeRace(), n0=Math.round(todayUTC()/864e5), W=wkSums(n0,12), cur=W[W.length-1], mx=1, rk=r&&r.km>0?r.dp/r.km:0;
@@ -1109,10 +1099,11 @@ function paceCard(){ // allure en endurance à fréquence cardiaque comparable, 
   return h+'<p class="small" style="margin:10px 0 0">'+txt+'</p><p class="small muted" style="margin:6px 0 0">Estimation : la vitesse est corrigée de l’écart de fréquence cardiaque moyenne entre les deux mois.</p></details>';
 }
 function pvBars(pl,x,ac){ // prévu contre réalisé, en une seconde
+  if(x.type&&x.type.indexOf("Club")===0)return ""; // séance du club : rien à comparer avec le plan
   var ed=estDur(pl.m,x), pp=x.km&&ed?ed/x.km:0, ap=ac.t&&ac.km?ac.t/ac.km:0, R=[];
-  function row(l,r,txt){var w=Math.max(2,Math.min(150,r*100)); return '<div class="pv"><span>'+l+'</span><div class="tr"><i style="width:'+(w/1.5)+'%"></i><u style="left:'+(100/1.5)+'%"></u></div><b class="num">'+txt+'</b></div>';}
+  function row(l,r,txt,noPlan){var w=Math.max(2,Math.min(150,r*100)); return '<div class="pv"><span>'+l+'</span><div class="tr"><i style="width:'+(w/1.5)+'%"></i>'+(noPlan?'':'<u style="left:'+(100/1.5)+'%"></u>')+'</div><b class="num">'+txt+'</b></div>';}
   if(x.km>0)R.push(row("Distance",ac.km/x.km,Math.round(ac.km/x.km*100)+" %"));
-  if(x.dp>0)R.push(row("Dénivelé",(ac.dp||0)/x.dp,Math.round((ac.dp||0)/x.dp*100)+" %")); else if(ac.dp>150)R.push(row("Dénivelé",1.5,"+"+nb(ac.dp)+" m"));
+  if(x.dp>0)R.push(row("Dénivelé",(ac.dp||0)/x.dp,Math.round((ac.dp||0)/x.dp*100)+" %")); else if(ac.dp>150)R.push(row("Dénivelé",1.5,"+"+nb(ac.dp)+" m",true)); // rien de prévu : pas de trait
   if(pp&&ap){var rr=pp/ap; R.push(row("Allure",rr,mmss(ap)+" /km"));}
   return R.length?'<details class="pvs" open><summary class="small muted" style="cursor:pointer;min-height:32px;list-style:none">Prévu contre réalisé</summary>'+R.join("")+'<p class="small muted" style="margin:2px 0 0">Le trait marque le prévu (100 %).</p></details>':"";
 }
@@ -1180,23 +1171,8 @@ function vFormeStrava(){
   B.forEach(function(x,k){h+='<div class="wm-col'+(x.cur?" today":"")+'"><div class="wm-plot">'+(x.v?'<i class="a" style="height:'+Math.max(4,x.v/mx*100)+'%"></i>':'<i class="rest"></i>')+'</div><b class="fm-l">'+((VP==="year"||k%3===0||x.cur)?x.l:"")+'</b></div>';});
   h+='</div></div>';
   var hv=h; h="";
-  // forme / fatigue / fraîcheur
-  var S=formeSeries(), pts=S.pts, z=pts[pts.length-1], N=Math.min(pts.length,60), view=pts.slice(pts.length-N);
-  var st=z.z>15?["Très frais","ok","Tu es reposée : bon moment pour une séance de qualité ou une course."]:z.z>5?["Frais","ok","Tu récupères bien, tu peux charger un peu."]:z.z>=-10?["Équilibré","ok","Charge et récupération sont en phase."]:z.z>=-25?["Chargée","warn","Tu accumules de la fatigue : garde les séances faciles vraiment faciles."]:["Surcharge","bad","Fatigue très élevée : allège les prochains jours."];
-  h+='<div class="card fm"><h2>Forme et fraîcheur</h2><div class="fm-top num"><div><span>Forme</span><b style="color:var(--brand)">'+Math.round(z.f)+'</b></div><div><span>Fatigue</span><b style="color:var(--acc-ink)">'+Math.round(z.a)+'</b></div><div><span>Fraîcheur</span><b style="color:var(--down)">'+(z.z>=0?"+":"−")+Math.abs(Math.round(z.z))+'</b></div></div>'+
-    '<div class="chip '+st[1]+'">'+st[0]+'</div><p class="small" style="margin:8px 0 8px">'+st[2]+'</p>'+formeSynth(z,pts);
-  var W=320, H=150, pl=30, pr=8, pt=8, pb=20, lo=0, hi=0; view.forEach(function(q){lo=Math.min(lo,q.z);hi=Math.max(hi,q.f,q.a,q.z);});
-  var span=hi-lo||1; lo-=span*.06; hi+=span*.06; span=hi-lo;
-  function X(k){return pl+(W-pl-pr)*k/Math.max(1,N-1);} function Y(v){return pt+(H-pt-pb)*(1-(v-lo)/span);}
-  function path(f){return view.map(function(q,k){return (k?"L":"M")+X(k).toFixed(1)+" "+Y(q[f]).toFixed(1);}).join("");}
-  var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Courbes de forme, fatigue et fraîcheur sur '+N+' jours">';
-  var step=Math.max(10,Math.ceil(span/4/10)*10), t0=Math.ceil(lo/step)*step;
-  for(var tv=t0;tv<=hi;tv+=step)g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(tv).toFixed(1)+'" y2="'+Y(tv).toFixed(1)+'" stroke="var(--line)" stroke-width="'+(tv===0?1.4:.6)+'"'+(tv===0?' stroke-dasharray="2 3"':'')+'/><text x="'+(pl-5)+'" y="'+(Y(tv)+3).toFixed(1)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+tv+'</text>';
-  g+='<path d="'+path("f")+'" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round"/><path d="'+path("a")+'" fill="none" stroke="var(--acc)" stroke-width="1.8" stroke-dasharray="5 3"/><path d="'+path("z")+'" fill="none" stroke="var(--down)" stroke-width="1.8"/>';
-  [0,Math.floor((N-1)/2),N-1].forEach(function(k,j){var dd=new Date(view[k].d*864e5); g+='<text x="'+X(k).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+(j===0?"start":j===2?"end":"middle")+'" font-size="9" fill="var(--muted)">'+dd.getUTCDate()+" "+MON[dd.getUTCMonth()]+'</text>';});
-  h+=g+'</svg><p class="small muted" style="margin:8px 0 0"><i class="wm-key" style="background:var(--brand);margin-left:0"></i>forme <i class="wm-key" style="background:var(--acc);margin-left:10px"></i>fatigue <i class="wm-key" style="background:var(--down);margin-left:10px"></i>fraîcheur</p>'+
-    '<p class="small muted" style="margin:8px 0 0">Calcul estimé à partir de la durée et de la fréquence cardiaque de tes sorties (formule de Banister, 42 j / 7 j)'+(S.est?' ; '+S.est+' sortie'+(S.est>1?'s':'')+' sans fréquence cardiaque estimée'+(S.est>1?'s':'')+' d’après la durée et le D+':'')+'. Ce n’est pas la valeur Strava ni Garmin.</p></div>';
-  return hv+projBlock()+h+dpCard();
+  var pj=projBlock();
+  return hv+(pj||fitBody(true))+dpCard();
 }
 
 // ---------- interactions ----------
