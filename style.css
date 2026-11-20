@@ -607,7 +607,6 @@ details.fold>*:last-child{margin-bottom:16px}
 .phlab .on{color:var(--ink);font-weight:700}
 
 /* Aujourd’hui : plus d’orange */
-.hero .facts>span{background:color-mix(in srgb,currentColor 12%,transparent);color:inherit;border-radius:999px;padding:4px 12px 4px 10px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
-.hero .facts>span::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--acc);flex:none}
+.hero .facts>span{background:color-mix(in srgb,currentColor 12%,transparent);color:inherit;border-radius:999px;padding:4px 12px;font-weight:600}
 .day.today{background:var(--brand-soft);color:var(--ink)}.day.today b{color:var(--ink)}.day.today.has i{background:var(--brand)}
 .hero .eyebrow{opacity:1}.hero .eyebrow::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--acc);margin-right:8px;vertical-align:1px}
