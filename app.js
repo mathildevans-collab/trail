@@ -755,7 +755,7 @@ function trophies(){
     (r.sg||[]).forEach(function(e){
       var o=seg[e.i]||(seg[e.i]={id:e.i,n:e.n,c:e.c,ef:[]}); o.ef.push({d:r.date,t:e.t,p:e.p,k:e.k});
       var tier=e.p===1?"or":e.p===2?"ar":e.p===3?"br":"";
-      if(tier)T.push({kind:"rec",tier:tier,g:"bolt",name:e.n,sub:"Segment · "+mmss(e.t),rank:e.p,d:r.date,seg:e.i});
+      if(tier)T.push({kind:"rec",tier:tier,g:"bolt",name:e.n,sub:(e.c?e.c+" · ":"")+mmss(e.t),rank:e.p,d:r.date,seg:e.i});
       if(e.c&&((e.p>0&&e.p<=3)||(e.k>0&&e.k<=10))){var ck=e.c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,""), c=city[ck]||(city[ck]={n:e.c,all:0,or:0,v:{}}); c.all++; if(e.p===1)c.or++; c.v[e.c]=(c.v[e.c]||0)+1; if(c.v[e.c]>c.v[c.n])c.n=e.c;}
     });
     (r.be||[]).forEach(function(b){var tier=b.p===1?"or":b.p===2?"ar":b.p===3?"br":""; if(tier)T.push({kind:"rec",tier:tier,g:"bolt",name:BEN[String(b.n).toLowerCase()]||b.n,sub:mmss(b.t),rank:b.p,d:r.date});});
@@ -783,7 +783,7 @@ function vTroph(){
   var R=trophies(), T=R.list, seen=TRSEEN||isoAgo(3), cnt={or:0,ar:0,br:0}, yr=isoToday().slice(0,4), mo=[0,0,0,0,0,0,0,0,0,0,0,0], wk=isoAgo(7), nWk=0, nNew=0;
   T.forEach(function(m){if(m.kind==="rec"){cnt[m.tier]++; if(m.d.slice(0,4)===yr)mo[+m.d.slice(5,7)-1]++;} if(m.d>=wk)nWk++; if(m.d>seen)nNew++;});
   function row(m){var nw=m.d>seen, tag=m.seg?'button':'div';
-    return '<'+tag+' class="sitem'+(nw||m.d===TRF?" hl":"")+'"'+(m.seg?' data-seg="'+esc(m.seg)+'"':'')+'>'+medal(m.tier,m.g)+'<span class="tx"><b>'+esc(m.name)+'</b><small>'+esc(m.sub)+(m.rank?" · "+(m.rank===1?"1er":m.rank+"e")+" temps":"")+'</small></span>'+(nw?'<span class="tro-pill">Nouveau</span>':'<span class="val">'+esc(dshort(m.d))+'</span>')+'</'+tag+'>';}
+    return '<'+tag+' class="sitem'+(nw||m.d===TRF?" hl":"")+'"'+(m.seg?' data-seg="'+esc(m.seg)+'"':'')+'>'+medal(m.tier,m.g)+'<span class="tx"><b>'+esc(m.name)+'</b><small>'+esc(m.sub)+'</small></span>'+(m.rank?'<span class="rk"><b>'+(m.rank===1?"1er":m.rank+"e")+'</b><small>'+(nw?"Nouveau":esc(dshort(m.d)))+'</small></span>':(nw?'<span class="tro-pill">Nouveau</span>':'<span class="val">'+esc(dshort(m.d))+'</span>'))+'</'+tag+'>';}
   var h=(TRFROM?'<button class="back" data-go="back">'+I.back+'Aujourd’hui</button>':'<button class="back" data-ssub="">'+I.back+'Réglages</button>');
   h+='<div class="tro-hero"><span class="eyebrow">Mes trophées</span><div class="tro-big"><b>'+T.length+'</b><span>médaille'+(T.length>1?"s":"")+'</span></div><p>'+(nWk?"+"+nWk+" cette semaine":"Aucune cette semaine")+(nNew?" · "+nNew+" nouvelle"+(nNew>1?"s":""):"")+'</p><div class="tro-tiers">'+[["or","Or"],["ar","Argent"],["br","Bronze"]].map(function(x){return '<div>'+medal(x[0],"")+'<b>'+cnt[x[0]]+'</b><small>'+x[1]+'</small></div>';}).join("")+'</div></div>';
   var f=TRF?T.filter(function(m){return m.d===TRF;}):[];
