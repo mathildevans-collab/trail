@@ -361,7 +361,7 @@ function rbCompute(pl,w,wk){
   var cand=wk.s.filter(flex), ch={}, items=[], txt="";
   if(dk>=Math.max(3,0.12*pk)&&cand.length){
     var tot=cand.reduce(function(a,x){return a+x.km;},0), A=Math.min(0.7*dk,0.3*tot);
-    cand.forEach(function(x){var cut=A*x.km/tot, to=Math.max(x.tag==="l"?x.km*0.7:Math.min(4,x.km),x.km-cut); to=Math.round(to*2)/2; if(to<x.km)ch[x.k]=to;});
+    cand.forEach(function(x){var cut=A*x.km/tot, to=Math.max(x.tag==="l"?x.km*0.7:Math.min(4,x.km),x.km-cut); if(x.club)to=Math.max(4,x.km-dk); to=Math.round(to*2)/2; if(to<x.km)ch[x.k]=to;});
     txt=(ex.km>0?"Tu as couru "+kmS(Math.round(ex.km*10)/10)+" km un jour sans séance prévue. ":"")+"Tu as couru "+kmS(Math.round(dk*10)/10)+" km de plus que prévu cette semaine"+(dd>=200?" (et +"+nb(Math.round(dd))+" m de dénivelé)":"")+". Pour arriver reposée à tes prochaines séances de qualité, j’en absorbe environ 70 % sur tes sorties faciles à venir.";
   } else if(dk<=-Math.max(3,0.15*pk)){
     var lg=cand.filter(function(x){return x.tag==="l";})[0], fr=null; try{var S=formeSeries(); fr=S&&S.pts[S.pts.length-1].z;}catch(e){}
@@ -378,7 +378,7 @@ function P(pl,w){
   var off=D.adj[pl.r.id+":"+w+":rb"]==="off";
   if(off||!rb.items.length)return Object.assign({},wk,{rb:rb,rbOff:off});
   var S=wk.s.map(function(x){var to=rb.ch[x.k]; if(to==null)return x; var f=to/x.km, c=Object.assign({},x); c.rbFrom=x.km; c.km=to; c.dp=Math.round((x.dp||0)*f); c.rbd=true; if(x.club)c.cw=1; c.steps=null;
-    c.txt=(x.txt||"")+" Ajustée selon ta semaine : vise "+kmS(c.km)+" km"+(c.dp?" et +"+c.dp+" m":"")+"."+(x.club?" Tu as déjà couru presque tout le volume de la semaine : faire la sortie du club en entier est déconseillé, sors plus court ou arrête-toi à "+kmS(c.km)+" km.":""); return c;});
+    c.txt=(x.txt||"")+" Ajustée selon ta semaine : vise "+kmS(c.km)+" km"+(c.dp?" et +"+c.dp+" m":"")+"."+(x.club?(c.km<=4?" Tu as déjà couru le volume prévu de la semaine : repos conseillé, au maximum "+kmS(c.km)+" km très faciles. Ne fais pas la sortie du club en entier.":" Tu as déjà couru une partie du volume de la semaine : ne fais pas la sortie du club en entier, vise "+kmS(c.km)+" km."):""); return c;});
   return Object.assign({},wk,{s:S,rb:rb,rbOff:false});
 }
 function rbCard(r,wk){
