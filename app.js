@@ -24,9 +24,9 @@ function tagOf(t){return QT[t]?"q":LT[t]?"l":"e";}
 
 // ---------- état ----------
 function thpRace(){return {id:"thp40",name:"THP40",full:"Trail de Haute Provence",place:"Forcalquier",date:"2027-05-08",time:"08:00",km:38.8,dp:1279,goal:295,prio:"A",builtin:true,start:"2026-11-09"};}
-function blank(){return {v:3,races:[thpRace()],active:"thp40",focus:"thp40",done:{},undone:{},actual:{},ci:{},adj:{},edits:{},cycle:{on:false,start:"",len:28},kit:{},todo:{},
+function blank(){return {v:3,races:[thpRace()],active:"thp40",focus:"thp40",done:{},undone:{},actual:{},ci:{},adj:{},edits:{},kit:{},todo:{},
   set:{theme:"auto",json:DEF_JSON,gel:35,water:15,vib:true,checkin:true,fake:""},race:null,practice:null,results:{},sync:{t:0,upd:"",err:"",gh:""}};}
-var OBJ={set:1,cycle:1,sync:1};
+var OBJ={set:1,sync:1};
 function assignState(n,o){for(var k in n){if(o[k]==null)continue; if(OBJ[k]&&typeof o[k]==="object")Object.assign(n[k],o[k]); else n[k]=o[k];} return n;}
 var LOADNOTE="", SEEN="";
 function parseKey(k){try{var r=JSON.parse(localStorage.getItem(k)||"null"); return r&&typeof r==="object"&&!Array.isArray(r)?r:null;}catch(e){return null;}}
@@ -52,7 +52,7 @@ function migrate(o,n){
   Object.keys(o.actual||{}).forEach(function(k){var a=o.actual[k]; if(a&&a.src!=="strava")n.actual["thp40:"+k]=a;});
   Object.keys(o.adj||{}).forEach(function(k){n.adj["thp40:"+k]=o.adj[k];});
   Object.keys(o.ci||{}).forEach(function(k){n.ci["thp40:"+k]=o.ci[k];});
-  if(o.cycle)n.cycle=o.cycle; if(o.kit)n.kit={thp40:o.kit};
+  if(o.kit)n.kit={thp40:o.kit};
   Object.keys(o.todo||{}).forEach(function(k){n.todo["thp40:"+k]=o.todo[k];});
   if(o.result)n.results.thp40=o.result; if(o.gpx)t.gpx=o.gpx;
   return n;
@@ -387,22 +387,13 @@ function rbCard(r,wk){
   h+='<p class="small muted" style="margin:8px 0 10px">Les séances club, les courses et celles que tu as modifiées ne changent jamais.</p>';
   return h+'<button class="btn sm" data-rb="'+(off?"on":"off")+'" data-w="'+wk.n+'">'+(off?"Appliquer l’ajustement":"Annuler l’ajustement")+'</button></details>';
 }
-function cycleDay(t){var c=D.cycle; if(!c.on||!isoOk(c.start))return 0; var d=Math.floor((t-dms(c.start))/DAY); if(d<0)return 0; return (d%(c.len||28))+1;}
-function inPeriod(t){var c=cycleDay(t); return c>=1&&c<=5;}
-function cycleBanner(t,s){
-  if(!inPeriod(t))return ""; var opt="";
-  if(s&&s.tag==="q"&&s.type.indexOf("Club")<0)opt=" Option : une version allégée aujourd’hui (quelques répétitions de moins, ou un tempo raccourci de 10 min).";
-  else if(s&&s.tag==="l"&&s.km&&!s.race)opt=" Option : réduire cette sortie de 10 à 15 %, soit environ "+kmS(s.km*0.87)+" km.";
-  return '<div class="banner">Tu es en phase menstruelle. C’est normal de se sentir un peu moins forte ou plus fatiguée. Tu peux garder le plan, ou baisser légèrement l’intensité.'+opt+'</div>';
-}
-
 // ---------- icônes ----------
 function sv(p,w){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';}
 var I={
  gear:sv('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
  check:sv('<path d="M5 12l5 5 9-10"/>',3), play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>',
  back:sv('<path d="M15 5l-7 7 7 7"/>',2.4), sync:sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'),
- heart:sv('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'), cycle:sv('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>'),
+ heart:sv('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'),
  bell:sv('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>'), flag:sv('<path d="M5 21V4h11l-2 4 2 4H5"/>'),
  gel:sv('<path d="M9 3h6v4l2 3v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9l2-3z"/>'), drop:sv('<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>'),
  vib:sv('<rect x="8" y="4" width="8" height="16" rx="2"/><path d="M4 8v8M20 8v8"/>'), up:sv('<path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>'),
@@ -511,7 +502,6 @@ function vPrep(r,pl){
     h+='<button class="day'+(s0?" has":"")+(dn?" done":"")+(tdy?" today":"")+'" data-day="'+i+'" aria-pressed="'+(sel===i)+'" aria-label="'+DOWL[i]+(s0?", "+esc(s0.type):", repos")+(dn?", faite":"")+'"><span>'+DL[i]+'</span><b>'+new Date(pl.start+((cur-1)*7+i)*DAY).getUTCDate()+'</b><i></i></button>';}
   h+='</div>';
   var s=sessAt(wk,sel);
-  h+=cycleBanner(selD,s);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
   if(cur===tw)h+=weekEndCard(r,pl,ti);
@@ -762,9 +752,7 @@ function vSettings(){
   h+=tile('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',"Données",lastExportTxt().replace(/\.$/,"").replace("Dernier export ","Export "),{tag:"button",attr:' data-ssub="donnees"'});
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>')+'</span><span class="sd-tx"><b>Apparence</b></span><div class="sd-seg" role="radiogroup" aria-label="Thème">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>')+'</span><span class="sd-tx"><b>Check-in du lundi</b></span>'+tg("checkin",D.set.checkin,"Check-in du lundi")+'</div>';
-  h+='<div class="sd-t'+(D.cycle.on?' sd-w':'')+'"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>')+'</span><span class="sd-tx"><b>Suivi du cycle</b></span>'+tg("cycle",D.cycle.on,"Suivi du cycle")+
-    (D.cycle.on?'<div class="sd-fields"><label class="field">Début des dernières règles<input type="date" id="cydate" value="'+esc(D.cycle.start||"")+'"></label><label class="field">Durée du cycle<select id="cylen">'+(function(){var o="";for(var i=21;i<=38;i++)o+='<option value="'+i+'"'+((D.cycle.len||28)===i?" selected":"")+'>'+i+' jours</option>';return o;})()+'</select></label></div><p class="muted xs" style="margin:0">Pendant les 5 premiers jours, un message te propose d’alléger la séance. Données gardées sur ce téléphone.</p>':'')+'</div>';
-  h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",attr:' data-ssub="course"'});
+  h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",w:1,row:1,attr:' data-ssub="course"'});
   h+=tile('<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',"Renfo et mobilité","7 renfo · 6 mobilité",{tag:"button",w:1,row:1,attr:' data-sheet="guide"'});
   h+=tile('<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',GS?(GS.err?"Synchro à vérifier":"Synchro entre appareils"):"Mêmes données partout",GS?(GS.err?esc(GS.err):(GS.t?"Active · "+ago(GS.t):"En attente de la première synchro")):"Téléphone et ordinateur, chiffré, sans compte",{tag:"button",w:1,row:1,attr:' data-act="'+(GS?"gmanage":"gsetup")+'"',st:GS?[GS.err?"w":"",""]:null});
   h+='</div><div class="sd-dz"><button data-act="reset">'+(resetArmed?"Toucher encore pour tout effacer":"Tout effacer")+'</button></div>'+foot;
@@ -1223,9 +1211,9 @@ $("view").addEventListener("keydown",function(e){var swi=e.target.closest&&e.tar
 $("view").addEventListener("change",function(e){
   var id=e.target.id, v=e.target.value;
   if(id==="gelmin"){D.set.gel=+v; save();} else if(id==="watermin"){D.set.water=+v; save();}
-  else if(id==="cydate"){D.cycle.start=v; save(); render(true);} else if(id==="cylen"){D.cycle.len=+v; save(); render(true);}
+
 });
-function toggleSw(k){if(k==="cycle")D.cycle.on=!D.cycle.on; else D.set[k]=!D.set[k]; save(); render(true);}
+function toggleSw(k){D.set[k]=!D.set[k]; save(); render(true);}
 function act(a,b){
   var ds=b.dataset;
   if(a==="sync")sync(true);
