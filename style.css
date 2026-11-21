@@ -674,8 +674,8 @@ details.fold>*:last-child{margin-bottom:16px}
 .tro-bars>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%}
 .tro-bars i{width:100%;max-width:22px;border-radius:6px 6px 3px 3px;background:var(--brand-soft)}.tro-bars i.cur{background:var(--brand)}
 .tro-bars .n{font:700 11px var(--mono)}.tro-bars .m{font:600 11px var(--mono);color:var(--muted)}
-.tro-st{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:12px 16px 16px}.tro-st::-webkit-scrollbar{display:none}
-.stp{flex:none;width:150px;display:flex;flex-direction:column;gap:3px;padding:12px;border-radius:18px;background:var(--bg)}
+.tro-st{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:12px 16px 6px;scroll-snap-type:x mandatory;scroll-padding-inline:16px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}.tro-st::-webkit-scrollbar{display:none}
+.stp{flex:none;width:148px;scroll-snap-align:start;display:flex;flex-direction:column;gap:3px;padding:12px;border-radius:18px;background:var(--bg)}
 .stp .md{width:44px;height:44px;margin-bottom:4px}.stp b{font:700 14px/1.2 var(--display)}.stp small{font:600 12px var(--mono);color:var(--muted)}.stp em{font:600 11px var(--mono);font-style:normal;color:var(--muted);margin-top:auto}
 .mbadge{display:inline-flex;align-items:center;min-height:44px;padding:0 4px 0 12px;border:0;background:none;color:var(--ink);cursor:pointer}
 .mbadge .md{margin-left:-12px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.25))}.mbadge .md:first-child{margin-left:0}
@@ -695,3 +695,5 @@ details.fold>*:last-child{margin-bottom:16px}
 .tro-pg button:disabled{opacity:.3}.tro-pg button svg{width:22px;height:22px}.tro-pg .rt{display:grid;transform:rotate(180deg)}
 .t-or{--c1:#f2b531;--c2:#d58f12}.t-ar{--c1:#cdd4d9;--c2:#9aa5ad}.t-br{--c1:#dc8f63;--c2:#b4673e}.t-vt{--c1:var(--brand);--c2:var(--brand);color:var(--brand)}
 .md .rg,.md .ds,.md .hl{display:none}
+.tro-dots{display:flex;justify-content:center;gap:6px;padding:0 0 14px}.tro-dots i{width:6px;height:6px;border-radius:50%;background:var(--line);transition:width .2s,background .2s}.tro-dots i.on{width:18px;border-radius:3px;background:var(--brand)}
+@media (prefers-reduced-motion:reduce){.tro-dots i{transition:none}}
