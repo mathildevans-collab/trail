@@ -657,8 +657,9 @@ details.fold>*:last-child{margin-bottom:16px}
 /* Trophées */
 .md{display:block;width:40px;height:40px;flex:none;color:var(--ink)}.md svg{display:block;width:100%;height:100%;overflow:visible}
 .md.s{width:32px;height:32px}
-.md .sc{stroke:currentColor;stroke-width:1.5;stroke-linejoin:round}.md .in{fill:none;stroke:currentColor;stroke-width:1.2;opacity:.45}
-.t-or .sc{fill:url(#mg-or)}.t-ar .sc{fill:url(#mg-ar)}.t-br .sc{fill:url(#mg-br)}.t-vt .sc{fill:url(#mg-vt)}.t-vt{color:var(--brand)}
+.md .rg{stroke:rgba(0,0,0,.4);stroke-width:1}.md .ds{stroke:rgba(0,0,0,.22);stroke-width:1}.md .hl{fill:none;stroke:#fff;stroke-opacity:.8;stroke-width:1.7;stroke-linecap:round}
+.t-or .rg{fill:url(#rg-or)}.t-or .ds{fill:url(#ds-or)}.t-ar .rg{fill:url(#rg-ar)}.t-ar .ds{fill:url(#ds-ar)}.t-br .rg{fill:url(#rg-br)}.t-br .ds{fill:url(#ds-br)}.t-vt .rg{fill:url(#rg-vt)}.t-vt .ds{fill:url(#ds-vt)}
+.t-vt{color:var(--brand)}.t-or,.t-ar,.t-br{color:#2a2418}
 .sitem .md{width:36px;height:36px}
 .sitem.hl{background:color-mix(in srgb,var(--sun) 14%,var(--card))}
 .tro-pill{font:700 12px var(--mono);color:var(--acc-ink);background:var(--acc-soft);border-radius:999px;padding:5px 10px;white-space:nowrap}
@@ -672,12 +673,6 @@ details.fold>*:last-child{margin-bottom:16px}
 .tro-tiers .md{width:42px;height:42px}.tro-tiers b{font:700 22px var(--display)}.tro-tiers small{font-size:12px;opacity:.9}
 .tro-card{margin:0 0 14px;padding:16px;border:1px solid var(--line);border-radius:22px;background:var(--card)}.tro-card.nopad{padding:0;overflow:hidden}
 .tro-card>.eyebrow{display:block}
-.tro-pod{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:12px}
-.pd{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px}
-.pd b{font:800 24px var(--display)}.pd .cn{font:600 13px/1.2 var(--body);overflow-wrap:anywhere}.pd small{font:600 11px var(--mono);color:var(--muted);margin-bottom:6px}
-.pd i{display:flex;align-items:flex-start;justify-content:center;width:100%;border-radius:14px 14px 4px 4px;background:var(--brand-soft);color:var(--brand)}
-.pd.p1 i{background:linear-gradient(180deg,var(--sun),color-mix(in srgb,var(--sun) 35%,var(--card)));color:var(--ink)}
-.pd i em{font:800 18px var(--display);font-style:normal;margin-top:8px}
 .tro-bars{display:flex;align-items:flex-end;gap:6px;height:104px;margin-top:12px}
 .tro-bars>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%}
 .tro-bars i{width:100%;max-width:22px;border-radius:6px 6px 3px 3px;background:var(--brand-soft)}.tro-bars i.cur{background:var(--brand)}
@@ -688,3 +683,16 @@ details.fold>*:last-child{margin-bottom:16px}
 .mbadge{display:inline-flex;align-items:center;min-height:44px;padding:0 4px 0 12px;border:0;background:none;color:var(--ink);cursor:pointer}
 .mbadge .md{margin-left:-12px;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.25))}.mbadge .md:first-child{margin-left:0}
 .mbadge b{margin-left:6px;font:700 14px var(--mono)}
+.md.l{width:54px;height:54px}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:16px}
+.pc{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+.pc .cn{font:700 14px/1.2 var(--display);overflow-wrap:anywhere;margin-top:4px}.pc small{font:600 12px var(--mono);color:var(--muted);margin-bottom:8px}
+.pc i{display:flex;align-items:flex-start;justify-content:center;width:100%;border-radius:14px 14px 0 0;color:var(--ink)}
+.pc i em{font:800 26px var(--display);font-style:normal;margin-top:8px}
+.pc.p1 i{height:96px;background:linear-gradient(180deg,#f3cb63,color-mix(in srgb,#e2a72e 25%,var(--card)))}
+.pc.p2 i{height:72px;background:linear-gradient(180deg,#cfd6da,color-mix(in srgb,#b7c0c6 25%,var(--card)))}
+.pc.p3 i{height:54px;background:linear-gradient(180deg,#e3a883,color-mix(in srgb,#c47c52 25%,var(--card)))}
+.tro-pg{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-top:1px solid var(--line)}
+.tro-pg span{font:600 13px var(--mono);color:var(--muted)}
+.tro-pg button{width:48px;height:48px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--brand)}
+.tro-pg button:disabled{opacity:.3}.tro-pg button svg{width:22px;height:22px}.tro-pg .rt{display:grid;transform:rotate(180deg)}

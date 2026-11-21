@@ -736,17 +736,16 @@ function swItem(ic,t,sub,key,on){return '<div class="sitem" role="switch" tabind
 function group(t,inner){return '<div class="sgroup"><span class="eyebrow">'+t+'</span><div class="slist">'+inner+'</div></div>';}
 function selMin(id,list,val){return '<select id="'+id+'" aria-label="'+(id==="gelmin"?"Fréquence du rappel de gel":"Fréquence du rappel d’eau")+'">'+list.map(function(v){return '<option value="'+v+'"'+(val===v?" selected":"")+'>'+(v?"toutes les "+v+" min":"désactivé")+'</option>';}).join("")+'</select>';}
 // ---------- Trophées : records de segments et de distances (Strava), étapes calculées sur tes sorties ----------
-var TRF="", TRSEEN="", TRFROM=false, TRALL=false;
+var TRF="", TRSEEN="", TRFROM=false, TRPG=0;
 function pz2(n){return n<10?"0"+n:""+n;}
 function mmss(t){t=Math.round(t); var h=Math.floor(t/3600), m=Math.floor(t%3600/60), s=t%60; return h?h+":"+pz2(m)+":"+pz2(s):m+":"+pz2(s);}
 function dshort(iso){return fmtD(dms(iso)).replace(/^\S+\s/,"");}
 function isoToday(){return new Date(todayUTC()).toISOString().slice(0,10);}
 function isoAgo(n){return new Date(todayUTC()-n*864e5).toISOString().slice(0,10);}
 var BEN={"400m":"400 m","1/2 mile":"800 m","1k":"1 km","1 mile":"1 mile","2 mile":"2 miles","5k":"5 km","10k":"10 km","15k":"15 km","10 mile":"10 miles","20k":"20 km","half-marathon":"Semi-marathon","30k":"30 km","marathon":"Marathon"};
-var SCAL=(function(){var p=[],i,n=120,a,r; for(i=0;i<n;i++){a=i/n*Math.PI*2; r=17.6+1.1*Math.cos(a*12); p.push((i?"L":"M")+(20+r*Math.cos(a)).toFixed(2)+" "+(20+r*Math.sin(a)).toFixed(2));} return p.join("")+"Z";})();
 function medal(tier,glyph,sz){
-  var mid=tier==="vt"?(glyph==="loop"?'<path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M25.5 15.5a7 7 0 0 0-11 1.5M14.5 24.5a7 7 0 0 0 11-1.5M26 12.5v4h-4M14 27.5v-4h4"/>':'<path d="M12 26.5l5.6-9 3.7 5.6 2.6-3.6 4.1 7z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>'):'<text x="20" y="25.6" text-anchor="middle" font-size="16" font-weight="800" style="fill:currentColor;font-family:var(--display)">'+(tier==="or"?1:tier==="ar"?2:3)+'</text>';
-  return '<span class="md t-'+tier+(sz?" "+sz:"")+'" aria-hidden="true"><svg viewBox="0 0 40 40"><path class="sc" d="'+SCAL+'"/><circle class="in" cx="20" cy="20" r="12.6"/>'+mid+'</svg></span>';
+  var mid=tier==="vt"?(glyph==="loop"?'<path fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M26 15a7.4 7.4 0 0 0-11.6 1.6M14 25a7.4 7.4 0 0 0 11.6-1.6M26.6 11.6v4.2h-4.2M13.4 28.4v-4.2h4.2"/>':'<path d="M11.5 27l6-9.6 4 6 2.8-3.8 4.2 7.4z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>'):(function(n){return '<text x="20" y="26.9" text-anchor="middle" font-size="18" font-weight="800" style="fill:#fff;fill-opacity:.55;font-family:var(--display)">'+n+'</text><text x="20" y="26" text-anchor="middle" font-size="18" font-weight="800" style="fill:currentColor;font-family:var(--display)">'+n+'</text>';})(tier==="or"?1:tier==="ar"?2:3);
+  return '<span class="md t-'+tier+(sz?" "+sz:"")+'" aria-hidden="true"><svg viewBox="0 0 40 40"><circle class="rg" cx="20" cy="20" r="18.6"/><circle class="ds" cx="20" cy="20" r="14.4"/><path class="hl" d="M9.6 17.5A11.2 11.2 0 0 1 22.5 9"/>'+mid+'</svg></span>';
 }
 function trophies(){
   var T=[], seg={}, city={}, ago=isoAgo(90), best=null, bd=null, kmM=0, dpM=0, kmR=null, dpR=null;
@@ -777,7 +776,7 @@ function medalBadge(selD){ // pastille de médailles dans le bilan du jour : tou
   var iso=new Date(selD).toISOString().slice(0,10), T=trophies().list.filter(function(m){return m.d===iso;}); if(!T.length)return "";
   return '<button class="mbadge" data-tro="'+iso+'" aria-label="'+T.length+(T.length>1?" médailles":" médaille")+' ce jour-là, voir les trophées">'+T.slice(0,3).map(function(m){return medal(m.tier,m.g,"s");}).join("")+'<b>'+T.length+'</b></button>';
 }
-function openTro(focus){TRALL=false; TRSEEN=D.tseen||isoAgo(3); D.tseen=isoToday(); save(); TRF=focus||""; TRFROM=!!focus; if(tab!=="settings"){prevTab=tab;tab="settings";} SSUB="trophees"; render(); window.scrollTo(0,0);}
+function openTro(focus){TRPG=0; TRSEEN=D.tseen||isoAgo(3); D.tseen=isoToday(); save(); TRF=focus||""; TRFROM=!!focus; if(tab!=="settings"){prevTab=tab;tab="settings";} SSUB="trophees"; render(); window.scrollTo(0,0);}
 function vTroph(){
   var R=trophies(), T=R.list, seen=TRSEEN||isoAgo(3), cnt={or:0,ar:0,br:0}, yr=isoToday().slice(0,4), mo=[0,0,0,0,0,0,0,0,0,0,0,0], wk=isoAgo(7), nWk=0, nNew=0;
   T.forEach(function(m){if(m.kind==="rec"){cnt[m.tier]++; if(m.d.slice(0,4)===yr)mo[+m.d.slice(5,7)-1]++;} if(m.d>=wk)nWk++; if(m.d>seen)nNew++;});
@@ -787,13 +786,15 @@ function vTroph(){
   h+='<div class="tro-hero"><span class="eyebrow">Mes trophées</span><div class="tro-big"><b>'+T.length+'</b><span>médaille'+(T.length>1?"s":"")+'</span></div><p>'+(nWk?"+"+nWk+" cette semaine":"Aucune cette semaine")+(nNew?" · "+nNew+" nouvelle"+(nNew>1?"s":""):"")+'</p><div class="tro-tiers">'+[["or","Or"],["ar","Argent"],["br","Bronze"]].map(function(x){return '<div>'+medal(x[0],"")+'<b>'+cnt[x[0]]+'</b><small>'+x[1]+'</small></div>';}).join("")+'</div></div>';
   var f=TRF?T.filter(function(m){return m.d===TRF;}):[];
   if(f.length)h+=group("Sortie du "+esc(dshort(TRF))+" · "+f.length+(f.length>1?" médailles":" médaille"),f.map(row).join(""));
-  if(R.lieux.length){var ord=R.lieux.length>=3?[1,0,2]:R.lieux.map(function(_,i){return i;}), hts=[64,92,48];
-    h+='<div class="tro-card"><span class="eyebrow">Mes lieux les plus forts</span><div class="tro-pod">'+ord.map(function(i){var c=R.lieux[i];return '<div class="pd p'+(i+1)+'"><b>'+c.all+'</b><span class="cn">'+esc(c.n)+'</span><small>'+(c.or?c.or+" en or":"segments")+'</small><i style="height:'+hts[i]+'px"><em>'+(i+1)+'</em></i></div>';}).join("")+'</div></div>';}
+  if(R.lieux.length){var ord=R.lieux.length>=3?[1,0,2]:R.lieux.map(function(_,i){return i;}), tr=["or","ar","br"];
+    h+='<div class="tro-card"><span class="eyebrow">Podium de tes villes</span><p class="small muted" style="margin:4px 0 0">Les villes où tu as battu le plus de records sur tes segments.</p><div class="podium">'+ord.map(function(i){var c=R.lieux[i];return '<div class="pc p'+(i+1)+'">'+medal(tr[i],"","l")+'<span class="cn">'+esc(c.n)+'</span><small>'+c.all+' record'+(c.all>1?"s":"")+'</small><i><em>'+(i+1)+'</em></i></div>';}).join("")+'</div></div>';}
   var mx=Math.max.apply(null,mo.concat(1)), nowM=+isoToday().slice(5,7), ML="JFMAMJJASOND";
   if(T.some(function(m){return m.kind==="rec";}))h+='<div class="tro-card"><span class="eyebrow">Records par mois · '+yr+'</span><div class="tro-bars" role="img" aria-label="Records par mois : '+mo.slice(0,nowM).map(function(n,i){return MON[i]+" "+n;}).join(", ")+'">'+mo.slice(0,nowM).map(function(n,i){return '<div><span class="n">'+(n||"")+'</span><i class="'+(i===nowM-1?"cur":"")+'" style="height:'+Math.max(3,Math.round(n/mx*64))+'px"></i><span class="m">'+ML[i]+'</span></div>';}).join("")+'</div></div>';
   var rec=T.filter(function(m){return m.kind==="rec"&&m.d!==TRF;}), st=T.filter(function(m){return m.kind==="step"&&m.d!==TRF;});
   if(st.length)h+='<div class="tro-card nopad"><span class="eyebrow" style="padding:16px 16px 0">Mes étapes</span><div class="tro-st">'+st.map(function(m){return '<div class="stp">'+medal(m.tier,m.g)+'<b>'+esc(m.name)+'</b><small>'+esc(m.sub)+'</small><em>'+esc(dshort(m.d))+'</em></div>';}).join("")+'</div></div>';
-  h+=group("Records",rec.length?(TRALL?rec:rec.slice(0,8)).map(row).join("")+(rec.length>8?'<button class="sitem" data-trall="1"><span class="tx"><b>'+(TRALL?"Réduire la liste":"Voir les "+rec.length+" records")+'</b></span></button>':""):'<div class="sitem"><span class="tx"><b>Pas encore de record</b><small>Tes records de segments et de distances arrivent avec la prochaine synchro Strava, puis à chaque nouvelle sortie.</small></span></div>');
+  rec.sort(function(x,y){return x.rank-y.rank||(x.d<y.d?1:x.d>y.d?-1:0);});
+  var PG=5, np=Math.max(1,Math.ceil(rec.length/PG)); if(TRPG>=np)TRPG=np-1; if(TRPG<0)TRPG=0;
+  h+=group("Records · les mieux classés d’abord",rec.length?rec.slice(TRPG*PG,TRPG*PG+PG).map(row).join("")+'<div class="tro-pg"><button data-trpg="-1" aria-label="5 records précédents"'+(TRPG?"":" disabled")+'>'+I.back+'</button><span>'+(TRPG*PG+1)+"–"+Math.min(rec.length,TRPG*PG+PG)+' sur '+rec.length+'</span><button data-trpg="1" aria-label="5 records suivants"'+(TRPG<np-1?"":" disabled")+'><span class="rt">'+I.back+'</span></button></div>':'<div class="sitem"><span class="tx"><b>Pas encore de record</b><small>Tes records de segments et de distances arrivent avec la prochaine synchro Strava, puis à chaque nouvelle sortie.</small></span></div>');
   return h+'<p class="foot">Or, argent, bronze : tes meilleurs temps sur tes segments et distances, d’après Strava. Les étapes sont calculées sur tes sorties.</p>';
 }
 function segSheet(id){
@@ -1250,7 +1251,7 @@ $("tabs").addEventListener("click",function(e){var b=e.target.closest("button[da
 $("view").addEventListener("click",function(e){
   var swi=e.target.closest("[data-sw]"); if(swi){toggleSw(swi.dataset.sw); return;}
   var b=e.target.closest("button"); if(!b)return; var ds=b.dataset;
-  if(ds.trall){TRALL=!TRALL; render(true); return;}
+  if(ds.trpg){TRPG+=+ds.trpg; render(true); return;}
   if(ds.tro!==undefined){openTro(ds.tro); return;}
   if(ds.seg){segSheet(ds.seg); return;}
   if(ds.ssub!==undefined){if(ds.ssub==="trophees"){openTro("");return;} SSUB=ds.ssub||null; render(); window.scrollTo(0,0); return;}
