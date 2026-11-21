@@ -807,12 +807,12 @@ function segMap(id){
   var W=340,H=200;
   function mx(lng,z){return (lng+180)/360*256*Math.pow(2,z);}
   function my(lat,z){var r=lat*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*256*Math.pow(2,z);}
-  var z=17, mnx,mxx,mny,mxy;
+  var z=18, mnx,mxx,mny,mxy;
   for(;z>9;z--){var xs=pts.map(function(p){return mx(p[1],z);}), ys=pts.map(function(p){return my(p[0],z);}); mnx=Math.min.apply(null,xs);mxx=Math.max.apply(null,xs);mny=Math.min.apply(null,ys);mxy=Math.max.apply(null,ys); if(mxx-mnx<=W*.7&&mxy-mny<=H*.7)break;}
   var ox=(mnx+mxx)/2-W/2, oy=(mny+mxy)/2-H/2, n=Math.pow(2,z), t="";
-  for(var tx=Math.floor(ox/256);tx<=Math.floor((ox+W)/256);tx++)for(var ty=Math.floor(oy/256);ty<=Math.floor((oy+H)/256);ty++){if(ty<0||ty>=n)continue; t+='<image href="https://tile.openstreetmap.org/'+z+'/'+(((tx%n)+n)%n)+'/'+ty+'.png" x="'+(tx*256-ox)+'" y="'+(ty*256-oy)+'" width="256" height="256"/>';}
+  for(var tx=Math.floor(ox/256);tx<=Math.floor((ox+W)/256);tx++)for(var ty=Math.floor(oy/256);ty<=Math.floor((oy+H)/256);ty++){if(ty<0||ty>=n)continue; t+='<image href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+ty+'/'+(((tx%n)+n)%n)" x="'+(tx*256-ox)+'" y="'+(ty*256-oy)+'" width="256" height="256"/>';}
   var P=pts.map(function(p){return (mx(p[1],z)-ox).toFixed(1)+","+(my(p[0],z)-oy).toFixed(1);}), a=P[0].split(","), b=P[P.length-1].split(",");
-  return '<div class="segmap"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Tracé du segment">'+t+'<polyline points="'+P.join(" ")+'" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+P.join(" ")+'" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="'+a[0]+'" cy="'+a[1]+'" r="5.5" fill="var(--brand)" stroke="#fff" stroke-width="2"/><circle cx="'+b[0]+'" cy="'+b[1]+'" r="5.5" fill="#fff" stroke="var(--acc)" stroke-width="3"/></svg><small>© OpenStreetMap</small></div>';
+  return '<div class="segmap"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Tracé du segment">'+t+'<polyline points="'+P.join(" ")+'" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+P.join(" ")+'" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="'+a[0]+'" cy="'+a[1]+'" r="5.5" fill="var(--brand)" stroke="#fff" stroke-width="2"/><circle cx="'+b[0]+'" cy="'+b[1]+'" r="5.5" fill="#fff" stroke="var(--acc)" stroke-width="3"/></svg><small>© Esri</small></div>';
 }
 function segSheet(id){
   var o=trophies().seg[id]; if(!o)return; var ef=o.ef.slice().sort(function(a,b){return a.d<b.d?1:-1;}), bt=Math.min.apply(null,ef.map(function(e){return e.t;})), bd=ef.filter(function(e){return e.t===bt;})[0];
