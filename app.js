@@ -799,24 +799,9 @@ function vTroph(){
   h+=group("Records · les mieux classés d’abord",rec.length?rec.slice(TRPG*PG,TRPG*PG+PG).map(row).join("")+'<div class="tro-pg"><button data-trpg="-1" aria-label="5 records précédents"'+(TRPG?"":" disabled")+'>'+I.back+'</button><span>'+(TRPG*PG+1)+"–"+Math.min(rec.length,TRPG*PG+PG)+' sur '+rec.length+'</span><button data-trpg="1" aria-label="5 records suivants"'+(TRPG<np-1?"":" disabled")+'><span class="rt">'+I.back+'</span></button></div>':'<div class="sitem"><span class="tx"><b>Pas encore de record</b><small>Tes records de segments et de distances arrivent avec la prochaine synchro Strava, puis à chaque nouvelle sortie.</small></span></div>');
   return h+'<p class="foot">Or, argent, bronze : tes meilleurs temps sur tes segments et distances, d’après Strava. Les étapes sont calculées sur tes sorties.</p>';
 }
-var SEGS={}; try{SEGS=JSON.parse(localStorage.getItem("cadenzo-segs")||"{}")||{};}catch(e){}
-function polyDec(str){var i=0,la=0,ln=0,o=[]; while(i<str.length){var b,sh=0,r=0; do{b=str.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5;}while(b>=32); la+=(r&1)?~(r>>1):(r>>1); sh=0;r=0; do{b=str.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5;}while(b>=32); ln+=(r&1)?~(r>>1):(r>>1); o.push([la/1e5,ln/1e5]);} return o;}
-function segMap(id){
-  var pl=SEGS[id]; if(!pl)return '<div class="segmap none"><span>Tracé disponible après la prochaine synchro</span></div>';
-  var pts=polyDec(pl); if(pts.length<2)return "";
-  var W=340,H=200;
-  function mx(lng,z){return (lng+180)/360*256*Math.pow(2,z);}
-  function my(lat,z){var r=lat*Math.PI/180; return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*256*Math.pow(2,z);}
-  var z=18, mnx,mxx,mny,mxy;
-  for(;z>9;z--){var xs=pts.map(function(p){return mx(p[1],z);}), ys=pts.map(function(p){return my(p[0],z);}); mnx=Math.min.apply(null,xs);mxx=Math.max.apply(null,xs);mny=Math.min.apply(null,ys);mxy=Math.max.apply(null,ys); if(mxx-mnx<=W*.7&&mxy-mny<=H*.7)break;}
-  var ox=(mnx+mxx)/2-W/2, oy=(mny+mxy)/2-H/2, n=Math.pow(2,z), t="";
-  for(var tx=Math.floor(ox/256);tx<=Math.floor((ox+W)/256);tx++)for(var ty=Math.floor(oy/256);ty<=Math.floor((oy+H)/256);ty++){if(ty<0||ty>=n)continue; t+='<image href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/'+z+'/'+ty+'/'+(((tx%n)+n)%n)+'" x="'+(tx*256-ox)+'" y="'+(ty*256-oy)+'" width="256" height="256"/>';}
-  var P=pts.map(function(p){return (mx(p[1],z)-ox).toFixed(1)+","+(my(p[0],z)-oy).toFixed(1);}), a=P[0].split(","), b=P[P.length-1].split(",");
-  return '<div class="segmap"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Tracé du segment">'+t+'<polyline points="'+P.join(" ")+'" fill="none" stroke="#fff" stroke-opacity=".9" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+P.join(" ")+'" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="'+a[0]+'" cy="'+a[1]+'" r="5.5" fill="var(--brand)" stroke="#fff" stroke-width="2"/><circle cx="'+b[0]+'" cy="'+b[1]+'" r="5.5" fill="#fff" stroke="var(--acc)" stroke-width="3"/></svg><small>© Esri</small></div>';
-}
 function segSheet(id){
   var o=trophies().seg[id]; if(!o)return; var ef=o.ef.slice().sort(function(a,b){return a.d<b.d?1:-1;}), bt=Math.min.apply(null,ef.map(function(e){return e.t;})), bd=ef.filter(function(e){return e.t===bt;})[0];
-  openSheet('<h2>'+esc(o.n)+'</h2><p class="small muted">'+(o.c?esc(o.c)+" · ":"")+ef.length+(ef.length>1?" passages":" passage")+'</p>'+segMap(id)+'<p style="margin:10px 0 4px"><span class="eyebrow">Ton record</span></p><p style="font:700 28px var(--display);margin:0 0 10px">'+mmss(bt)+' <span class="small muted" style="font:600 13px var(--mono)">le '+esc(dshort(bd.d))+'</span></p><div class="slist" style="margin-bottom:14px">'+ef.slice(0,8).map(function(e,i){var prv=ef[i+1], dl=prv?e.t-prv.t:0; return '<div class="sitem" style="min-height:48px"><span class="tx"><b>'+esc(dshort(e.d))+'</b></span><span class="val" style="color:var(--ink);font-weight:600">'+mmss(e.t)+'</span>'+(prv?'<span class="val" style="min-width:56px;text-align:right;color:'+(dl<0?'var(--ok)':'var(--muted)')+'">'+(dl<0?"−":"+")+Math.abs(dl)+' s</span>':'')+'</div>';}).join("")+'</div>');
+  openSheet('<h2>'+esc(o.n)+'</h2><p class="small muted">'+(o.c?esc(o.c)+" · ":"")+ef.length+(ef.length>1?" passages":" passage")+'</p><p style="margin:10px 0 4px"><span class="eyebrow">Ton record</span></p><p style="font:700 28px var(--display);margin:0 0 10px">'+mmss(bt)+' <span class="small muted" style="font:600 13px var(--mono)">le '+esc(dshort(bd.d))+'</span></p><div class="slist" style="margin-bottom:14px">'+ef.slice(0,8).map(function(e,i){var prv=ef[i+1], dl=prv?e.t-prv.t:0; return '<div class="sitem" style="min-height:48px"><span class="tx"><b>'+esc(dshort(e.d))+'</b></span><span class="val" style="color:var(--ink);font-weight:600">'+mmss(e.t)+'</span>'+(prv?'<span class="val" style="min-width:56px;text-align:right;color:'+(dl<0?'var(--ok)':'var(--muted)')+'">'+(dl<0?"−":"+")+Math.abs(dl)+' s</span>':'')+'</div>';}).join("")+'</div>');
 }
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 document.addEventListener("scroll",function(e){var t=e.target; if(!t.classList||!t.classList.contains("tro-st"))return; var w=t.children[0]?t.children[0].offsetWidth+10:150, i=Math.round(t.scrollLeft/w), d=t.parentNode.querySelectorAll(".tro-dots i"); for(var k=0;k<d.length;k++)d[k].classList.toggle("on",k===i);},true);
@@ -1370,7 +1355,7 @@ var syncing=false;
 function sync(manual){
   if(!STRAVA||syncing)return; syncing=true;
   var urls=[D.set.json||DEF_JSON]; if(urls[0]!==DEF_JSON)urls.push(DEF_JSON); if(/github\.io$/.test(location.hostname))urls.push("activities.json");
-  function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); if(j.segs&&typeof j.segs==="object"){Object.keys(j.segs).forEach(function(k){if(j.segs[k])SEGS[k]=j.segs[k];}); try{localStorage.setItem("cadenzo-segs",JSON.stringify(SEGS));}catch(e){}} return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
+  function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
   ghCheck();
   get(0).then(function(j){
     var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});

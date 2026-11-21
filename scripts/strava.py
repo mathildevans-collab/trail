@@ -49,36 +49,6 @@ def details(run_id, access):
     return sg, be
 
 
-MAX_SEGS = 40  # tracés de segments lus par lecture (limite Strava : 100 requêtes / 15 min)
-
-
-def wanted_segments(runs):
-    """Segments utiles à la carte : ceux qui ont une médaille, puis les plus fréquentés."""
-    medal, freq = {}, {}
-    for r in runs:
-        for e in r.get("sg") or []:
-            freq[e["i"]] = freq.get(e["i"], 0) + 1
-            if 0 < e.get("p", 0) <= 3:
-                medal[e["i"]] = 1
-    ids = [i for i in freq if i in medal or freq[i] >= 4]
-    return sorted(ids, key=lambda i: (i not in medal, -freq[i]))
-
-
-def segment_lines(runs, prev_segs, access):
-    out = dict(prev_segs or {})
-    left = MAX_SEGS
-    for i in wanted_segments(runs):
-        if str(i) in out or left <= 0:
-            continue
-        left -= 1
-        try:
-            d = get(API + "/api/v3/segments/" + str(i), access)
-            out[str(i)] = ((d.get("map") or {}).get("polyline") or "")
-        except Exception as e:
-            print("::warning::Tracé du segment " + str(i) + " non lu : " + str(e)[:80])
-    return out
-
-
 def post(url, data):
     return call(urllib.request.Request(url, data=urllib.parse.urlencode(data).encode(), method="POST"))
 
@@ -131,10 +101,9 @@ def sync():
     try:
         old_file = json.load(open("activities.json"))
         prev = old_file["runs"]
-        prev_segs = old_file.get("segs") or {}
         last = datetime.datetime.fromisoformat(old_file.get("updated", ""))
     except Exception:
-        prev, last, prev_segs = None, None, {}
+        prev, last = None, None
     # segments et records : repris du fichier précédent, lus chez Strava seulement pour les sorties nouvelles
     known = {p["id"]: p for p in (prev or []) if p.get("id") and "sg" in p}
     left = MAX_DETAILS
@@ -147,16 +116,15 @@ def sync():
                 r["sg"], r["be"] = details(r["id"], access)
             except Exception as e:  # un détail raté ne doit jamais bloquer la lecture des sorties
                 print("::warning::Détail de la sortie " + str(r["id"]) + " non lu : " + str(e)[:80])
-    segs = segment_lines(runs, prev_segs, access)
     now = datetime.datetime.now(datetime.timezone.utc)
     stale = last is None or (now - last).days >= KEEPALIVE_DAYS
     if not runs and prev:  # réponse vide inattendue : on garde les sorties déjà publiées
         print("::warning::Strava n'a renvoyé aucune sortie, activities.json n'est pas modifié.")
         return
     # on n'écrit (et ne commit) que s'il y a du nouveau, ou une fois par mois pour garder la synchro active
-    if prev != runs or segs != prev_segs or stale:
+    if prev != runs or stale:
         json.dump({"updated": now.isoformat(timespec="seconds"),
-                   "runs": runs, "segs": segs}, open("activities.json", "w"), ensure_ascii=False, indent=1)
+                   "runs": runs}, open("activities.json", "w"), ensure_ascii=False, indent=1)
         print(len(runs), "sorties écrites dans activities.json")
     else:
         print("Aucun changement")
