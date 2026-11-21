@@ -698,3 +698,4 @@ details.fold>*:last-child{margin-bottom:16px}
 .tro-dots{display:flex;justify-content:center;gap:6px;padding:0 0 14px}.tro-dots i{width:6px;height:6px;border-radius:50%;background:var(--line);transition:width .2s,background .2s}.tro-dots i.on{width:18px;border-radius:3px;background:var(--brand)}
 @media (prefers-reduced-motion:reduce){.tro-dots i{transition:none}}
 .stp{border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.chip.acc{background:var(--acc);color:#fff}

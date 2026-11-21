@@ -379,6 +379,7 @@ function P(pl,w){
   var off=D.adj[pl.r.id+":"+w+":rb"]==="off";
   if(off||!rb.items.length)return Object.assign({},wk,{rb:rb,rbOff:off});
   var S=wk.s.map(function(x){var to=rb.ch[x.k]; if(to==null)return x; var f=to/x.km, c=Object.assign({},x); c.rbFrom=x.km; c.km=to; c.dp=Math.round((x.dp||0)*f); c.rbd=true; if(x.club)c.cw=1; c.steps=null;
+    if(x.club){c.txt=c.km<=4?"Repos conseillé. "+kmS(c.km)+" km très faciles au maximum.":"Pas la sortie complète : vise "+kmS(c.km)+" km."; return c;}
     c.txt=(x.txt||"")+" Ajustée selon ta semaine : vise "+kmS(c.km)+" km"+(c.dp?" et +"+c.dp+" m":"")+"."+(x.club?(c.km<=4?" Tu as déjà couru le volume prévu de la semaine : repos conseillé, au maximum "+kmS(c.km)+" km très faciles. Ne fais pas la sortie du club en entier.":" Tu as déjà couru une partie du volume de la semaine : ne fais pas la sortie du club en entier, vise "+kmS(c.km)+" km."):""); return c;});
   return Object.assign({},wk,{s:S,rb:rb,rbOff:false});
 }
@@ -516,7 +517,7 @@ function sessionHero(r,pl,wk,s){
   var k=sk(r,wk.n,s.k), dn=!!D.done[k], z=zoneOf(s.type).split(" · ")[0], ed=estDur(pl.m,s), ac=D.actual[k], isB=s.type==="Course B";
   var h='<div class="card hero"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+(wk.rec?' · allégée':'')+'</span>'+(s.race?'':'<button class="hedit" data-edit="'+wk.n+'-'+s.k+'">Modifier</button>')+'</div><h2>'+esc(isB?s.name:s.type)+'</h2>';
   var tags=[]; if(isB)tags.push("Course B"); if(s.adjusted&&wk.adjLabel)tags.push(wk.adjLabel); if(s.cw)tags.push("⚠ Sortie club complète déconseillée"); if(s.rbd)tags.push("Ajustée : "+kmS(s.rbFrom)+" → "+kmS(s.km)+" km"); if(s.edited)tags.push(s.added?"Ajoutée par toi":"Modifiée par toi"); if(s.club)tags.push("Club : 15 km, 2 h, +500 m min.");
-  if(tags.length)h+='<div class="tagline">'+tags.map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join("")+'</div>';
+  if(tags.length)h+='<div class="tagline">'+tags.map(function(t){return '<span class="chip'+(t.indexOf("⚠")===0?' acc':'')+'">'+esc(t)+'</span>';}).join("")+'</div>';
   h+='<div class="facts num">'+(s.km?'<span>'+kmS(s.km)+' km</span>':'')+(s.dp?'<span>+'+nb(s.dp)+' m</span>':'')+(z?'<span>'+esc(z)+'</span>':'')+(ed&&s.type.indexOf("Club")<0?'<span>≈ '+dur(ed)+'</span>':'')+'</div>';
   if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<details><summary>Consignes complètes</summary><div class="in"><p>'+esc(s.txt)+'</p></div></details>':'');
   else if(s.txt)h+='<p>'+esc(s.txt)+'</p>';
