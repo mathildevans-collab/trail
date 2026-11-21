@@ -506,7 +506,6 @@ function vPrep(r,pl){
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
-  h+=medalRow(new Date(selD).toISOString().slice(0,10));
   h+=rbCard(r,wk);
   h+=weekCard(r,pl,wk,s,showM);
   h+=checkinCard(r,pl,cur);
@@ -535,7 +534,7 @@ function bilanCard(r,pl,wk,sel,selD){
   var ttl=selD===t?"Bilan du jour":"Bilan de "+DOWL[sel];
   if(s&&ac){
     var rv=review(pl.m,s,ac), b=BADGE[rv.lvl];
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span></div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(s.km)+'</i></i></span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(s.dp||0)+'</i></i></span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
+    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span>'+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(s.km)+'</i></i></span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(s.dp||0)+'</i></i></span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
   }
   if(ex){
     var di=iso(selD), hr=0, hn=0; HIST.forEach(function(q){if(q.date===di&&q.hr>0){hr+=q.hr*q.km;hn+=q.km;}}); hr=hn?hr/hn:0;
@@ -547,7 +546,7 @@ function bilanCard(r,pl,wk,sel,selD){
     if(ex.km>=10){lvl=1;}
     if(wk.rb&&wk.rb.items&&wk.rb.items.length&&!wk.rbOff)L.push("Le reste de ta semaine a été ajusté en conséquence.");
     var bd=BADGE[lvl]; var chip=lvl?'<span class="chip warn">Hors plan</span>':'<span class="chip off">Hors plan</span>';
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2>'+chip+'</div><div class="stats num"><div class="stat"><b>'+kmS(ex.km)+'</b><span>km · non prévu</span></div><div class="stat"><b>+'+nb(ex.dp||0)+'</b><span>m</span></div><div class="stat"><b>'+(ex.t?mmss(ex.t/ex.km):"–")+'</b><span>/km'+(ex.t?" · "+dur(ex.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(L.join(" "))+'</p></div>';
+    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2>'+chip+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ex.km)+'</b><span>km · non prévu</span></div><div class="stat"><b>+'+nb(ex.dp||0)+'</b><span>m</span></div><div class="stat"><b>'+(ex.t?mmss(ex.t/ex.km):"–")+'</b><span>/km'+(ex.t?" · "+dur(ex.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(L.join(" "))+'</p></div>';
   }
   if(s&&!ac&&selD<t&&!s.race&&s.km>0&&!D.done[sk(r,wk.n,s.k)]){
     return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip off">Non faite</span></div><p class="small" style="margin:8px 0 0">Aucune sortie reçue de Strava ce jour-là pour « '+esc(s.type)+' ». '+(s.club||s.type.indexOf("Club")===0?'Si tu y es allée sans enregistrer, marque-la faite depuis la séance.':'Si tu l’as faite sans Strava, marque-la faite depuis la séance. Sinon, ne la rattrape pas d’un coup : le plan s’adapte.')+'</p></div>';
@@ -774,10 +773,9 @@ function trophies(){
   var lieux=Object.keys(city).map(function(k){return city[k];}).sort(function(a,b){return b.all-a.all||b.or-a.or;}).slice(0,3);
   return {list:T,seg:seg,lieux:lieux};
 }
-function medalRow(iso){
-  var T=trophies().list.filter(function(m){return m.d===iso;}); if(!T.length)return "";
-  return '<div class="card tro-row"><span class="eyebrow">'+T.length+(T.length>1?" médailles":" médaille")+'</span><div class="mr">'+T.map(function(m){
-    return '<button class="mc" data-tro="'+iso+'" aria-label="'+esc(m.name)+(m.rank?", "+(m.rank===1?"1er":m.rank+"e")+" temps":", étape")+'">'+medal(m.tier,m.g,"s")+'<span>'+esc(m.name)+'<small>'+(m.rank?(m.rank===1?"1er":m.rank+"e")+" · ":"")+esc(m.sub.replace(/^Segment · /,""))+'</small></span></button>';}).join("")+'</div></div>';
+function medalBadge(selD){ // pastille de médailles dans le bilan du jour : touche = écran Trophées sur cette sortie
+  var iso=new Date(selD).toISOString().slice(0,10), T=trophies().list.filter(function(m){return m.d===iso;}); if(!T.length)return "";
+  return '<button class="mbadge" data-tro="'+iso+'" aria-label="'+T.length+(T.length>1?" médailles":" médaille")+' ce jour-là, voir les trophées">'+T.slice(0,3).map(function(m){return medal(m.tier,m.g,"s");}).join("")+'<b>'+T.length+'</b></button>';
 }
 function openTro(focus){TRALL=false; TRSEEN=D.tseen||isoAgo(3); D.tseen=isoToday(); save(); TRF=focus||""; TRFROM=!!focus; if(tab!=="settings"){prevTab=tab;tab="settings";} SSUB="trophees"; render(); window.scrollTo(0,0);}
 function vTroph(){
