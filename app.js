@@ -745,22 +745,30 @@ function srow(ic,t,sub,ctrl){return '<div class="sitem"><span class="ico">'+I[ic
 function swItem(ic,t,sub,key,on){return '<div class="sitem" role="switch" tabindex="0" aria-checked="'+!!on+'" data-sw="'+key+'" style="cursor:pointer"><span class="ico">'+I[ic]+'</span><span class="tx"><b>'+t+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</span><span class="sw" data-on="'+!!on+'" aria-hidden="true"></span></div>';}
 function group(t,inner){return '<div class="sgroup"><span class="eyebrow">'+t+'</span><div class="slist">'+inner+'</div></div>';}
 function selMin(id,list,val){return '<select id="'+id+'" aria-label="'+(id==="gelmin"?"Fréquence du rappel de gel":"Fréquence du rappel d’eau")+'">'+list.map(function(v){return '<option value="'+v+'"'+(val===v?" selected":"")+'>'+(v?"toutes les "+v+" min":"désactivé")+'</option>';}).join("")+'</select>';}
+var SSUB=null;
 function vSettings(){
-  var th=D.set.theme, a=activeRace();
-  var h='<button class="back" data-go="back">'+I.back+'Retour</button><h1 style="font-size:30px;margin-bottom:16px">Réglages</h1>';
-  h+=group("Apparence",'<div class="spad"><div class="opts" role="radiogroup" aria-label="Thème" style="margin:0">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>');
-  h+=group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer un CSV","Export Garmin Connect ou Strava (activities.csv). Les sorties sont rangées dans ton plan.",null,' data-act="csv"'));
-  h+=group("Entraînement",sitem("dumb","Renfo et mobilité","7 séances de renfo, 6 de mobilité",null,' data-sheet="guide"'));
-  h+=group("Coach",swItem("cycle","Suivi du cycle","Adapte les conseils pendant les règles","cycle",D.cycle.on)+
-    (D.cycle.on?'<div class="spad"><div class="fields"><label class="field">Début des dernières règles<input type="date" id="cydate" value="'+esc(D.cycle.start||"")+'"></label><label class="field">Durée du cycle<select id="cylen">'+(function(){var o="";for(var i=21;i<=38;i++)o+='<option value="'+i+'"'+((D.cycle.len||28)===i?" selected":"")+'>'+i+' jours</option>';return o;})()+'</select></label></div><p class="muted xs" style="margin:0">Mets la date à jour à chaque cycle. Ces données restent sur ce téléphone.</p></div>':'')+
-    swItem("bell","Check-in du lundi","Fatigue et sommeil pour ajuster la semaine","checkin",D.set.checkin));
-  h+=group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
+  var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
+  function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer un CSV","Export Garmin Connect ou Strava (activities.csv). Les sorties sont rangées dans ton plan.",null,' data-act="csv"'));}
+  function gCourse(){return group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
     swItem("vib","Vibration au ravito","Android seulement : l’iPhone ne vibre pas depuis le web","vib",D.set.vib)+
-    (D.race?sitem("trash","Réinitialiser le chrono de course",esc((raceById(D.race.rid)||{}).name||"")+" · "+(D.race.done?"terminée":D.race.t0?"chrono lancé":"prêt"),"",' data-act="racereset"',"danger"):""));
-  h+=group("Synchronisation",GS?sitem("sync",GS.err?"Synchro à vérifier":"Synchro entre appareils active",GS.err?esc(GS.err):(GS.t?"Dernière synchro "+ago(GS.t):"En attente de la première synchro"),null,' data-act="gmanage"',GS.err?"danger":""):sitem("sync","Mêmes données partout","Les mêmes données sur ton téléphone et ton ordinateur, chiffrées, sans compte",null,' data-act="gsetup"'));
-  h+=group("Données",sitem("down","Exporter mes données","Fichier complet : plan, séances, Garmin. "+lastExportTxt(),null,' data-act="export"')+sitem("up","Importer une sauvegarde","Fusionner ou remplacer, avec copie de sécurité avant",null,' data-act="import"')+sitem("down","Copies automatiques","Revenir à une version précédente de ce téléphone",null,' data-act="backups"')+
-    sitem("trash",resetArmed?"Toucher encore pour tout effacer":"Tout effacer","Séances cochées, chiffres, check-ins, modifications du plan (les courses restent)","",' data-act="reset"',"danger"));
-  return h+'<p class="foot">Plan trail · v3 · données gardées sur ce téléphone</p>';
+    (D.race?sitem("trash","Réinitialiser le chrono de course",esc((raceById(D.race.rid)||{}).name||"")+" · "+(D.race.done?"terminée":D.race.t0?"chrono lancé":"prêt"),"",' data-act="racereset"',"danger"):""));}
+  function gDonnees(){return group("Données",sitem("down","Exporter mes données","Fichier complet : plan, séances, Garmin. "+lastExportTxt(),null,' data-act="export"')+sitem("up","Importer une sauvegarde","Fusionner ou remplacer, avec copie de sécurité avant",null,' data-act="import"')+sitem("down","Copies automatiques","Revenir à une version précédente de ce téléphone",null,' data-act="backups"'));}
+  if(SSUB){var T={sorties:["Garmin et CSV",gSorties],donnees:["Données",gDonnees],course:["Mode Course",gCourse]}[SSUB]; if(T)return '<button class="back" data-ssub="">'+I.back+'Réglages</button><h1 style="font-size:30px;margin-bottom:16px">'+T[0]+'</h1>'+T[1]()+foot;}
+  function tile(ic,t,body,o){o=o||{}; return '<'+(o.tag||"div")+' class="sd-t'+(o.w?" sd-w":"")+(o.row?" sd-row":"")+'"'+(o.attr||"")+'><span class="sd-ic">'+sv(ic)+'</span>'+(o.st?'<span class="sd-st '+o.st[0]+'"><i></i>'+o.st[1]+'</span>':'')+'<span class="sd-tx"><b>'+t+'</b>'+(body?'<small>'+body+'</small>':'')+'</span></'+(o.tag||"div")+'>';}
+  function tg(key,on,label){return '<div class="sd-tg" role="switch" tabindex="0" aria-checked="'+!!on+'" aria-label="'+label+'" data-sw="'+key+'"><span>'+(on?"Activé":"Désactivé")+'</span><u class="'+(on?"on":"")+'"></u></div>';}
+  var sy=D.sync, syOk=!(sy.err||sy.gh==="ko"), h='<button class="back" data-go="back">'+I.back+'Retour</button><h1 style="font-size:30px;margin-bottom:16px">Réglages</h1><div class="sd">';
+  h+='<div class="sd-t sd-w sd-hero"><span class="sd-ic">'+sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')+'</span><span class="sd-st"><i style="background:'+(syOk?'var(--ok)':'var(--acc)')+'"></i>'+(syOk?"À jour":"À vérifier")+'</span><span class="sd-tx"><b>'+(STRAVA?"Strava":"Sorties")+'</b><small>'+(STRAVA?(sy.t?"Dernière synchro "+ago(sy.t):"Jamais synchronisé"):"Importe un CSV pour ranger tes sorties")+'</small></span>'+(STRAVA?'<button class="sd-btn" data-act="sync">Synchroniser maintenant</button>':'<button class="sd-btn" data-act="csv">Importer un CSV</button>')+'</div>';
+  h+=tile('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',"Garmin et CSV",(G&&G.last)?"Import du "+fmtD(dayN(G.last)*864e5).replace(/^\S+\s/,""):"Aucun import",{tag:"button",attr:' data-ssub="sorties"',st:[(gOld==null||gOld>9)?"w":"",gOld==null?"—":gOld+" j"]});
+  h+=tile('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',"Données",lastExportTxt().replace(/\.$/,"").replace("Dernier export ","Export "),{tag:"button",attr:' data-ssub="donnees"'});
+  h+='<div class="sd-t"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>')+'</span><span class="sd-tx"><b>Apparence</b></span><div class="sd-seg" role="radiogroup" aria-label="Thème">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>';
+  h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>')+'</span><span class="sd-tx"><b>Check-in du lundi</b></span>'+tg("checkin",D.set.checkin,"Check-in du lundi")+'</div>';
+  h+='<div class="sd-t'+(D.cycle.on?' sd-w':'')+'"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>')+'</span><span class="sd-tx"><b>Suivi du cycle</b></span>'+tg("cycle",D.cycle.on,"Suivi du cycle")+
+    (D.cycle.on?'<div class="sd-fields"><label class="field">Début des dernières règles<input type="date" id="cydate" value="'+esc(D.cycle.start||"")+'"></label><label class="field">Durée du cycle<select id="cylen">'+(function(){var o="";for(var i=21;i<=38;i++)o+='<option value="'+i+'"'+((D.cycle.len||28)===i?" selected":"")+'>'+i+' jours</option>';return o;})()+'</select></label></div><p class="muted xs" style="margin:0">Pendant les 5 premiers jours, un message te propose d’alléger la séance. Données gardées sur ce téléphone.</p>':'')+'</div>';
+  h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",attr:' data-ssub="course"'});
+  h+=tile('<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',"Renfo et mobilité","7 renfo · 6 mobilité",{tag:"button",w:1,row:1,attr:' data-sheet="guide"'});
+  h+=tile('<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',GS?(GS.err?"Synchro à vérifier":"Synchro entre appareils"):"Mêmes données partout",GS?(GS.err?esc(GS.err):(GS.t?"Active · "+ago(GS.t):"En attente de la première synchro")):"Téléphone et ordinateur, chiffré, sans compte",{tag:"button",w:1,row:1,attr:' data-act="'+(GS?"gmanage":"gsetup")+'"',st:GS?[GS.err?"w":"",""]:null});
+  h+='</div><div class="sd-dz"><button data-act="reset">'+(resetArmed?"Toucher encore pour tout effacer":"Tout effacer")+'</button></div>'+foot;
+  return h;
 }
 function ago(t){var m=Math.round((Date.now()-t)/60000); if(m<1)return "à l’instant"; if(m<60)return "il y a "+m+" min"; var h=Math.round(m/60); return h<24?"il y a "+h+" h":"il y a "+Math.round(h/24)+" j";}
 
@@ -943,7 +951,7 @@ function render(keep){
   window.scrollTo(0,keep?y:0);
 }
 document.addEventListener("toggle",function(e){var d=e.target; if(d&&d.dataset&&d.dataset.fold)FOLD[d.dataset.fold]=d.open;},true);
-function setTab(t){if(t!=="settings")prevTab=t; if(t==="course")CV="list"; tab=t; resetArmed=false; editRes=false; if(t==="today"&&!browsing)goNow(); render(); if(t==="plan"){var ce=document.querySelector(".wk.cur"); if(ce)ce.scrollIntoView({block:"center"});}}
+function setTab(t){SSUB=null; if(t!=="settings")prevTab=t; if(t==="course")CV="list"; tab=t; resetArmed=false; editRes=false; if(t==="today"&&!browsing)goNow(); render(); if(t==="plan"){var ce=document.querySelector(".wk.cur"); if(ce)ce.scrollIntoView({block:"center"});}}
 
 
 // ---------- Forme : volume + forme/fraîcheur (depuis toutes les sorties Strava lues) ----------
@@ -1185,7 +1193,8 @@ $("tabs").addEventListener("click",function(e){var b=e.target.closest("button[da
 $("view").addEventListener("click",function(e){
   var swi=e.target.closest("[data-sw]"); if(swi){toggleSw(swi.dataset.sw); return;}
   var b=e.target.closest("button"); if(!b)return; var ds=b.dataset;
-  if(ds.go){if(ds.go==="settings"){prevTab=tab;tab="settings";render();} else if(ds.go==="back")setTab(prevTab||"today"); else if(ds.go==="today-race"){browsing=false;setTab("today");} else setTab(ds.go); return;}
+  if(ds.ssub!==undefined){SSUB=ds.ssub||null; render(); window.scrollTo(0,0); return;}
+  if(ds.go){if(ds.go==="settings"){prevTab=tab;tab="settings";SSUB=null;render();} else if(ds.go==="back")setTab(prevTab||"today"); else if(ds.go==="today-race"){browsing=false;setTab("today");} else setTab(ds.go); return;}
   if(ds.theme){D.set.theme=ds.theme; applyTheme(); save(); render(true); return;}
   if(ds.wm){WM=ds.wm; render(true); return;}
   if(ds.vp){VP=ds.vp; render(true); return;}
