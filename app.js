@@ -298,7 +298,8 @@ function review(m,s,ac){
   if(s.type.indexOf("Club")===0){L.push("Séance du club enregistrée. Elle compte dans ta semaine, rien à comparer avec le plan."); return {lvl:0,lines:L,fast:false};}
   if(s.race||s.type==="Course B"){L.push("Course enregistrée : "+kmS(ac.km)+" km"+(ac.t?" en "+dur(ac.t):"")+"."); return {lvl:0,lines:L,fast:false};}
   if(s.km>0){var r=ac.km/s.km;
-    if(r>1.15){bump(1);L.push("Plus long que prévu : "+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus. Garde de la fraîcheur pour la suite.");}
+    if(r>1.15&&ac.km-s.km>=3){bump(2);L.push("Tu as dépassé de "+kmS(Math.round((ac.km-s.km)*10)/10)+" km ("+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus). Reste dans le plan : ce surplus est retiré de tes prochaines sorties, y compris le club.");}
+    else if(r>1.15){bump(1);L.push("Plus long que prévu : "+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus. Garde de la fraîcheur pour la suite.");}
     else if(r>=0.9)L.push("Distance dans la cible : "+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus.");
     else if(r>=0.75){bump(1);L.push("Un peu court : "+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus.");}
     else{bump(2);L.push("Nettement en dessous : "+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus. Si c’était de la fatigue, tu as bien fait. Sinon, ne rattrape pas d’un coup.");}}
