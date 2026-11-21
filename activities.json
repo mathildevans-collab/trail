@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-21T08:26:50+00:00",
+ "updated": "2026-11-21T16:37:00+00:00",
  "runs": [
   {
    "id": 16909731256,
@@ -15826,6 +15826,177 @@
      "n": "10K",
      "t": 4030,
      "p": 0
+    }
+   ]
+  },
+  {
+   "id": 21073338208,
+   "date": "2026-11-21",
+   "km": 21.67,
+   "dp": 151,
+   "t": 7717,
+   "hr": 161,
+   "sg": [
+    {
+     "i": 19374147,
+     "n": "Pin Rolland > Stade",
+     "t": 120,
+     "p": 0,
+     "k": 0,
+     "c": "Saint-Mandrier-sur-Mer"
+    },
+    {
+     "i": 38508997,
+     "n": "Sablettes -> les plaines",
+     "t": 771,
+     "p": 0,
+     "k": 0,
+     "c": "La Seyne-sur-Mer"
+    },
+    {
+     "i": 16848433,
+     "n": "Route des sablettes final",
+     "t": 191,
+     "p": 0,
+     "k": 0,
+     "c": "La Seyne-sur-Mer"
+    },
+    {
+     "i": 23838025,
+     "n": "Segment Avenue du Brusc",
+     "t": 143,
+     "p": 0,
+     "k": 0,
+     "c": "Six-Fours-les-Plages"
+    },
+    {
+     "i": 11062361,
+     "n": "montée malogineste",
+     "t": 122,
+     "p": 0,
+     "k": 0,
+     "c": "Six-Fours-les-Plages"
+    },
+    {
+     "i": 30822222,
+     "n": "Montée des poteaux (Fractionné en côte)",
+     "t": 63,
+     "p": 0,
+     "k": 0,
+     "c": "Six-Fours-les-Plages"
+    },
+    {
+     "i": 15980319,
+     "n": "Montée parc Méditerranée ",
+     "t": 164,
+     "p": 0,
+     "k": 0,
+     "c": "Six-Fours-les-Plages"
+    },
+    {
+     "i": 5781070,
+     "n": "Coudoulière Climb",
+     "t": 143,
+     "p": 0,
+     "k": 0,
+     "c": "Six Fours Les Plages"
+    },
+    {
+     "i": 20738014,
+     "n": "COUDOU short climb",
+     "t": 102,
+     "p": 0,
+     "k": 0,
+     "c": ""
+    },
+    {
+     "i": 33006541,
+     "n": "font de Fillol short",
+     "t": 117,
+     "p": 0,
+     "k": 0,
+     "c": "Six-Fours-les-Plages"
+    },
+    {
+     "i": 16557730,
+     "n": "Piste cyclable Intermarché->Coopérative",
+     "t": 202,
+     "p": 0,
+     "k": 0,
+     "c": "Six-Fours-les-Plages"
+    },
+    {
+     "i": 16848448,
+     "n": "Route des sablettes Part1",
+     "t": 214,
+     "p": 0,
+     "k": 0,
+     "c": "La Seyne-sur-Mer"
+    },
+    {
+     "i": 3556908,
+     "n": "Route de Six Fours aux Sablettes",
+     "t": 723,
+     "p": 0,
+     "k": 0,
+     "c": "Six Fours Les Plages"
+    }
+   ],
+   "be": [
+    {
+     "n": "400m",
+     "t": 136,
+     "p": 0
+    },
+    {
+     "n": "1/2 mile",
+     "t": 274,
+     "p": 0
+    },
+    {
+     "n": "1K",
+     "t": 343,
+     "p": 0
+    },
+    {
+     "n": "1 mile",
+     "t": 565,
+     "p": 0
+    },
+    {
+     "n": "2 mile",
+     "t": 1136,
+     "p": 0
+    },
+    {
+     "n": "5K",
+     "t": 1771,
+     "p": 0
+    },
+    {
+     "n": "10K",
+     "t": 3611,
+     "p": 0
+    },
+    {
+     "n": "15K",
+     "t": 5543,
+     "p": 0
+    },
+    {
+     "n": "10 mile",
+     "t": 5958,
+     "p": 0
+    },
+    {
+     "n": "20K",
+     "t": 7378,
+     "p": 0
+    },
+    {
+     "n": "Half-Marathon",
+     "t": 7774,
+     "p": 3
     }
    ]
   }
