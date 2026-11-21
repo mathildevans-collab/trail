@@ -508,7 +508,7 @@ function vPrep(r,pl){
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
-  h+=rbCard(r,wk);
+
   h+=weekCard(r,pl,wk,s,showM);
   h+=checkinCard(r,pl,cur);
   return h;
