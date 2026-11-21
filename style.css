@@ -657,9 +657,6 @@ details.fold>*:last-child{margin-bottom:16px}
 /* Trophées */
 .md{display:block;width:40px;height:40px;flex:none;color:var(--ink)}.md svg{display:block;width:100%;height:100%;overflow:visible}
 .md.s{width:32px;height:32px}
-.md .rg{stroke:rgba(0,0,0,.4);stroke-width:1}.md .ds{stroke:rgba(0,0,0,.22);stroke-width:1}.md .hl{fill:none;stroke:#fff;stroke-opacity:.8;stroke-width:1.7;stroke-linecap:round}
-.t-or .rg{fill:url(#rg-or)}.t-or .ds{fill:url(#ds-or)}.t-ar .rg{fill:url(#rg-ar)}.t-ar .ds{fill:url(#ds-ar)}.t-br .rg{fill:url(#rg-br)}.t-br .ds{fill:url(#ds-br)}.t-vt .rg{fill:url(#rg-vt)}.t-vt .ds{fill:url(#ds-vt)}
-.t-vt{color:var(--brand)}.t-or,.t-ar,.t-br{color:#2a2418}
 .sitem .md{width:36px;height:36px}
 .sitem.hl{background:color-mix(in srgb,var(--sun) 14%,var(--card))}
 .tro-pill{font:700 12px var(--mono);color:var(--acc-ink);background:var(--acc-soft);border-radius:999px;padding:5px 10px;white-space:nowrap}
@@ -696,3 +693,5 @@ details.fold>*:last-child{margin-bottom:16px}
 .tro-pg span{font:600 13px var(--mono);color:var(--muted)}
 .tro-pg button{width:48px;height:48px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--brand)}
 .tro-pg button:disabled{opacity:.3}.tro-pg button svg{width:22px;height:22px}.tro-pg .rt{display:grid;transform:rotate(180deg)}
+.t-or{--c1:#f2b531;--c2:#d58f12}.t-ar{--c1:#cdd4d9;--c2:#9aa5ad}.t-br{--c1:#dc8f63;--c2:#b4673e}.t-vt{--c1:var(--brand);--c2:var(--brand);color:var(--brand)}
+.md .rg,.md .ds,.md .hl{display:none}
