@@ -653,3 +653,20 @@ details.fold>*:last-child{margin-bottom:16px}
 .sd-fields{display:grid;gap:10px;margin-top:6px}
 .sd-dz{margin:18px 0 0;text-align:center}.sd-dz button{min-height:44px;border:0;background:none;color:var(--acc-ink);font-weight:700;font-size:15px}
 @media (prefers-reduced-motion:reduce){.sd-tg u,.sd-tg u::after{transition:none}}
+
+/* Trophées */
+.md{display:block;width:40px;height:40px;flex:none;color:var(--ink)}.md svg{display:block;width:100%;height:100%}
+.md.s{width:30px;height:30px}
+.t-or{--f:var(--sun)}.t-ar{--f:var(--line)}.t-br{--f:var(--acc-soft)}.t-vt{--f:var(--brand-soft);color:var(--brand)}
+.md circle.bg{fill:var(--f);stroke:currentColor;stroke-width:2}
+.tro-row .eyebrow{display:block;margin-bottom:8px}
+.mr{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px}.mr::-webkit-scrollbar{display:none}
+.mc{display:flex;align-items:center;gap:8px;min-height:48px;padding:4px 14px 4px 6px;border-radius:999px;border:1px solid var(--sun);background:color-mix(in srgb,var(--sun) 16%,var(--card));color:var(--ink);font:600 14px var(--body);flex:none;text-align:left}
+.mc small{display:block;font:600 12px var(--mono);color:var(--muted)}
+.tro-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.tro-sum div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.tro-sum b{font:700 22px var(--display)}.tro-sum small{color:var(--muted);font-size:12px}
+.sitem .md{width:34px;height:34px}
+.sitem.hl{background:color-mix(in srgb,var(--sun) 14%,var(--card))}
+.tro-pill{font:700 12px var(--mono);color:var(--acc-ink);background:var(--acc-soft);border-radius:999px;padding:5px 10px;white-space:nowrap}
+.tro-rk{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand);font:700 15px var(--display)}

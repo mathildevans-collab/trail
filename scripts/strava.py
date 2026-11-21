@@ -32,6 +32,23 @@ def call(req, tries=4):
             raise
 
 
+MAX_DETAILS = 40  # appels « détail » par lecture : Strava limite à 100 requêtes / 15 min, le reste suit à la lecture suivante
+
+
+def details(run_id, access):
+    """Segments parcourus et meilleurs temps d'une sortie, réduits au minimum utile aux trophées."""
+    d = get(API + "/api/v3/activities/" + str(run_id) + "?include_all_efforts=true", access)
+    sg = []
+    for e in d.get("segment_efforts") or []:
+        seg = e.get("segment") or {}
+        sg.append({"i": seg.get("id") or e.get("id"), "n": e.get("name") or seg.get("name") or "",
+                   "t": int(e.get("elapsed_time") or 0), "p": int(e.get("pr_rank") or 0),
+                   "k": int(e.get("kom_rank") or 0), "c": (seg.get("city") or "").strip()})
+    be = [{"n": b.get("name") or "", "t": int(b.get("elapsed_time") or 0), "p": int(b.get("pr_rank") or 0)}
+          for b in d.get("best_efforts") or []]
+    return sg, be
+
+
 def post(url, data):
     return call(urllib.request.Request(url, data=urllib.parse.urlencode(data).encode(), method="POST"))
 
@@ -74,7 +91,7 @@ def sync():
             break
         for a in acts:
             if a.get("sport_type") in ("Run", "TrailRun") and a.get("distance", 0) > 0:
-                runs.append({"date": a["start_date_local"][:10],
+                runs.append({"id": a["id"], "date": a["start_date_local"][:10],
                              "km": round(a["distance"] / 1000, 2),
                              "dp": round(a.get("total_elevation_gain", 0)),
                              "t": int(a.get("moving_time", 0))}
@@ -87,6 +104,18 @@ def sync():
         last = datetime.datetime.fromisoformat(old_file.get("updated", ""))
     except Exception:
         prev, last = None, None
+    # segments et records : repris du fichier précédent, lus chez Strava seulement pour les sorties nouvelles
+    known = {p["id"]: p for p in (prev or []) if p.get("id") and "sg" in p}
+    left = MAX_DETAILS
+    for r in sorted(runs, key=lambda r: r["date"], reverse=True):
+        if r["id"] in known:
+            r["sg"], r["be"] = known[r["id"]]["sg"], known[r["id"]].get("be", [])
+        elif left > 0:
+            left -= 1
+            try:
+                r["sg"], r["be"] = details(r["id"], access)
+            except Exception as e:  # un détail raté ne doit jamais bloquer la lecture des sorties
+                print("::warning::Détail de la sortie " + str(r["id"]) + " non lu : " + str(e)[:80])
     now = datetime.datetime.now(datetime.timezone.utc)
     stale = last is None or (now - last).days >= KEEPALIVE_DAYS
     if not runs and prev:  # réponse vide inattendue : on garde les sorties déjà publiées
