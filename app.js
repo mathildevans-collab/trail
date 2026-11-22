@@ -799,14 +799,17 @@ function vCourse(){
   return h+'</div><div class="row course-actions" style="margin-bottom:12px"><button class="btn" data-act="editrace" data-r="'+f.id+'">'+I.pen+' Modifier la course</button><button class="btn" data-race="'+f.id+'" data-practice="1">'+I.play+' Essayer le mode Course</button></div>';
 }
 function diffCard(m){
-  if(!m.prof)return '<div class="card"><h2>Difficultés</h2><p class="small muted" style="margin:0">Ajoute la trace GPX pour voir le profil, les montées et les descentes techniques.</p><button class="btn sm" data-act="editrace" data-r="'+m.r.id+'" style="margin-top:10px">'+I.pen+' Ajouter la trace</button></div>';
-  var h='<div class="card"><h2>Difficultés</h2>';
-  if(!m.diff.length)return h+'<p class="small muted" style="margin:0">Pas de montée ou de descente marquée sur ce parcours.</p></div>';
-  return h+m.diff.map(function(d,i){return '<div class="dfrow"><span class="dfn'+(d.hard?' hard':'')+'">'+(i+1)+'</span><span><b>'+(d.up?'Montée':'Descente')+(d.hard?(d.up?' raide':' technique'):'')+'</b><small>km '+kmS(d.a)+' → '+kmS(d.b)+' · '+kmS(Math.round((d.b-d.a)*100)/100)+' km</small></span><em>'+(d.up?'+':'−')+d.g+' m<small>'+d.p+' %</small></em></div>';}).join("")+'</div>';
+  var body='';
+  if(!m.prof)body='<p class="small muted" style="margin:0">Ajoute la trace GPX pour voir le profil, les montées et les descentes techniques.</p><button class="btn sm" data-act="editrace" data-r="'+m.r.id+'" style="margin-top:10px">'+I.pen+' Ajouter la trace</button>';
+  else if(!m.diff.length)body='<p class="small muted" style="margin:0">Pas de montée ou de descente marquée sur ce parcours.</p>';
+  else body=m.diff.map(function(d,i){return '<div class="dfrow"><span class="dfn'+(d.hard?' hard':'')+'">'+(i+1)+'</span><span><b>'+(d.up?'Montée':'Descente')+(d.hard?(d.up?' raide':' technique'):'')+'</b><small>km '+kmS(d.a)+' → '+kmS(d.b)+' · '+kmS(Math.round((d.b-d.a)*100)/100)+' km</small></span><em>'+(d.up?'+':'−')+d.g+' m<small>'+d.p+' %</small></em></div>';}).join("");
+  return '<details class="card fold course-panel"><summary><h2>Difficultés</h2><span class="small muted">'+(m.prof?m.diff.length+' segments':'Détails')+'</span></summary><div class="course-accordion-content">'+body+'</div></details>';
 }
 function aidCard(m){
-  var C=m.cps.slice(0,-1); if(!C.length)return '';
-  return '<div class="card"><h2>Ravitaillements</h2>'+C.map(function(c,i){var nx=m.cps[i+1], sec=nx&&{a:c.km,b:nx.km,up:m.dplus(c.km,nx.km),dn:m.dminus(c.km,nx.km)}; return '<div class="dfrow"><span class="dfn aid">R'+(i+1)+'</span><span><b>'+esc(c.n)+'</b><small>km '+kmS(c.km)+(m.prof?' · '+Math.round(m.elevAt(c.km))+' m':'')+' · vers '+tod(m.r,m.cumMin(c.km))+'</small></span><em>'+(sec?'→ '+kmS(Math.round((sec.b-sec.a)*10)/10)+' km<small>+'+sec.up+' / −'+sec.dn+'</small>':'')+'</em></div>';}).join("")+'</div>';
+  var C=m.cps.slice(0,-1), body;
+  if(!C.length)body='<p class="small muted" style="margin:0">Aucun ravitaillement renseigné.</p>';
+  else body=C.map(function(c,i){var nx=m.cps[i+1], sec=nx&&{a:c.km,b:nx.km,up:m.dplus(c.km,nx.km),dn:m.dminus(c.km,nx.km)}; return '<div class="dfrow"><span class="dfn aid">R'+(i+1)+'</span><span><b>'+esc(c.n)+'</b><small>km '+kmS(c.km)+(m.prof?' · '+Math.round(m.elevAt(c.km))+' m':'')+' · vers '+tod(m.r,m.cumMin(c.km))+'</small></span><em>'+(sec?'→ '+kmS(Math.round((sec.b-sec.a)*10)/10)+' km<small>+'+sec.up+' / −'+sec.dn+'</small>':'')+'</em></div>';}).join("");
+  return '<details class="card fold course-panel"><summary><h2>Ravitaillements</h2><span class="small muted">'+C.length+' point'+(C.length>1?'s':'')+'</span></summary><div class="course-accordion-content">'+body+'</div></details>';
 }
 function passHTML(r,m){
   var h='<p class="small" style="margin:0 0 8px">Allure moyenne : <b>'+mmss(m.goal*60/m.L)+'/km</b>, soit <b>'+mmss(m.eff)+' par km-effort</b>.</p><table class="tbl num"><tr><th>Section</th><th>D+ / D−</th><th>Passage</th></tr>';
