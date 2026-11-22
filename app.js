@@ -909,7 +909,7 @@ document.addEventListener("scroll",function(e){var t=e.target; if(!t.classList||
 var SSUB=null;
 function vSettings(){
   var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
-  function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer le .zip Garmin","Le fichier exporté depuis Garmin Connect, tel quel, sans le décompresser. Sommeil, VFC, activités : sans doublon si tu le réimportes.",null,' data-act="gimport"')+sitem("up","Importer un CSV","Export Garmin Connect ou Strava (activities.csv). Les sorties sont rangées dans ton plan.",null,' data-act="csv"'));}
+  function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
   function gCourse(){return group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
     swItem("vib","Vibration au ravito","Android seulement : l’iPhone ne vibre pas depuis le web","vib",D.set.vib)+
     (D.race?sitem("trash","Réinitialiser le chrono de course",esc((raceById(D.race.rid)||{}).name||"")+" · "+(D.race.done?"terminée":D.race.t0?"chrono lancé":"prêt"),"",' data-act="racereset"',"danger"):""));}
@@ -1410,7 +1410,6 @@ function act(a,b){
   else if(a==="editrace")editRace(ds.r);
   else if(a==="activate"){D.active=ds.r; save(); goNow(); toast("Tu suis maintenant le plan de "+raceById(ds.r).name+"."); render(true);}
   else if(a==="resetedits"){var r=activeRace(); if(!confirm("Rétablir toutes les séances d’origine du plan "+r.name+" ?"))return; var U2=snapU(); delete D.edits[r.id]; save(); render(true); toast("Séances d’origine rétablies.",U2);}
-  else if(a==="csv")$("fileCsv").click();
   else if(a==="import")$("fileJson").click();
   else if(a==="export")exportData();
   else if(a==="gsetup")gSetupSheet();
@@ -1527,22 +1526,6 @@ function applyActs(acts){
 
 // ---------- fichiers ----------
 function readFile(input,cb){var f=input.files&&input.files[0]; if(!f)return; var rd=new FileReader(); rd.onerror=function(){toast("Lecture du fichier impossible.");}; rd.onload=function(){try{cb(String(rd.result),f);}catch(err){toast("Ce fichier n’a pas pu être lu.");} input.value="";}; rd.readAsText(f);}
-function parseCsv(t){var first=t.split("\n")[0], sep=first.split(";").length>first.split(",").length?";":",", rows=[],row=[],f="",q=false,i,c;
-  for(i=0;i<t.length;i++){c=t[i]; if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;} else if(c==='"')q=true; else if(c===sep){row.push(f);f="";}
-    else if(c==="\n"||c==="\r"){if(c==="\r"&&t[i+1]==="\n")i++; row.push(f);f=""; if(row.length>1||row[0]!=="")rows.push(row); row=[];} else f+=c;}
-  if(f!==""||row.length){row.push(f);rows.push(row);} return rows;}
-$("fileCsv").addEventListener("change",function(){readFile(this,function(txt){
-  var rows=parseCsv(txt.replace(/^﻿/,"")); if(rows.length<2){toast("Fichier vide.");return;}
-  var H=rows[0].map(function(x){return x.toLowerCase().trim();}), ix=function(n){for(var a=0;a<n.length;a++){var j=H.indexOf(n[a]); if(j>=0)return j;} return -1;};
-  var iD=ix(["date","activity date","date de l'activité","date de l’activité"]), iK=ix(["distance"]), iA=ix(["ascension totale","elevation gain","dénivelé positif"]), iT=ix(["type d'activité","type d’activité","activity type","type"]), iM=ix(["temps de déplacement","moving time","durée","duration","temps"]);
-  if(iD<0||iK<0){toast("Colonnes Date et Distance introuvables.");return;}
-  var acts=[];
-  rows.slice(1).forEach(function(r){var ty=iT>=0?(r[iT]||"").toLowerCase():"course"; if(!/course|trail|run/.test(ty))return;
-    var ds=(r[iD]||"").trim(), dt=null; if(/^\d{4}-\d{2}-\d{2}/.test(ds))dt=ds.slice(0,10); else{var pd=new Date(ds); if(!isNaN(pd))dt=pd.getFullYear()+"-"+pz(pd.getMonth()+1)+"-"+pz(pd.getDate());}
-    var km=num(r[iK]); if(km>1000)km=km/1000; if(!dt||!(km>0))return;
-    acts.push({date:dt,km:km,dp:iA>=0?(num(r[iA])||0):0,t:iM>=0?parseDur(r[iM]):0,src:"csv"});});
-  var n=applyActs(acts); save(); toast(acts.length+" sorties lues, "+n+" rangées dans ton plan."); render(true);
-});});
 $("fileJson").addEventListener("change",function(){readFile(this,function(txt){
   var o; try{o=JSON.parse(txt);}catch(e){toast("Fichier illisible : ce n’est pas du JSON valide. Rien n’a été modifié."); return;}
   var u=SAFE.unwrap(o), st=u.state;
