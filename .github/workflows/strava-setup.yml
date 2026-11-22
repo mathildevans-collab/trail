@@ -17,6 +17,10 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: test -n "$GH_PAT" || (echo "::error::Ajoute d'abord le secret GH_PAT (voir README)." && exit 1)
+      - name: Masquer le code d’autorisation dans les logs
+        env:
+          STRAVA_CODE: ${{ inputs.code }}
+        run: echo "::add-mask::$STRAVA_CODE"
       - name: Échanger le code contre un jeton
         env:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
