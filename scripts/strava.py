@@ -118,7 +118,7 @@ def cotes_for(runs, now):
         for e in segs.values():
             km = math.hypot((e["la"] - l["lat"]) * 111.0, (e["ln"] - l["lng"]) * 111.0 * math.cos(math.radians(l["lat"])))
             if km <= l["r"] and 100 <= e["d"] <= COTE_MAX_M and e["g"] >= 4 and e["e"] >= 8:
-                items.append({"i": e["i"], "n": e["n"], "d": e["d"], "g": e["g"], "e": e["e"]})
+                items.append({"i": e["i"], "n": e["n"], "d": e["d"], "g": e["g"], "e": e["e"], "v": e.get("c", ""), "k": round(km, 1)})
         res[l["id"]] = {"nom": l["nom"], "items": sorted(items, key=lambda c: -c["e"])[:12]}
     return res
 

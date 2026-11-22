@@ -710,3 +710,4 @@ details.fold>*:last-child{margin-bottom:16px}
 .ctmore{display:block;width:100%;border:0;background:none;margin-top:10px;font:700 12px var(--display);color:var(--brand);cursor:pointer;padding:6px}
 .ctlieu{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:12px;border:1px solid var(--line);border-radius:14px;margin-top:8px;background:none;color:inherit;font:inherit;cursor:pointer}.ctlieu small{display:block;color:var(--muted);font:600 11px var(--mono)}.ctlieu.on{border-color:var(--brand);background:var(--brand-soft)}
 .ctadd{display:flex;gap:8px;margin-top:12px}.ctadd input{flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:inherit;font:600 15px inherit}.ctadd .btn{width:auto;padding:0 18px}
+.ctrow small{display:block;line-height:1.5}
