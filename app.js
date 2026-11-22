@@ -490,6 +490,33 @@ function vToday(){
   if(ph==="race")return vRaceDay(r,pl);
   return vAfter(r,pl);
 }
+var COTES={}; try{COTES=JSON.parse(localStorage.getItem("cadenzo-cotes")||"{}")||{};}catch(e){}
+var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStorage.getItem("cadenzo-ct")||"{}"));}catch(e){}
+function ctSave(){try{localStorage.setItem("cadenzo-ct",JSON.stringify(CTS));}catch(e){}}
+function cotesList(){ // côtes du lieu choisi, les plus anciennes (ou jamais faites) d'abord
+  var ids=Object.keys(COTES); if(!ids.length)return null; if(!COTES[CTS.l])CTS.l=ids[0]; var L=COTES[CTS.l], last={}, best={};
+  HIST.forEach(function(r){(r.sg||[]).forEach(function(e){if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date; if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;});});
+  var it=(L.items||[]).map(function(c){return {c:c,last:last[c.i]||"",p:best[c.i]||0};});
+  it.sort(function(a,b){return a.last<b.last?-1:a.last>b.last?1:b.c.e-a.c.e;});
+  return {nom:L.nom,items:it};
+}
+function ctAgo(d){if(!d)return "Jamais faite"; var n=Math.round((Date.parse(isoToday())-Date.parse(d))/864e5); return n<14?"Il y a "+n+" j":"Il y a "+Math.round(n/7)+" sem.";}
+function cotesCard(){
+  var L=cotesList(); if(!L)return "";
+  var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><button class="ctch" data-ctl="1">📍 '+esc(L.nom)+'</button>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Autres côtes">↻</button>':'')+'</div>';
+  if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 0">Côtes prêtes à la prochaine synchro (environ 15 min).</p></div>';
+  var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
+  var x=v[0], c=x.c;
+  h+='<div class="cthero"><span class="cts">CONSEILLÉE'+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><b>'+esc(c.n)+'</b><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctAgo(x.last)+'</p></div>';
+  if(v.length>1){
+    if(CTS.open)h+=v.slice(1).map(function(y){return '<div class="ctrow">'+(y.p?medal(y.p===1?"or":y.p===2?"ar":"br","",""):'<span class="ctg">'+Math.round(y.c.g)+'%</span>')+'<span><b>'+esc(y.c.n)+'</b><small>'+ctAgo(y.last)+'</small></span><em>'+y.c.d+' m</em></div>';}).join("");
+    h+='<button class="ctmore" data-ctt="1">'+(CTS.open?"Masquer":"Voir les "+(v.length-1)+" autres")+(CTS.open?" ▴":" ▾")+'</button>';}
+  return h+'</div>';
+}
+function ctSheet(){
+  var ids=Object.keys(COTES);
+  openSheet('<h3 style="margin:0 0 6px">Lieu des côtes</h3>'+ids.map(function(id){var o=COTES[id], k=(o.items||[]).length; return '<button class="ctlieu'+(id===CTS.l?" on":"")+'" data-ctp="'+esc(id)+'"><span><b>'+esc(o.nom)+'</b><small>'+(k?k+" côtes · rayon 5 km":"prêt à la prochaine synchro")+'</small></span><span>'+(id===CTS.l?"✓":"")+'</span></button>';}).join(""));
+}
 function vPrep(r,pl){
   var ti=planIdx(pl), tw=ti>=0?Math.floor(ti/7)+1:0, td=ti>=0?ti%7:-1;
   if(cur>pl.n)cur=pl.n; if(cur<1)cur=1;
@@ -505,7 +532,7 @@ function vPrep(r,pl){
   h+='</div>';
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
-  h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
+  h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel); if(s&&s.type==="Côtes")h+=cotesCard();
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
 
@@ -846,6 +873,7 @@ document.addEventListener("keydown",function(e){ if(e.key!=="Tab"||$("sheet").hi
   if(!inside){e.preventDefault(); (e.shiftKey?last:first).focus(); return;}
   if(e.shiftKey&&ae===first){e.preventDefault(); last.focus();} else if(!e.shiftKey&&ae===last){e.preventDefault(); first.focus();}});
 $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close]")){closeSheet();return;} var b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.ctp){CTS.l=b.dataset.ctp; CTS.off=0; ctSave(); closeSheet(); render(true); return;}
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
   if(b.dataset.sact)sheetAct(b.dataset.sact,b);});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
@@ -1256,6 +1284,9 @@ $("tabs").addEventListener("click",function(e){var b=e.target.closest("button[da
 $("view").addEventListener("click",function(e){
   var swi=e.target.closest("[data-sw]"); if(swi){toggleSw(swi.dataset.sw); return;}
   var b=e.target.closest("button"); if(!b)return; var ds=b.dataset;
+  if(ds.ctt){CTS.open=!CTS.open; ctSave(); render(true); return;}
+  if(ds.ctn){CTS.off+=3; ctSave(); render(true); return;}
+  if(ds.ctl){ctSheet(); return;}
   if(ds.trpg){TRPG+=+ds.trpg; render(true); return;}
   if(ds.tro!==undefined){openTro(ds.tro); return;}
   if(ds.seg){segSheet(ds.seg); return;}
@@ -1357,7 +1388,7 @@ var syncing=false;
 function sync(manual){
   if(!STRAVA||syncing)return; syncing=true;
   var urls=[D.set.json||DEF_JSON]; if(urls[0]!==DEF_JSON)urls.push(DEF_JSON); if(/github\.io$/.test(location.hostname))urls.push("activities.json");
-  function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
+  function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); if(j.cotes&&typeof j.cotes==="object"){COTES=j.cotes; try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}} return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
   ghCheck();
   get(0).then(function(j){
     var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});

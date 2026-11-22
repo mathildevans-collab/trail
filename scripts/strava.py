@@ -49,6 +49,48 @@ def details(run_id, access):
     return sg, be
 
 
+COTE_MAX_M = 800      # côtes d'au plus 800 m de montée
+COTE_REFRESH_J = 30   # une zone est relue au plus une fois par mois
+
+
+def explore(lieu, access):
+    """Segments de côte autour d'un lieu : 4 quadrants, car Strava ne rend que 10 segments par zone."""
+    import math
+    dlat = lieu["r"] / 111.0
+    dlng = lieu["r"] / (111.0 * math.cos(math.radians(lieu["lat"])))
+    out = {}
+    for sy in (-1, 0):
+        for sx in (-1, 0):
+            sw = (lieu["lat"] + sy * dlat, lieu["lng"] + sx * dlng)
+            ne = (sw[0] + dlat, sw[1] + dlng)
+            q = urllib.parse.urlencode({"bounds": "%.5f,%.5f,%.5f,%.5f" % (sw + ne), "activity_type": "running"})
+            for s in get(API + "/api/v3/segments/explore?" + q, access).get("segments", []):
+                d, g, e = s.get("distance", 0), s.get("avg_grade", 0), s.get("elev_difference", 0)
+                if 150 <= d <= COTE_MAX_M and g >= 5 and e >= 15:
+                    out[s["id"]] = {"i": s["id"], "n": s.get("name", ""), "d": round(d), "g": round(g, 1), "e": round(e)}
+    return sorted(out.values(), key=lambda c: -c["e"])[:12]
+
+
+def cotes_for(prev, access, now):
+    try:
+        lieux = json.load(open("lieux.json"))
+    except Exception:
+        return prev or {}
+    res = {}
+    for l in lieux:
+        old = (prev or {}).get(l["id"]) or {}
+        fresh = old.get("items") and old.get("maj") and (now - datetime.datetime.fromisoformat(old["maj"])).days < COTE_REFRESH_J
+        if fresh and old.get("nom") == l["nom"]:
+            res[l["id"]] = old
+            continue
+        try:
+            res[l["id"]] = {"nom": l["nom"], "maj": now.isoformat(timespec="seconds"), "items": explore(l, access)}
+        except Exception as e:
+            print("::warning::Côtes de " + l["nom"] + " non lues : " + str(e)[:80])
+            res[l["id"]] = old or {"nom": l["nom"], "items": []}
+    return res
+
+
 def post(url, data):
     return call(urllib.request.Request(url, data=urllib.parse.urlencode(data).encode(), method="POST"))
 
@@ -101,9 +143,10 @@ def sync():
     try:
         old_file = json.load(open("activities.json"))
         prev = old_file["runs"]
+        prev_cotes = old_file.get("cotes") or {}
         last = datetime.datetime.fromisoformat(old_file.get("updated", ""))
     except Exception:
-        prev, last = None, None
+        prev, last, prev_cotes = None, None, {}
     # segments et records : repris du fichier précédent, lus chez Strava seulement pour les sorties nouvelles
     known = {p["id"]: p for p in (prev or []) if p.get("id") and "sg" in p}
     left = MAX_DETAILS
@@ -117,14 +160,15 @@ def sync():
             except Exception as e:  # un détail raté ne doit jamais bloquer la lecture des sorties
                 print("::warning::Détail de la sortie " + str(r["id"]) + " non lu : " + str(e)[:80])
     now = datetime.datetime.now(datetime.timezone.utc)
+    cotes = cotes_for(prev_cotes, access, now)
     stale = last is None or (now - last).days >= KEEPALIVE_DAYS
     if not runs and prev:  # réponse vide inattendue : on garde les sorties déjà publiées
         print("::warning::Strava n'a renvoyé aucune sortie, activities.json n'est pas modifié.")
         return
     # on n'écrit (et ne commit) que s'il y a du nouveau, ou une fois par mois pour garder la synchro active
-    if prev != runs or stale:
+    if prev != runs or cotes != prev_cotes or stale:
         json.dump({"updated": now.isoformat(timespec="seconds"),
-                   "runs": runs}, open("activities.json", "w"), ensure_ascii=False, indent=1)
+                   "runs": runs, "cotes": cotes}, open("activities.json", "w"), ensure_ascii=False, indent=1)
         print(len(runs), "sorties écrites dans activities.json")
     else:
         print("Aucun changement")
