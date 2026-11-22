@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=76;
+var APPV=77;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1417,9 +1417,14 @@ var syncing=false;
 function sync(manual){
   if(!STRAVA||syncing)return; syncing=true;
   var urls=[D.set.json||DEF_JSON]; if(urls[0]!==DEF_JSON)urls.push(DEF_JSON); if(/github\.io$/.test(location.hostname))urls.push("activities.json");
-  function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); if(j.cotes&&typeof j.cotes==="object"){var pe={}; Object.keys(COTES).forEach(function(k){if(COTES[k].pend&&!j.cotes[k])pe[k]=COTES[k];}); COTES=Object.assign({},j.cotes,pe); try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}} return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
+  function one(u){var c=window.AbortController?new AbortController():null, t=setTimeout(function(){if(c)c.abort();},8000);
+    return fetch(u+"?t="+Date.now(),{cache:"no-store",signal:c?c.signal:undefined}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){clearTimeout(t); if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); return j;},function(e){clearTimeout(t); throw e;});}
+  // les deux sources en parallèle (GitHub direct et le site) : on garde la plus récente, et une source lente ou en panne ne bloque plus
+  function get(){return new Promise(function(res,rej){var got=[],fail=0,timer=null,done=false;
+      function fin(){if(done)return; done=true; clearTimeout(timer); got.sort(function(a,b){return String(b.updated||"").localeCompare(String(a.updated||""));}); var j=got[0]; if(j.cotes&&typeof j.cotes==="object"){var pe={}; Object.keys(COTES).forEach(function(k){if(COTES[k].pend&&!j.cotes[k])pe[k]=COTES[k];}); COTES=Object.assign({},j.cotes,pe); try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}} res(j);}
+      urls.forEach(function(u){one(u).then(function(j){got.push(j); if(got.length===urls.length)fin(); else if(!timer)timer=setTimeout(fin,1500);},function(e){fail++; if(fail===urls.length)rej(e); else if(got.length+fail===urls.length)fin();});});});}
   ghCheck();
-  get(0).then(function(j){
+  get().then(function(j){
     var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
     histSave((j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0,id:r.id||0,sg:Array.isArray(r.sg)?r.sg:null,be:Array.isArray(r.be)?r.be:[]};}));
     D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err=""; var n=applyActs(runs); if(manual)toast(runs.length+" sorties lues · "+n+" séances du plan");

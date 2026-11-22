@@ -712,3 +712,4 @@ details.fold>*:last-child{margin-bottom:16px}
 .ctadd{display:flex;gap:8px;margin-top:12px}.ctadd input{flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:inherit;font:600 15px inherit}.ctadd .btn{width:auto;padding:0 18px}
 .ctrow small{display:block;line-height:1.5}
 .ctlk{color:inherit;text-decoration:none;display:block}.ctlk b{margin-bottom:10px}a.ctrow{color:inherit;text-decoration:none}
+html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;width:0;height:0}.sheet-in,.racemode,.wo{scrollbar-width:none}
