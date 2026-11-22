@@ -779,30 +779,34 @@ function vPlan(){
 
 // --- Mes courses ---
 function raceRow(r,a,f){var past=daysTo(r)<0, res=D.results[r.id], fin=res&&res.splits&&res.splits[res.splits.length-1], m=model(r);
-  return '<button class="race'+(r.prio==="B"?" b":"")+(past?" past":"")+'" data-opencourse="'+r.id+'"><span class="tag">'+r.prio+'</span><span style="flex:1;min-width:0"><b class="rn">'+esc(r.name)+'</b><br><span class="small muted">'+fmtD(dms(r.date))+' · '+kmS(m.L)+' km · +'+nb(m.dp)+' m</span></span>'+(fin?'<span class="chip ok">'+hmc(fin)+'</span>':a&&r.id===a.id?'<span class="chip">objectif</span>':past?'':'<span class="chip" style="background:none">'+jx(r)+'</span>')+'<span class="chev" aria-hidden="true">›</span></button>';}
+  return '<button class="sd-t race-dash'+(r.prio==="B"?" b":"")+(past?" past":"")+'" data-opencourse="'+r.id+'"><span class="sd-ic">'+sv('<path d="M3 20l6-10 4 6 3-4 5 8z"/><path d="M15 12V4l4 2-4 2"/>')+'</span><span class="sd-tx"><b>'+esc(r.name)+'</b><small>'+fmtD(dms(r.date))+'</small><small>'+kmS(m.L)+' km · +'+nb(m.dp)+' m D+</small></span><span class="race-dash-foot">'+(fin?'<span class="chip ok">'+hmc(fin)+'</span>':a&&r.id===a.id?'<span class="chip">Objectif</span>':past?'':'<span class="chip">'+jx(r)+'</span>')+'<span class="chev">›</span></span></button>';}
 function vCourse(){
   var a=activeRace(), f=focusRace(), h;
   if(CV!=="detail"||!f){
     h=header("Ta saison","Mes courses");
     var all=races(), up=all.filter(function(r){return daysTo(r)>=0;}), pa=all.filter(function(r){return daysTo(r)<0;}).reverse();
     if(CT!=="up"&&CT!=="past")CT=up.length||!pa.length?"up":"past";
-    h+='<div class="wm-seg fm-sub" role="tablist" aria-label="Courses">'+[["up","À venir",up.length],["past","Passées",pa.length]].map(function(x){return '<button role="tab" data-ctab="'+x[0]+'" aria-selected="'+(CT===x[0])+'">'+x[1]+' <span class="cnt">'+x[2]+'</span></button>';}).join("")+'</div>';
+    var next=up[0];
+    h+='<div class="sd course-dashboard">';
+    h+='<div class="sd-t"><span class="sd-ic">'+sv('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/>')+'</span><span class="sd-tx"><b>'+up.length+'</b><small>À venir</small></span></div>';
+    h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M3 17l5-6 4 3 5-8 4 5"/><path d="M3 21h18"/>')+'</span><span class="sd-tx"><b>'+pa.length+'</b><small>Passées</small></span></div>';
+    if(next){var nm=model(next); h+='<div class="sd-t sd-w sd-hero course-next" data-opencourse="'+next.id+'"><span class="sd-ic">'+sv('<path d="M2 20l6-10 4 6 3-4 7 8z"/>')+'</span><span class="sd-tx"><b>Prochaine course</b><small>'+esc(next.name)+' · '+fmtD(dms(next.date))+'</small><small>'+kmS(nm.L)+' km · +'+nb(nm.dp)+' m D+ · '+jx(next)+'</small></span><span class="chip">'+next.prio+'</span></div>';}
+    h+='<div class="sd-w course-switch"><div class="wm-seg fm-sub" role="tablist" aria-label="Courses">'+[["up","À venir",up.length],["past","Passées",pa.length]].map(function(x){return '<button role="tab" data-ctab="'+x[0]+'" aria-selected="'+(CT===x[0])+'">'+x[1]+' <span class="cnt">'+x[2]+'</span></button>';}).join("")+'</div></div>';
     var L=CT==="up"?up:pa;
-    h+='<div role="tabpanel">'+(L.length?L.map(function(r){return raceRow(r,a,f);}).join(""):'<p class="muted small" style="margin:8px 4px 16px">'+(CT==="up"?"Aucune course à venir. Ajoute ta prochaine course ci-dessous.":"Aucune course passée pour l’instant.")+'</p>')+'</div>';
-    return h+'<button class="race add" data-act="addrace">+ Ajouter une course (trace GPX)</button>';
+    h+='<div class="sd-w course-grid" role="tabpanel">'+(L.length?L.map(function(r){return raceRow(r,a,f);}).join(""):'<div class="sd-t sd-w course-empty"><span class="sd-tx"><b>'+(CT==="up"?"Aucune course à venir":"Aucune course passée")+'</b><small>'+(CT==="up"?"Ajoute ta prochaine course.":"Tes courses terminées apparaîtront ici.")+'</small></span></div>')+'</div>';
+    return h+'</div><button class="race add" data-act="addrace">+ Ajouter une course</button>';
   }
   h='<button class="back" data-act="courselist">'+I.back+'Mes courses</button><div class="top"><div><span class="eyebrow">Course '+f.prio+' · '+fmtD(dms(f.date))+'</span><h1>'+esc(f.name)+'</h1></div></div>';
   if(!f)return h;
   var m=model(f);
   if(f.prio==="A"&&a&&f.id!==a.id)h+='<div class="banner">Ce n’est pas ton plan en cours (tu suis '+esc(a.name)+'). <button class="btn sm primary" data-act="activate" data-r="'+f.id+'" style="margin-top:8px">Suivre le plan de '+esc(f.name)+'</button></div>';
   if(f.prio==="B"){var apl=a&&planOf(a), inA=apl&&dms(f.date)<apl.end&&dms(f.date)>=apl.start; h+='<div class="banner">Course B'+(inA?' : intégrée au plan de '+esc(a.name)+' le '+fmtD(dms(f.date))+', avec la veille et le lendemain allégés.':' : en dehors de ton plan en cours.')+'</div>';}
-  // Bornes fixes, tirées du temps estimé (km + D+) et non de l’objectif : sinon le curseur se recentre à chaque relâchement.
   var gref=estGoal(m.L,m.dp), gmin=Math.max(20,Math.round(Math.min(gref*0.6,m.goal)/5)*5), gmax=Math.round(Math.max(gref*1.5,m.goal)/5)*5;
   var est=estNow(f), auto=goalAuto(f);
   h+='<div class="card"><h2>Objectif</h2><div class="goal"><b class="num" id="goalv">'+hm(m.goal)+'</b><input type="range" id="goal" min="'+gmin+'" max="'+gmax+'" step="5" value="'+m.goal+'" aria-label="Objectif de temps"></div><p class="small muted" style="margin:0" id="goalnote">'+(auto?'Estimation actuelle · '+esc(est.src)+'. Tu peux la changer.':'Modifié par toi · estimation actuelle '+hm(est.min)+' ('+esc(est.src)+') <button class="btn sm" data-act="goalauto" style="margin-left:6px">Utiliser l’estimation</button>')+'</p></div>';
   h+='<div class="card"><h2>Le parcours</h2>'+profileSVG(m,{id:"profsvg",diff:true})+(m.prof?'<div id="profinfo" class="profinfo muted">Touche le profil : km, altitude, D+ et passage visé.</div><div class="legend"><span><i style="background:var(--brand)"></i>Profil</span>'+(m.traps.length?'<span><i style="background:var(--off)"></i>'+m.trapTxt+'</span>':'')+(m.cps.length>1?'<span>R = ravito</span>':'')+'</div>':'<p class="small muted" style="margin:6px 0 0">Ajoute la trace GPX (Modifier la course) pour voir le profil, les montées et les descentes.</p>')+'</div>';
   h+=diffCard(m)+aidCard(m);
-  var near=daysTo(f)>=0&&daysTo(f)<=21; // course proche : les deux blocs s’ouvrent seuls ; sinon repliés, choix mémorisé
+  var near=daysTo(f)>=0&&daysTo(f)<=21;
   function fo(key,ttl,sub,id,html){var o=FOLD[key]!=null?FOLD[key]:near; return '<details class="card fold" data-fold="'+key+'"'+(o?" open":"")+'><summary><h2>'+ttl+'</h2><span class="small muted">'+sub+'</span></summary><div style="padding:0 16px 16px" id="'+id+'">'+html+'</div></details>';}
   h+=fo("pass","Estimation actuelle",near?"":"toucher pour ouvrir","passwrap",passHTML(f,m));
   h+=fo("strat","Stratégie",near?"":"toucher pour ouvrir","stratwrap",stratHTML(m));
@@ -905,7 +909,7 @@ document.addEventListener("scroll",function(e){var t=e.target; if(!t.classList||
 var SSUB=null;
 function vSettings(){
   var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
-  function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer le .zip Garmin","Le fichier exporté depuis Garmin Connect, tel quel, sans le décompresser. Sommeil, VFC, activités : sans doublon si tu le réimportes.",null,' data-act="gimport"')+sitem("up","Importer un CSV","Export Garmin Connect ou Strava (activities.csv). Les sorties sont rangées dans ton plan.",null,' data-act="csv"'));}
+  function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
   function gCourse(){return group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
     swItem("vib","Vibration au ravito","Android seulement : l’iPhone ne vibre pas depuis le web","vib",D.set.vib)+
     (D.race?sitem("trash","Réinitialiser le chrono de course",esc((raceById(D.race.rid)||{}).name||"")+" · "+(D.race.done?"terminée":D.race.t0?"chrono lancé":"prêt"),"",' data-act="racereset"',"danger"):""));}
@@ -915,7 +919,7 @@ function vSettings(){
   function tile(ic,t,body,o){o=o||{}; return '<'+(o.tag||"div")+' class="sd-t'+(o.w?" sd-w":"")+(o.row?" sd-row":"")+'"'+(o.attr||"")+'><span class="sd-ic">'+sv(ic)+'</span>'+(o.st?'<span class="sd-st '+o.st[0]+'"><i></i>'+o.st[1]+'</span>':'')+'<span class="sd-tx"><b>'+t+'</b>'+(body?'<small>'+body+'</small>':'')+'</span></'+(o.tag||"div")+'>';}
   function tg(key,on,label){return '<div class="sd-tg" role="switch" tabindex="0" aria-checked="'+!!on+'" aria-label="'+label+'" data-sw="'+key+'"><span>'+(on?"Activé":"Désactivé")+'</span><u class="'+(on?"on":"")+'"></u></div>';}
   var sy=D.sync, syOk=!(sy.err||sy.gh==="ko"), h='<button class="back" data-go="back">'+I.back+'Retour</button><h1 style="font-size:30px;margin-bottom:16px">Réglages</h1><div class="sd">';
-  h+='<div class="sd-t sd-w sd-hero"><span class="sd-ic">'+sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')+'</span><span class="sd-st"><i style="background:'+(syOk?'var(--ok)':'var(--acc)')+'"></i>'+(syOk?"À jour":"À vérifier")+'</span><span class="sd-tx"><b>'+(STRAVA?"Strava":"Sorties")+'</b><small>'+(STRAVA?(sy.t?"Dernière synchro "+ago(sy.t):"Jamais synchronisé"):"Importe un CSV pour ranger tes sorties")+'</small></span>'+(STRAVA?'<button class="sd-btn" data-act="sync">Synchroniser maintenant</button>':'<button class="sd-btn" data-act="csv">Importer un CSV</button>')+'</div>';
+  h+='<div class="sd-t sd-w sd-hero"><span class="sd-ic">'+sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')+'</span><span class="sd-st"><i style="background:'+(syOk?'var(--ok)':'var(--acc)')+'"></i>'+(syOk?"À jour":"À vérifier")+'</span><span class="sd-tx"><b>'+(STRAVA?"Strava":"Sorties")+'</b><small>'+(STRAVA?(sy.t?"Dernière synchro "+ago(sy.t):"Jamais synchronisé") :"Import manuel désactivé")+'</small></span>'+(STRAVA?'<button class="sd-btn" data-act="sync">Synchroniser maintenant</button>':'')+'</div>';
   var TR=trophies().list, nNew=TR.filter(function(m){return m.d>(D.tseen||isoAgo(3));}).length;
   h+='<button class="sd-t sd-w sd-row" data-ssub="trophees" style="min-height:0"><span class="sd-ic" style="background:color-mix(in srgb,var(--sun) 22%,var(--card));color:var(--ink)">'+sv('<circle cx="12" cy="10" r="6"/><path d="M8.5 15L7 22l5-3 5 3-1.5-7"/>')+'</span><span class="sd-tx"><b>Trophées</b><small>'+(TR.length?TR.length+(TR.length>1?" médailles":" médaille"):"Records et étapes")+'</small></span>'+(nNew?'<span class="sd-st"><i style="background:var(--acc)"></i>'+nNew+(nNew>1?" nouvelles":" nouvelle")+'</span>':'')+'</button>';
   h+=tile('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',"Export Garmin",(G&&G.last)?"Import du "+fmtD(dayN(G.last)*864e5).replace(/^\S+\s/,""):"Aucun import",{tag:"button",attr:' data-ssub="sorties"',st:[(gOld==null||gOld>9)?"w":"",gOld==null?"—":gOld+" j"]});
@@ -1406,7 +1410,6 @@ function act(a,b){
   else if(a==="editrace")editRace(ds.r);
   else if(a==="activate"){D.active=ds.r; save(); goNow(); toast("Tu suis maintenant le plan de "+raceById(ds.r).name+"."); render(true);}
   else if(a==="resetedits"){var r=activeRace(); if(!confirm("Rétablir toutes les séances d’origine du plan "+r.name+" ?"))return; var U2=snapU(); delete D.edits[r.id]; save(); render(true); toast("Séances d’origine rétablies.",U2);}
-  else if(a==="csv")$("fileCsv").click();
   else if(a==="import")$("fileJson").click();
   else if(a==="export")exportData();
   else if(a==="gsetup")gSetupSheet();
@@ -1523,22 +1526,6 @@ function applyActs(acts){
 
 // ---------- fichiers ----------
 function readFile(input,cb){var f=input.files&&input.files[0]; if(!f)return; var rd=new FileReader(); rd.onerror=function(){toast("Lecture du fichier impossible.");}; rd.onload=function(){try{cb(String(rd.result),f);}catch(err){toast("Ce fichier n’a pas pu être lu.");} input.value="";}; rd.readAsText(f);}
-function parseCsv(t){var first=t.split("\n")[0], sep=first.split(";").length>first.split(",").length?";":",", rows=[],row=[],f="",q=false,i,c;
-  for(i=0;i<t.length;i++){c=t[i]; if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++;}else q=false;}else f+=c;} else if(c==='"')q=true; else if(c===sep){row.push(f);f="";}
-    else if(c==="\n"||c==="\r"){if(c==="\r"&&t[i+1]==="\n")i++; row.push(f);f=""; if(row.length>1||row[0]!=="")rows.push(row); row=[];} else f+=c;}
-  if(f!==""||row.length){row.push(f);rows.push(row);} return rows;}
-$("fileCsv").addEventListener("change",function(){readFile(this,function(txt){
-  var rows=parseCsv(txt.replace(/^﻿/,"")); if(rows.length<2){toast("Fichier vide.");return;}
-  var H=rows[0].map(function(x){return x.toLowerCase().trim();}), ix=function(n){for(var a=0;a<n.length;a++){var j=H.indexOf(n[a]); if(j>=0)return j;} return -1;};
-  var iD=ix(["date","activity date","date de l'activité","date de l’activité"]), iK=ix(["distance"]), iA=ix(["ascension totale","elevation gain","dénivelé positif"]), iT=ix(["type d'activité","type d’activité","activity type","type"]), iM=ix(["temps de déplacement","moving time","durée","duration","temps"]);
-  if(iD<0||iK<0){toast("Colonnes Date et Distance introuvables.");return;}
-  var acts=[];
-  rows.slice(1).forEach(function(r){var ty=iT>=0?(r[iT]||"").toLowerCase():"course"; if(!/course|trail|run/.test(ty))return;
-    var ds=(r[iD]||"").trim(), dt=null; if(/^\d{4}-\d{2}-\d{2}/.test(ds))dt=ds.slice(0,10); else{var pd=new Date(ds); if(!isNaN(pd))dt=pd.getFullYear()+"-"+pz(pd.getMonth()+1)+"-"+pz(pd.getDate());}
-    var km=num(r[iK]); if(km>1000)km=km/1000; if(!dt||!(km>0))return;
-    acts.push({date:dt,km:km,dp:iA>=0?(num(r[iA])||0):0,t:iM>=0?parseDur(r[iM]):0,src:"csv"});});
-  var n=applyActs(acts); save(); toast(acts.length+" sorties lues, "+n+" rangées dans ton plan."); render(true);
-});});
 $("fileJson").addEventListener("change",function(){readFile(this,function(txt){
   var o; try{o=JSON.parse(txt);}catch(e){toast("Fichier illisible : ce n’est pas du JSON valide. Rien n’a été modifié."); return;}
   var u=SAFE.unwrap(o), st=u.state;
