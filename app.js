@@ -531,7 +531,7 @@ function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
   ctWatch(); var L=cotesList(); if(!L)return "";
-  var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><button class="ctch" data-ctl="1">📍 '+esc(L.nom)+'</button>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Autres côtes">↻</button>':'')+'</div>';
+  var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><span class="ctch">📍 '+esc(L.nom)+'</span>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Autres côtes">↻</button>':'')+'</div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">Côtes prêtes dans environ 5 min. <span style="opacity:.6">v'+APPV+'</span></p><button class="ctmore" data-act="sync" style="margin:0">Relire maintenant</button></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
@@ -558,21 +558,7 @@ function ctHere(){
 }
 var CT_TOPIC="cadenzo-lieux-def79f15a0c4a14c40b8";
 function ctSlug(n){return n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"lieu";}
-function ctAdd(q){
-  var msg=document.getElementById("ctMsg"); function say(t){if(msg)msg.textContent=t;}
-  if(!q){return;} if(Object.keys(COTES).length>=6){say("6 lieux au maximum.");return;} say("Recherche…");
-  fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q),{headers:{"Accept-Language":"fr"}}).then(function(r){return r.json();}).then(function(j){
-    if(!j.length){say("Ville introuvable.");return;}
-    var nom=(j[0].name||q).slice(0,30), id=ctSlug(nom), m={id:id,nom:nom,lat:+j[0].lat,lng:+j[0].lon};
-    return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0;
-      if(!COTES[id])COTES[id]={nom:nom,items:[],pend:1}; CTS.l=id; CTS.off=0; ctSave(); try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}
-      closeSheet(); render(true); toast(nom+" ajoutée · côtes prêtes dans environ 5 min.");});
-  }).catch(function(){say("Impossible pour l’instant. Réessaie.");});
-}
-function ctSheet(){
-  var ids=Object.keys(COTES);
-  openSheet('<h3 style="margin:0 0 6px">Lieu des côtes</h3>'+ids.map(function(id){var o=COTES[id], k=(o.items||[]).length; return '<button class="ctlieu'+(id===CTS.l?" on":"")+'" data-ctp="'+esc(id)+'"><span><b>'+esc(o.nom)+'</b><small>'+(k?k+(k>1?" côtes":" côte")+" · rayon 5 km":"prêt à la prochaine synchro")+'</small></span><span>'+(id===CTS.l?"✓":"")+'</span></button>';}).join("")+'<form class="ctadd" id="ctForm"><input id="ctVille" type="text" maxlength="30" placeholder="Ajouter une ville" autocomplete="off" aria-label="Ville à ajouter"><button class="btn primary" type="submit">Ajouter</button></form><p class="small muted" id="ctMsg" style="margin:8px 2px 0"></p>');
-}
+
 function vPrep(r,pl){
   var ti=planIdx(pl), tw=ti>=0?Math.floor(ti/7)+1:0, td=ti>=0?ti%7:-1;
   if(cur>pl.n)cur=pl.n; if(cur<1)cur=1;
@@ -945,10 +931,10 @@ document.addEventListener("keydown",function(e){ if(e.key!=="Tab"||$("sheet").hi
   if(!inside){e.preventDefault(); (e.shiftKey?last:first).focus(); return;}
   if(e.shiftKey&&ae===first){e.preventDefault(); last.focus();} else if(!e.shiftKey&&ae===last){e.preventDefault(); first.focus();}});
 $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close]")){closeSheet();return;} var b=e.target.closest("button"); if(!b)return;
-  if(b.dataset.ctp){CTS.l=b.dataset.ctp; CTS.off=0; ctSave(); closeSheet(); render(true); return;}
+
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
   if(b.dataset.sact)sheetAct(b.dataset.sact,b);});
-$("sheet").addEventListener("submit",function(e){if(e.target.id!=="ctForm")return; e.preventDefault(); ctAdd(($("ctVille").value||"").trim());});
+
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
 document.addEventListener("click",function(e){var b=e.target.closest("[data-wo]"); if(!b||!window.WORKOUT)return; e.preventDefault(); var v=b.dataset.wo.split(":"); WORKOUT.start(v[0],v[1]||null,{RENFO:RENFO,MOB:MOB,MOBS:MOBS,MOBFOR:MOBFOR,closeSheet:closeSheet});});
 function showInfo(key){
@@ -1359,7 +1345,7 @@ $("view").addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b)return; var ds=b.dataset;
   if(ds.ctt){CTS.open=!CTS.open; ctSave(); render(true); return;}
   if(ds.ctn){CTS.off+=3; ctSave(); render(true); return;}
-  if(ds.ctl){ctSheet(); return;}
+
   if(ds.ctg){ctHere(); return;}
   if(ds.trpg){TRPG+=+ds.trpg; render(true); return;}
   if(ds.tro!==undefined){openTro(ds.tro); return;}
