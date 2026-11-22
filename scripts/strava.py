@@ -23,7 +23,7 @@ def call(req, tries=4):
             if e.code in (429, 500, 502, 503, 504) and i + 1 < tries:
                 time.sleep(20 * (i + 1)); continue
             if e.code in (400, 401) and "oauth/token" in req.full_url:
-                print("::error::Strava refuse le jeton (" + str(e.code) + "). Relance l'Action « Strava setup » avec un nouveau code (voir le README).")
+                print("::error::Strava refuse le jeton (" + str(e.code) + ") : " + body + ". Relance l'Action « Strava setup » avec un nouveau code (voir le README).")
             else:
                 print("::error::Strava a répondu " + str(e.code) + " : " + body)
             raise
