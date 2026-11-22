@@ -102,8 +102,29 @@ def lieux_demandes(cfg):
     return changed
 
 
-def cotes_for(runs, now):
-    """Côtes proposées : parmi les segments déjà courus, ceux de moins de 800 m, assez raides, autour de chaque lieu."""
+def explore(lieu, access):
+    """Segments autour d'un lieu, même jamais courus : grille 3 x 3 (Strava ne rend que 10 segments par zone). Demande l'autorisation « read »."""
+    import math
+    dlat = lieu["r"] / 111.0
+    dlng = lieu["r"] / (111.0 * math.cos(math.radians(lieu["lat"])))
+    out, vus = {}, set()
+    for i in range(3):
+        for j in range(3):
+            sw = (lieu["lat"] - dlat + i * 2 * dlat / 3, lieu["lng"] - dlng + j * 2 * dlng / 3)
+            ne = (sw[0] + 2 * dlat / 3, sw[1] + 2 * dlng / 3)
+            q = urllib.parse.urlencode({"bounds": "%.5f,%.5f,%.5f,%.5f" % (sw + ne), "activity_type": "running"})
+            for s in get(API + "/api/v3/segments/explore?" + q, access).get("segments", []):
+                vus.add(s["id"])
+                d, g, e = s.get("distance", 0), s.get("avg_grade", 0), s.get("elev_difference", 0)
+                if 100 <= d <= COTE_MAX_M and g >= 4 and e >= 8 and s.get("start_latlng"):
+                    out[s["id"]] = {"i": s["id"], "n": s.get("name", ""), "d": round(d), "g": round(g, 1), "e": round(e),
+                                    "v": "", "la": round(s["start_latlng"][0], 4), "ln": round(s["start_latlng"][1], 4), "s": "e"}
+    print("Côtes " + lieu["nom"] + " : " + str(len(vus)) + " segments trouvés, " + str(len(out)) + " gardés")
+    return list(out.values())
+
+
+def cotes_for(runs, prev, access, now):
+    """Côtes proposées : recherche Strava autour de chaque lieu (jamais courues comprises) + segments déjà courus."""
     import math
     cfg = load_lieux()
     lieux_demandes(cfg)
@@ -114,12 +135,32 @@ def cotes_for(runs, now):
                 segs[e["i"]] = e
     res = {}
     for l in cfg["lieux"]:
-        items = []
+        old = (prev or {}).get(l["id"]) or {}
+        ex = old.get("ex")           # résultats de la recherche, gardés 30 jours
+        t_ex = old.get("t_ex", "")
+        t_fail = old.get("t_fail", "")
+        age = lambda t: (now - datetime.datetime.fromisoformat(t)).total_seconds() / 3600 if t else 1e9
+        if (ex is None or age(t_ex) > COTE_REFRESH_J * 24) and age(t_fail) > 12:
+            try:
+                ex, t_ex, t_fail = explore(l, access), now.isoformat(timespec="seconds"), ""
+            except Exception as e:
+                print("::warning::Recherche de côtes refusée (" + str(e)[:60] + ") : autorisation « read » à ajouter, voir README")
+                t_fail = now.isoformat(timespec="seconds")
+        items = {c["i"]: dict(c) for c in (ex or [])}
         for e in segs.values():
-            km = math.hypot((e["la"] - l["lat"]) * 111.0, (e["ln"] - l["lng"]) * 111.0 * math.cos(math.radians(l["lat"])))
-            if km <= l["r"] and 100 <= e["d"] <= COTE_MAX_M and e["g"] >= 4 and e["e"] >= 8:
-                items.append({"i": e["i"], "n": e["n"], "d": e["d"], "g": e["g"], "e": e["e"], "v": e.get("c", ""), "k": round(km, 1)})
-        res[l["id"]] = {"nom": l["nom"], "items": sorted(items, key=lambda c: -c["e"])[:12]}
+            if 100 <= e["d"] <= COTE_MAX_M and e["g"] >= 4 and e["e"] >= 8 and e["i"] not in items:
+                items[e["i"]] = {"i": e["i"], "n": e["n"], "d": e["d"], "g": e["g"], "e": e["e"], "v": e.get("c", ""), "la": e["la"], "ln": e["ln"], "s": "h"}
+        out = []
+        for c in items.values():
+            km = math.hypot((c["la"] - l["lat"]) * 111.0, (c["ln"] - l["lng"]) * 111.0 * math.cos(math.radians(l["lat"])))
+            if km <= l["r"] * 1.15:
+                c["k"] = round(km, 1)
+                out.append(c)
+        res[l["id"]] = {"nom": l["nom"], "lat": l["lat"], "lng": l["lng"], "items": sorted(out, key=lambda c: -c["e"])[:30]}
+        if ex is not None:
+            res[l["id"]]["ex"], res[l["id"]]["t_ex"] = ex, t_ex
+        if t_fail:
+            res[l["id"]]["t_fail"] = t_fail
     return res
 
 
@@ -192,7 +233,7 @@ def sync():
             except Exception as e:  # un détail raté ne doit jamais bloquer la lecture des sorties
                 print("::warning::Détail de la sortie " + str(r["id"]) + " non lu : " + str(e)[:80])
     now = datetime.datetime.now(datetime.timezone.utc)
-    cotes = cotes_for(runs, now)
+    cotes = cotes_for(runs, prev_cotes, access, now)
     stale = last is None or (now - last).days >= KEEPALIVE_DAYS
     if not runs and prev:  # réponse vide inattendue : on garde les sorties déjà publiées
         print("::warning::Strava n'a renvoyé aucune sortie, activities.json n'est pas modifié.")

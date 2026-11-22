@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=80;
+var APPV=81;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -516,25 +516,45 @@ var COTES={}; try{COTES=JSON.parse(localStorage.getItem("cadenzo-cotes")||"{}")|
 var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStorage.getItem("cadenzo-ct")||"{}"));}catch(e){}
 function ctSave(){try{localStorage.setItem("cadenzo-ct",JSON.stringify(CTS));}catch(e){}}
 function cotesList(){ // côtes du lieu choisi, les plus anciennes (ou jamais faites) d'abord
-  var ids=Object.keys(COTES); if(!ids.length)return null; if(!COTES[CTS.l])CTS.l=ids[0]; var L=COTES[CTS.l], last={}, best={};
+  var ids=Object.keys(COTES); if(!ids.length)return null; if(!COTES[CTS.l])CTS.l=ids[0]; var cur=CTS.l;
+  if(CTS.pos){var bd=10,bi=null; ids.forEach(function(id){var o=COTES[id]; if(o.lat==null)return; var d=ctHav(CTS.pos.la,CTS.pos.ln,o.lat,o.lng); if(d<bd){bd=d;bi=id;}}); if(bi)cur=bi; else return {nom:"Ma position",items:[],far:true};}
+  var L=COTES[cur], last={}, best={};
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date; if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;});});
-  var it=(L.items||[]).map(function(c){return {c:c,last:last[c.i]||"",p:best[c.i]||0};});
-  it.sort(function(a,b){return a.last<b.last?-1:a.last>b.last?1:b.c.e-a.c.e;});
+  var it=(L.items||[]).map(function(c){var l=last[c.i]||"", age=l?Math.min(60,Math.round((Date.parse(isoToday())-Date.parse(l))/864e5)):60, k=ctDist(c); return {c:c,last:l,p:best[c.i]||0,sc:age/10-(k==null?0:k)};});
+  it.sort(function(a,b){return b.sc-a.sc||b.c.e-a.c.e;});
   return {nom:L.nom,items:it};
 }
 function ctAgo(d){if(!d)return "Jamais faite"; var n=Math.round((Date.parse(isoToday())-Date.parse(d))/864e5); return n<14?"Il y a "+n+" j":"Il y a "+Math.round(n/7)+" sem.";}
-function ctWhere(c){var k=c.k, t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
+function ctHav(a,b,c,d){var R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r*Math.cos((a+c)/2*r); return Math.sqrt(x*x+y*y)*R;}
+function ctDist(c){return CTS.pos&&c.la!=null?Math.round(ctHav(CTS.pos.la,CTS.pos.ln,c.la,c.ln)*10)/10:c.k;}
+function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
+function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
-  var L=cotesList(); if(!L)return "";
+  ctWatch(); var L=cotesList(); if(!L)return "";
   var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><button class="ctch" data-ctl="1">📍 '+esc(L.nom)+'</button>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Autres côtes">↻</button>':'')+'</div>';
+  if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">Côtes prêtes dans environ 5 min. <span style="opacity:.6">v'+APPV+'</span></p><button class="ctmore" data-act="sync" style="margin:0">Relire maintenant</button></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
   var x=v[0], c=x.c;
-  h+='<div class="cthero"><span class="cts">CONSEILLÉE'+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><a class="ctlk" href="https://www.strava.com/segments/'+c.i+'" target="_blank" rel="noopener"><b>'+esc(c.n)+' ↗</b></a><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctWhere(c)+' · '+ctAgo(x.last)+'</p></div>';
+  h+='<div class="cthero"><span class="cts">CONSEILLÉE · '+ctLvl(c).toUpperCase()+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><a class="ctlk" href="https://www.strava.com/segments/'+c.i+'" target="_blank" rel="noopener"><b>'+esc(c.n)+' ↗</b></a><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctWhere(c)+' · '+ctAgo(x.last)+'</p></div>';
   if(v.length>1){
     if(CTS.open)h+=v.slice(1).map(function(y){return '<a class="ctrow" href="https://www.strava.com/segments/'+y.c.i+'" target="_blank" rel="noopener">'+(y.p?medal(y.p===1?"or":y.p===2?"ar":"br","",""):'<span class="ctg">'+Math.round(y.c.g)+'%</span>')+'<span><b>'+esc(y.c.n)+'</b><small>'+ctWhere(y.c)+'</small><small>'+ctAgo(y.last)+'</small></span><em>'+y.c.d+' m ↗</em></a>';}).join("");
     h+='<button class="ctmore" data-ctt="1">'+(CTS.open?"Masquer":"Voir les "+(v.length-1)+" autres")+(CTS.open?" ▴":" ▾")+'</button>';}
   return h+'</div>';
+}
+var CTW=null;
+function ctWatch(){
+  if(CTW!==null||!navigator.geolocation||!window.isSecureContext)return;
+  CTW=navigator.geolocation.watchPosition(function(p){var o=CTS.pos, moved=!o||ctHav(o.la,o.ln,p.coords.latitude,p.coords.longitude)>0.15; CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)}; if(moved&&document.querySelector(".ct")&&$("sheet").hidden)render(true);},function(){CTW=null;},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
+}
+document.addEventListener("visibilitychange",function(){if(document.hidden&&CTW!==null){try{navigator.geolocation.clearWatch(CTW);}catch(e){} CTW=null;}});
+function ctPost(m,done){return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0; if(!COTES[m.id])COTES[m.id]={nom:m.nom,items:[],pend:1,lat:m.lat,lng:m.lng}; try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){} done&&done();});}
+function ctHere(){
+  if(!CTS.pos){toast("Position introuvable. Autorise la localisation.");return;}
+  fetch("https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat="+CTS.pos.la+"&lon="+CTS.pos.ln,{headers:{"Accept-Language":"fr"}}).then(function(r){return r.json();}).then(function(j){
+    var a=j.address||{}, nom=(a.village||a.town||a.city||a.municipality||j.name||"Ma position").slice(0,30), id=ctSlug(nom);
+    return ctPost({id:id,nom:nom,lat:CTS.pos.la,lng:CTS.pos.ln},function(){render(true); toast(nom+" ajoutée · côtes prêtes dans environ 5 min.");});
+  }).catch(function(){toast("Impossible pour l’instant. Réessaie.");});
 }
 var CT_TOPIC="cadenzo-lieux-def79f15a0c4a14c40b8";
 function ctSlug(n){return n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"lieu";}
@@ -1336,6 +1356,7 @@ $("view").addEventListener("click",function(e){
   if(ds.ctt){CTS.open=!CTS.open; ctSave(); render(true); return;}
   if(ds.ctn){CTS.off+=3; ctSave(); render(true); return;}
   if(ds.ctl){ctSheet(); return;}
+  if(ds.ctg){ctHere(); return;}
   if(ds.trpg){TRPG+=+ds.trpg; render(true); return;}
   if(ds.tro!==undefined){openTro(ds.tro); return;}
   if(ds.seg){segSheet(ds.seg); return;}

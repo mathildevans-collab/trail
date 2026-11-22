@@ -7,8 +7,8 @@ Fichiers : `index.html`, `style.css`, `data.js` (le plan), `app.js`, `fit.js` (s
 ## Strava sans Claude (à faire une seule fois)
 
 1. **Strava** : sur strava.com/settings/api, mets `localhost` dans « Authorization Callback Domain ».
-2. **Autorisation** : ouvre cette adresse dans ton navigateur en remplaçant `TON_CLIENT_ID`, puis clique sur Autoriser (laisse cochée la lecture des activités) :
-   `https://www.strava.com/oauth/authorize?client_id=TON_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=activity:read_all`
+2. **Autorisation** : ouvre cette adresse dans ton navigateur en remplaçant `TON_CLIENT_ID`, puis clique sur Autoriser (laisse cochées la lecture des activités et la lecture générale : la seconde sert à chercher des côtes autour de toi) :
+   `https://www.strava.com/oauth/authorize?client_id=TON_CLIENT_ID&response_type=code&redirect_uri=http://localhost&approval_prompt=force&scope=read,activity:read_all`
    La page qui s'ouvre ensuite affiche une erreur : c'est normal. Copie la valeur après `code=` dans l'adresse (jusqu'au `&`).
 3. **Jeton GitHub** : sur github.com/settings/personal-access-tokens, crée un jeton « fine-grained », limité à ce dépôt, avec la permission *Secrets : Read and write*. Copie-le.
 4. **Secrets** : dans ce dépôt, Settings, Secrets and variables, Actions, ajoute trois secrets :
