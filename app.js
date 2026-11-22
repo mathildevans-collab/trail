@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=72;
+var APPV=73;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1447,7 +1447,9 @@ function syncNote(){
   var txt=s.gh==="ko"?"Strava ne répond plus côté GitHub : tes dernières sorties peuvent manquer.":s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
   return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old?' <button class="link-btn" data-act="sync">Actualiser</button>':"")+'</p>';
 }
-function autoSync(){if(STRAVA&&!syncing&&(Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV()))sync(false);}
+var CTRY=0;
+function autoSync(){var need=Object.keys(COTES).every(function(k){return !(COTES[k].items||[]).length;})&&Date.now()-CTRY>60000; if(need)CTRY=Date.now();
+  if(STRAVA&&!syncing&&(need||Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV()))sync(false);}
 function applyActs(acts){
   var r=activeRace(); if(!r)return 0; var pl=planOf(r), bd=byDate(pl), byDay={}, n=0;
   acts.forEach(function(a){if(!a.date||!(a.km>0))return; var o=byDay[a.date]||(byDay[a.date]={km:0,dp:0,t:0,src:a.src}); o.km+=a.km; o.dp+=a.dp||0; o.t+=a.t||0;});
