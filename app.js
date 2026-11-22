@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=75;
+var APPV=76;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -509,9 +509,9 @@ function cotesCard(){
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">Côtes prêtes dans environ 5 min. <span style="opacity:.6">v'+APPV+'</span></p><button class="ctmore" data-act="sync" style="margin:0">Relire maintenant</button></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
   var x=v[0], c=x.c;
-  h+='<div class="cthero"><span class="cts">CONSEILLÉE'+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><b>'+esc(c.n)+'</b><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctWhere(c)+' · '+ctAgo(x.last)+'</p></div>';
+  h+='<div class="cthero"><span class="cts">CONSEILLÉE'+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><a class="ctlk" href="https://www.strava.com/segments/'+c.i+'" target="_blank" rel="noopener"><b>'+esc(c.n)+' ↗</b></a><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctWhere(c)+' · '+ctAgo(x.last)+'</p></div>';
   if(v.length>1){
-    if(CTS.open)h+=v.slice(1).map(function(y){return '<div class="ctrow">'+(y.p?medal(y.p===1?"or":y.p===2?"ar":"br","",""):'<span class="ctg">'+Math.round(y.c.g)+'%</span>')+'<span><b>'+esc(y.c.n)+'</b><small>'+ctWhere(y.c)+'</small><small>'+ctAgo(y.last)+'</small></span><em>'+y.c.d+' m</em></div>';}).join("");
+    if(CTS.open)h+=v.slice(1).map(function(y){return '<a class="ctrow" href="https://www.strava.com/segments/'+y.c.i+'" target="_blank" rel="noopener">'+(y.p?medal(y.p===1?"or":y.p===2?"ar":"br","",""):'<span class="ctg">'+Math.round(y.c.g)+'%</span>')+'<span><b>'+esc(y.c.n)+'</b><small>'+ctWhere(y.c)+'</small><small>'+ctAgo(y.last)+'</small></span><em>'+y.c.d+' m ↗</em></a>';}).join("");
     h+='<button class="ctmore" data-ctt="1">'+(CTS.open?"Masquer":"Voir les "+(v.length-1)+" autres")+(CTS.open?" ▴":" ▾")+'</button>';}
   return h+'</div>';
 }
