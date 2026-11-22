@@ -36,6 +36,16 @@ def call(req, tries=4):
 MAX_DETAILS = 40  # appels « détail » par lecture : Strava limite à 100 requêtes / 15 min, le reste suit à la lecture suivante
 
 
+def geo(seg):
+    """Forme du segment (longueur, pente, dénivelé, départ) : sert à proposer les côtes."""
+    try:
+        la, ln = seg["start_latlng"]
+        return {"d": round(seg["distance"]), "g": round(seg.get("average_grade") or 0, 1),
+                "e": round((seg.get("elevation_high") or 0) - (seg.get("elevation_low") or 0)), "la": round(la, 4), "ln": round(ln, 4)}
+    except Exception:
+        return {}
+
+
 def details(run_id, access):
     """Segments parcourus et meilleurs temps d'une sortie, réduits au minimum utile aux trophées."""
     d = get(API + "/api/v3/activities/" + str(run_id) + "?include_all_efforts=true", access)
@@ -44,7 +54,8 @@ def details(run_id, access):
         seg = e.get("segment") or {}
         sg.append({"i": seg.get("id") or e.get("id"), "n": e.get("name") or seg.get("name") or "",
                    "t": int(e.get("elapsed_time") or 0), "p": int(e.get("pr_rank") or 0),
-                   "k": int(e.get("kom_rank") or 0), "c": (seg.get("city") or "").strip()})
+                   "k": int(e.get("kom_rank") or 0), "c": (seg.get("city") or "").strip()}
+                  | geo(seg))
     be = [{"n": b.get("name") or "", "t": int(b.get("elapsed_time") or 0), "p": int(b.get("pr_rank") or 0)}
           for b in d.get("best_efforts") or []]
     return sg, be
@@ -52,26 +63,6 @@ def details(run_id, access):
 
 COTE_MAX_M = 800      # côtes d'au plus 800 m de montée
 COTE_REFRESH_J = 30   # une zone est relue au plus une fois par mois
-
-
-def explore(lieu, access):
-    """Segments de côte autour d'un lieu : grille 3 × 3, car Strava ne rend que 10 segments par zone."""
-    import math
-    dlat = lieu["r"] / 111.0
-    dlng = lieu["r"] / (111.0 * math.cos(math.radians(lieu["lat"])))
-    out, vus = {}, set()
-    for i in range(3):
-        for j in range(3):
-            sw = (lieu["lat"] - dlat + i * 2 * dlat / 3, lieu["lng"] - dlng + j * 2 * dlng / 3)
-            ne = (sw[0] + 2 * dlat / 3, sw[1] + 2 * dlng / 3)
-            q = urllib.parse.urlencode({"bounds": "%.5f,%.5f,%.5f,%.5f" % (sw + ne), "activity_type": "running"})
-            for s in get(API + "/api/v3/segments/explore?" + q, access).get("segments", []):
-                vus.add(s["id"])
-                d, g, e = s.get("distance", 0), s.get("avg_grade", 0), s.get("elev_difference", 0)
-                if 100 <= d <= COTE_MAX_M and g >= 4 and e >= 8:
-                    out[s["id"]] = {"i": s["id"], "n": s.get("name", ""), "d": round(d), "g": round(g, 1), "e": round(e)}
-    print("Côtes " + lieu["nom"] + " : " + str(len(vus)) + " segments trouvés, " + str(len(out)) + " gardés")
-    return sorted(out.values(), key=lambda c: -c["e"])[:12]
 
 
 def load_lieux():
@@ -89,7 +80,7 @@ def lieux_demandes(cfg):
     if not cfg.get("canal"):
         return False
     try:
-        raw = urllib.request.urlopen("https://ntfy.sh/" + cfg["canal"] + "/json?poll=1&since=3d", timeout=15).read().decode()
+        raw = urllib.request.urlopen("https://ntfy.sh/" + cfg["canal"] + "/json?poll=1&since=72h", timeout=15).read().decode()
     except Exception as e:
         print("::warning::Demandes de lieu non lues : " + str(e)[:80])
         return False
@@ -111,22 +102,24 @@ def lieux_demandes(cfg):
     return changed
 
 
-def cotes_for(prev, access, now):
+def cotes_for(runs, now):
+    """Côtes proposées : parmi les segments déjà courus, ceux de moins de 800 m, assez raides, autour de chaque lieu."""
+    import math
     cfg = load_lieux()
     lieux_demandes(cfg)
+    segs = {}
+    for r in runs:
+        for e in r.get("sg") or []:
+            if "d" in e and e["i"] not in segs:
+                segs[e["i"]] = e
     res = {}
     for l in cfg["lieux"]:
-        old = (prev or {}).get(l["id"]) or {}
-        age = (now - datetime.datetime.fromisoformat(old["maj"])).total_seconds() / 3600 if old.get("maj") else 1e9
-        fresh = age < (COTE_REFRESH_J * 24 if old.get("items") else 6)  # une zone vide est relue au bout de 6 h
-        if fresh and old.get("nom") == l["nom"] and old.get("v") == 2:
-            res[l["id"]] = old
-            continue
-        try:
-            res[l["id"]] = {"nom": l["nom"], "v": 2, "maj": now.isoformat(timespec="seconds"), "items": explore(l, access)}
-        except Exception as e:
-            print("::warning::Côtes de " + l["nom"] + " non lues : " + str(e)[:80])
-            res[l["id"]] = old or {"nom": l["nom"], "items": []}
+        items = []
+        for e in segs.values():
+            km = math.hypot((e["la"] - l["lat"]) * 111.0, (e["ln"] - l["lng"]) * 111.0 * math.cos(math.radians(l["lat"])))
+            if km <= l["r"] and 100 <= e["d"] <= COTE_MAX_M and e["g"] >= 4 and e["e"] >= 8:
+                items.append({"i": e["i"], "n": e["n"], "d": e["d"], "g": e["g"], "e": e["e"]})
+        res[l["id"]] = {"nom": l["nom"], "items": sorted(items, key=lambda c: -c["e"])[:12]}
     return res
 
 
@@ -187,7 +180,7 @@ def sync():
     except Exception:
         prev, last, prev_cotes = None, None, {}
     # segments et records : repris du fichier précédent, lus chez Strava seulement pour les sorties nouvelles
-    known = {p["id"]: p for p in (prev or []) if p.get("id") and "sg" in p}
+    known = {p["id"]: p for p in (prev or []) if p.get("id") and "sg" in p and all("d" in e for e in p["sg"])}
     left = MAX_DETAILS
     for r in sorted(runs, key=lambda r: r["date"], reverse=True):
         if r["id"] in known:
@@ -199,7 +192,7 @@ def sync():
             except Exception as e:  # un détail raté ne doit jamais bloquer la lecture des sorties
                 print("::warning::Détail de la sortie " + str(r["id"]) + " non lu : " + str(e)[:80])
     now = datetime.datetime.now(datetime.timezone.utc)
-    cotes = cotes_for(prev_cotes, access, now)
+    cotes = cotes_for(runs, now)
     stale = last is None or (now - last).days >= KEEPALIVE_DAYS
     if not runs and prev:  # réponse vide inattendue : on garde les sorties déjà publiées
         print("::warning::Strava n'a renvoyé aucune sortie, activities.json n'est pas modifié.")
