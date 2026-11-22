@@ -1,22 +1,26 @@
 name: Strava sync
+
 on:
   schedule:
     - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
-  push:  # tout déploiement relance aussi la chaîne si elle s'était arrêtée
+  push:
     branches: [main]
     paths-ignore: ["activities.json", "README.md"]
+
 permissions:
   contents: write
-  actions: write  # pour se relancer toute seule
-concurrency:  # jamais deux lectures en même temps : le jeton Strava pourrait être perdu
+
+concurrency:
   group: strava
   cancel-in-progress: false
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Lire Strava
         env:
           STRAVA_CLIENT_ID: ${{ secrets.STRAVA_CLIENT_ID }}
@@ -24,7 +28,8 @@ jobs:
           STRAVA_REFRESH_TOKEN: ${{ secrets.STRAVA_REFRESH_TOKEN }}
           RT_OUT: ${{ runner.temp }}/new_rt
         run: python3 scripts/strava.py sync
-      - name: Garder le jeton Strava à jour s'il a changé
+
+      - name: Garder le jeton Strava à jour
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
           RT_OUT: ${{ runner.temp }}/new_rt
@@ -33,13 +38,15 @@ jobs:
             if [ -n "$GH_PAT" ]; then
               GH_TOKEN="$GH_PAT" gh secret set STRAVA_REFRESH_TOKEN --repo "$GITHUB_REPOSITORY" < "$RT_OUT"
             else
-              echo "::error::Strava a émis un nouveau jeton mais le secret GH_PAT est absent ou expiré : la prochaine synchro échouera. Recrée GH_PAT (voir le README) puis relance « Strava setup »."
+              echo "::error::GH_PAT absent ou expiré."
               exit 1
             fi
           fi
+
       - name: Repérer les nouvelles séances
         if: always()
         run: python3 scripts/notify.py "$RUNNER_TEMP/notif.txt"
+
       - name: Publier activities.json
         if: always()
         run: |
@@ -48,33 +55,23 @@ jobs:
           git add activities.json lieux.json
           git diff --cached --quiet && exit 0
           git commit -m "Mise à jour Strava"
-          for i in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
+          for i in 1 2 3; do
+            git pull --rebase -q && git push && exit 0
+            sleep 5
+          done
           exit 1
+
       - name: Prévenir sur le téléphone (ntfy)
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
           if [ -s "$RUNNER_TEMP/notif.txt" ] && [ -n "$NTFY_TOPIC" ]; then
             echo "::add-mask::$NTFY_TOPIC"
-            curl -fsS --max-time 20 -H "Title: Cadenzo" -H "Tags: running_shirt_with_sash" \
+            curl -fsS --max-time 20 \
+              -H "Title: Cadenzo" \
+              -H "Tags: running_shirt_with_sash" \
               -H "Click: https://mathildevans-collab.github.io/trail/" \
-              --data-binary @"$RUNNER_TEMP/notif.txt" "https://ntfy.sh/$NTFY_TOPIC" >/dev/null \
-              || echo "::warning::Notification non envoyée (ntfy injoignable)."
+              --data-binary @"$RUNNER_TEMP/notif.txt" \
+              "https://ntfy.sh/$NTFY_TOPIC" >/dev/null \
+              || echo "::warning::Notification non envoyée."
           fi
-      - name: Se relancer dans 5 minutes
-        # GitHub saute souvent les passages programmés (parfois pendant des heures).
-        # La lecture se relance donc elle-même ; le cron ne sert plus que de secours.
-        # Si une relance est déjà en attente, GitHub n'en garde qu'une seule.
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          sleep 270
-          # 4 essais : une panne brève de l'API GitHub ne doit pas casser la chaîne
-          for i in 1 2 3 4; do
-            gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/strava-sync.yml/dispatches" -f ref="${GITHUB_REF_NAME}" >/dev/null && exit 0
-            echo "::warning::Relance impossible (essai $i/4)."; sleep $((i*15))
-          done
-          # Échec visible : l'appli affiche alors « Strava ne répond plus côté GitHub »
-          echo "::error::La chaîne de relance est arrêtée. Pour la relancer : Actions › Strava sync › Run workflow."
-          exit 1
