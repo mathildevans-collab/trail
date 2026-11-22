@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=77;
+var APPV=78;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -123,7 +123,19 @@ function activeRace(){
 }
 function focusRace(){var r=raceById(D.focus); if(!r){r=activeRace()||races()[0]||null; D.focus=r?r.id:null;} return r;}
 function estGoal(km,dp){return Math.max(30,Math.round((km+dp/100)*5.75*(1+Math.max(0,km-20)/200)/5)*5);}
-function goalOf(r){return +r.goal||estGoal(+r.km||10,+r.dp||0);}
+// Estimation actuelle : prédictions Garmin (semi, ramenées à l’effort de la course) et sorties récentes de 12 km et plus ; sinon formule simple.
+function estNow(r){
+  var km=+r.km||10, dp=+r.dp||0, E=km+dp/100, P=[], src=[], k;
+  try{var g=window.GARMIN&&GARMIN.data&&GARMIN.data(), best=null;
+    if(g&&g.days){Object.keys(g.days).sort().reverse().some(function(d){var x=g.days[d]; if(x&&x.p&&x.p[2]>0&&dayN(d)>dayN(isoAgo(400))){best=x.p[2];return true;}return false;});
+      if(best){P.push(best/60*Math.pow(E/21.0975,1.06)); src.push("Garmin");}}}catch(e){}
+  var lr=(typeof HIST!=="undefined"&&HIST||[]).filter(function(a){return a.km>=12&&a.t>0&&dayN(a.date)>dayN(isoAgo(150));}).map(function(a){return a.t/60*Math.pow(E/(a.km+a.dp/100),1.06);}).sort(function(a,b){return a-b;});
+  if(lr.length){P.push(lr[Math.floor(lr.length/2)]); src.push(lr.length+(lr.length>1?" sorties":" sortie"));}
+  if(!P.length)return {min:estGoal(km,dp),src:"formule simple"};
+  var m=P.reduce(function(a,b){return a+b;},0)/P.length; return {min:Math.max(30,Math.round(m/5)*5),src:src.join(" + ")};
+}
+function goalAuto(r){return r.gm!==undefined?!r.gm:(r.builtin?true:!(+r.goal>0));}
+function goalOf(r){return goalAuto(r)?estNow(r).min:(+r.goal||estGoal(+r.km||10,+r.dp||0));}
 
 // ---------- modèle d’une course : profil, passages, stratégie ----------
 var MC={};
@@ -757,11 +769,12 @@ function vCourse(){
   if(f.prio==="B"){var apl=a&&planOf(a), inA=apl&&dms(f.date)<apl.end&&dms(f.date)>=apl.start; h+='<div class="banner">Course B'+(inA?' : intégrée au plan de '+esc(a.name)+' le '+fmtD(dms(f.date))+', avec la veille et le lendemain allégés.':' : en dehors de ton plan en cours.')+'</div>';}
   // Bornes fixes, tirées du temps estimé (km + D+) et non de l’objectif : sinon le curseur se recentre à chaque relâchement.
   var gref=estGoal(m.L,m.dp), gmin=Math.max(20,Math.round(Math.min(gref*0.6,m.goal)/5)*5), gmax=Math.round(Math.max(gref*1.5,m.goal)/5)*5;
-  h+='<div class="card"><h2>Objectif</h2><div class="goal"><b class="num" id="goalv">'+hm(m.goal)+'</b><input type="range" id="goal" min="'+gmin+'" max="'+gmax+'" step="5" value="'+m.goal+'" aria-label="Objectif de temps"></div><p class="small muted" style="margin:0">Temps de passage, allures et mode Course suivent cet objectif.</p></div>';
+  var est=estNow(f), auto=goalAuto(f);
+  h+='<div class="card"><h2>Objectif</h2><div class="goal"><b class="num" id="goalv">'+hm(m.goal)+'</b><input type="range" id="goal" min="'+gmin+'" max="'+gmax+'" step="5" value="'+m.goal+'" aria-label="Objectif de temps"></div><p class="small muted" style="margin:0" id="goalnote">'+(auto?'Estimation actuelle · '+esc(est.src)+'. Tu peux la changer.':'Modifié par toi · estimation actuelle '+hm(est.min)+' ('+esc(est.src)+') <button class="btn sm" data-act="goalauto" style="margin-left:6px">Utiliser l’estimation</button>')+'</p></div>';
   h+='<div class="card"><h2>Le parcours</h2>'+profileSVG(m,{id:"profsvg"})+(m.prof?'<div id="profinfo" class="profinfo muted">Touche le profil : km, altitude, D+ et passage visé.</div><div class="legend"><span><i style="background:var(--brand)"></i>Profil</span>'+(m.traps.length?'<span><i style="background:var(--off)"></i>'+m.trapTxt+'</span>':'')+(m.cps.length>1?'<span>R = ravito</span>':'')+'</div>':'<p class="small muted" style="margin:6px 0 0">Ajoute la trace GPX (Modifier la course) pour voir le profil, les montées et les descentes.</p>')+'</div>';
   var near=daysTo(f)>=0&&daysTo(f)<=21; // course proche : les deux blocs s’ouvrent seuls ; sinon repliés, choix mémorisé
   function fo(key,ttl,sub,id,html){var o=FOLD[key]!=null?FOLD[key]:near; return '<details class="card fold" data-fold="'+key+'"'+(o?" open":"")+'><summary><h2>'+ttl+'</h2><span class="small muted">'+sub+'</span></summary><div style="padding:0 16px 16px" id="'+id+'">'+html+'</div></details>';}
-  h+=fo("pass","Temps de passage",near?"":"toucher pour ouvrir","passwrap",passHTML(f,m));
+  h+=fo("pass","Estimation actuelle",near?"":"toucher pour ouvrir","passwrap",passHTML(f,m));
   h+=fo("strat","Stratégie",near?"":"toucher pour ouvrir","stratwrap",stratHTML(m));
   return h+'<div class="row" style="margin-bottom:12px"><button class="btn" data-act="editrace" data-r="'+f.id+'">'+I.pen+' Modifier la course</button><button class="btn" data-race="'+f.id+'" data-practice="1">'+I.play+' Essayer le mode Course</button></div>';
 }
@@ -1011,7 +1024,7 @@ function sheetAct(a,b){
     var name=isB?r0.name:$("rName").value.trim(), date=$("rDate").value, time=$("rTime").value||"08:00", rkm=isB?r0.km:num($("rKm").value), rdp=isB?r0.dp:Math.round(num($("rDp").value)||0), gv=$("rGoal").value.trim(), goal=gv?Math.round(parseDur(gv)/60):0;
     if(!name){toast("Donne un nom à la course.");return;} if(!isoOk(date)){toast("Choisis la date de la course.");return;} if(!(rkm>0)){toast("Indique la distance.");return;}
     if(gv&&!(goal>10)){toast("Objectif au format h:mm, par exemple 3:30.");return;}
-    var rr=r0||{id:uid()}; rr.name=name; rr.date=date; rr.time=time; rr.km=Math.round(rkm*100)/100; rr.dp=rdp; rr.goal=goal||0;
+    var rr=r0||{id:uid()}; rr.name=name; rr.date=date; rr.time=time; rr.km=Math.round(rkm*100)/100; rr.dp=rdp; rr.goal=goal||0; rr.gm=!!goal;
     if(!isB){rr.prio=SH.prio||"A"; rr.place=$("rPlace").value.trim(); var st=$("rStart").value; rr.start=isoOk(st)?st:nextMonday();
       rr.cps=$("rCps").value.split("\n").map(function(l){var mm=/^\s*(\d+(?:[.,]\d+)?)\s*(?:km)?\s*[:\-–·]?\s*(.*)$/.exec(l); return mm?{km:num(mm[1]),n:mm[2].trim()}:null;}).filter(function(c){return c&&c.km>0&&c.km<rr.km;});}
     if(pendingGpx){rr.gpx={name:pendingGpx.name,total:pendingGpx.total,pts:scalePts(pendingGpx.pts,pendingGpx.total,rr.km)}; if(!isB&&pendingGpx.prof)rr.prof=pendingGpx.prof.map(function(p){return [Math.round(p[0]*rr.km/pendingGpx.total*100)/100,p[1]];});}
@@ -1053,7 +1066,7 @@ function render(keep){
   $("view").innerHTML=v;
   document.querySelectorAll("#tabs button").forEach(function(b){b.setAttribute("aria-current",b.dataset.t===tab?"page":"false");});
   if(tab==="course"){var f=focusRace(); if(f){var g=$("goal");
-    if(g){g.addEventListener("input",function(){f.goal=+g.value; var mm=model(f); $("goalv").textContent=hm(mm.goal); $("passwrap").innerHTML=passHTML(f,mm); $("stratwrap").innerHTML=stratHTML(mm);}); g.addEventListener("change",function(){save(); render(true);});}
+    if(g){g.addEventListener("input",function(){f.goal=+g.value; f.gm=true; var mm=model(f); $("goalv").textContent=hm(mm.goal); $("passwrap").innerHTML=passHTML(f,mm); $("stratwrap").innerHTML=stratHTML(mm);}); g.addEventListener("change",function(){save(); render(true);});}
     bindProfile(model(f));}}
   window.scrollTo(0,keep?y:0);
 }
@@ -1341,6 +1354,7 @@ $("view").addEventListener("change",function(e){
 function toggleSw(k){D.set[k]=!D.set[k]; save(); render(true);}
 function act(a,b){
   var ds=b.dataset;
+  if(a==="goalauto"){var fr=focusRace(); if(fr){fr.gm=false; fr.goal=0; save(); render(true);} return;}
   if(a==="sync")sync(true);
   else if(a==="now"){goNow(); render();}
   else if(a==="watch")watchSheet(+ds.w,ds.k);
