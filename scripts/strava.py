@@ -55,20 +55,22 @@ COTE_REFRESH_J = 30   # une zone est relue au plus une fois par mois
 
 
 def explore(lieu, access):
-    """Segments de côte autour d'un lieu : 4 quadrants, car Strava ne rend que 10 segments par zone."""
+    """Segments de côte autour d'un lieu : grille 3 × 3, car Strava ne rend que 10 segments par zone."""
     import math
     dlat = lieu["r"] / 111.0
     dlng = lieu["r"] / (111.0 * math.cos(math.radians(lieu["lat"])))
-    out = {}
-    for sy in (-1, 0):
-        for sx in (-1, 0):
-            sw = (lieu["lat"] + sy * dlat, lieu["lng"] + sx * dlng)
-            ne = (sw[0] + dlat, sw[1] + dlng)
+    out, vus = {}, set()
+    for i in range(3):
+        for j in range(3):
+            sw = (lieu["lat"] - dlat + i * 2 * dlat / 3, lieu["lng"] - dlng + j * 2 * dlng / 3)
+            ne = (sw[0] + 2 * dlat / 3, sw[1] + 2 * dlng / 3)
             q = urllib.parse.urlencode({"bounds": "%.5f,%.5f,%.5f,%.5f" % (sw + ne), "activity_type": "running"})
             for s in get(API + "/api/v3/segments/explore?" + q, access).get("segments", []):
+                vus.add(s["id"])
                 d, g, e = s.get("distance", 0), s.get("avg_grade", 0), s.get("elev_difference", 0)
-                if 150 <= d <= COTE_MAX_M and g >= 5 and e >= 15:
+                if 100 <= d <= COTE_MAX_M and g >= 4 and e >= 8:
                     out[s["id"]] = {"i": s["id"], "n": s.get("name", ""), "d": round(d), "g": round(g, 1), "e": round(e)}
+    print("Côtes " + lieu["nom"] + " : " + str(len(vus)) + " segments trouvés, " + str(len(out)) + " gardés")
     return sorted(out.values(), key=lambda c: -c["e"])[:12]
 
 
@@ -115,7 +117,8 @@ def cotes_for(prev, access, now):
     res = {}
     for l in cfg["lieux"]:
         old = (prev or {}).get(l["id"]) or {}
-        fresh = old.get("items") and old.get("maj") and (now - datetime.datetime.fromisoformat(old["maj"])).days < COTE_REFRESH_J
+        age = (now - datetime.datetime.fromisoformat(old["maj"])).total_seconds() / 3600 if old.get("maj") else 1e9
+        fresh = age < (COTE_REFRESH_J * 24 if old.get("items") else 6)  # une zone vide est relue au bout de 6 h
         if fresh and old.get("nom") == l["nom"]:
             res[l["id"]] = old
             continue
