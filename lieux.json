@@ -14,6 +14,13 @@
    "lat": 43.83742,
    "lng": 4.36007,
    "r": 5
+  },
+  {
+   "id": "saint-mandrier-sur-mer",
+   "nom": "Saint-Mandrier-sur-Mer",
+   "lat": 43.07481,
+   "lng": 5.90972,
+   "r": 5
   }
  ]
 }
