@@ -119,11 +119,11 @@ def cotes_for(prev, access, now):
         old = (prev or {}).get(l["id"]) or {}
         age = (now - datetime.datetime.fromisoformat(old["maj"])).total_seconds() / 3600 if old.get("maj") else 1e9
         fresh = age < (COTE_REFRESH_J * 24 if old.get("items") else 6)  # une zone vide est relue au bout de 6 h
-        if fresh and old.get("nom") == l["nom"]:
+        if fresh and old.get("nom") == l["nom"] and old.get("v") == 2:
             res[l["id"]] = old
             continue
         try:
-            res[l["id"]] = {"nom": l["nom"], "maj": now.isoformat(timespec="seconds"), "items": explore(l, access)}
+            res[l["id"]] = {"nom": l["nom"], "v": 2, "maj": now.isoformat(timespec="seconds"), "items": explore(l, access)}
         except Exception as e:
             print("::warning::Côtes de " + l["nom"] + " non lues : " + str(e)[:80])
             res[l["id"]] = old or {"nom": l["nom"], "items": []}
