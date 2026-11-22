@@ -717,3 +717,16 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .dfrow b{display:block;font:700 14px var(--display)}.dfrow small{display:block;color:var(--muted);font:600 11px var(--mono);line-height:1.5}.dfrow em{font:800 14px var(--display);font-style:normal;text-align:right}
 .dfn{width:28px;height:28px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font:800 12px var(--display)}.dfn.hard{background:var(--off);color:#fff}.dfn.aid{border-radius:9px;background:var(--brand-soft);color:var(--brand)}
 .dfn.aid{font-size:11px;white-space:nowrap;letter-spacing:-.02em}
+
+
+/* Fiche course en tableau de bord */
+.course-detail-dashboard{display:flex;flex-direction:column;gap:12px}
+.course-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.course-metrics .sd-t{min-height:102px;padding:12px;gap:4px}
+.course-metrics .sd-tx{margin-top:2px}
+.course-metrics .sd-tx b{font:800 23px/1.1 var(--display);overflow-wrap:anywhere}
+.course-metrics .sd-tx small{font:600 11px var(--body)}
+.course-objective,.course-chart-card,.course-panel{margin:0;min-width:0}
+.course-objective h2,.course-chart-card h2,.course-panel h2{font-size:18px}
+.course-detail-dashboard .fold{align-self:stretch}
+.course-actions{margin-top:12px}
