@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=78;
+var APPV=79;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -163,8 +163,15 @@ function model(r){
     genStrat(m);
     if(r.strat&&r.strat.length){m.strat=r.strat; m.adv=r.strat.map(function(x){return [x[2],x[1]];}); m.adv[m.adv.length-1][0]=m.L+1;}
   }
+  m.diff=m.prof?diffs(m):[];
+  (m.diff||[]).forEach(function(d){if((m.traps||[]).some(function(t){return d.a<t[1]&&d.b>t[0];}))d.hard=true;});
   m.kmAt=function(min){if(min<=0)return 0; var lo=0,hi=m.L; for(var k=0;k<32;k++){var x=(lo+hi)/2; if(m.cumMin(x)<min)lo=x; else hi=x;} return lo;};
   MC[r.id]={key:key,m:m}; return m;
+}
+function diffs(m){ // difficultés : montées de 60 m et plus, descentes raides, tirées du profil
+  var D_=[]; segs(m,1).forEach(function(c){D_.push({a:c.a,b:c.b,g:c.g,p:c.p,up:true,hard:c.p>=10});});
+  segs(m,-1).forEach(function(c){if(c.p>=8)D_.push({a:c.a,b:c.b,g:c.g,p:c.p,up:false,hard:c.p>=12});});
+  D_.sort(function(x,y){return x.a-y.a;}); return D_.slice(0,14);
 }
 function segs(m,sign){ // montées (1) ou descentes (−1) d’au moins 60 m, replats de 25 m tolérés
   var P=m.prof, out=[], n=P.length, i=0;
@@ -471,6 +478,8 @@ function profileSVG(m,o){
   s+='<path d="'+d+'" fill="none" stroke="'+line+'" stroke-width="2.4" stroke-linejoin="round"/>';
   (m.traps||[]).forEach(function(t){var seg=P.filter(function(p){return p[0]>=t[0]&&p[0]<=t[1];}); if(seg.length>1)s+='<path d="'+pts(seg)+'" fill="none" stroke="'+trap+'" stroke-width="3.6" stroke-linecap="round"/>';});
   m.cps.slice(0,-1).forEach(function(c,i){s+='<line x1="'+X(c.km)+'" x2="'+X(c.km)+'" y1="'+(top-8)+'" y2="'+bot+'" stroke="'+txt+'" stroke-dasharray="2 3" stroke-width="1"/><text x="'+X(c.km)+'" y="'+(top-11)+'" text-anchor="middle" font-size="10" font-weight="700" fill="'+txt+'">R'+(i+1)+'</text>';});
+  if(o.diff&&m.diff)m.diff.forEach(function(d,i){var seg=P.filter(function(p){return p[0]>=d.a&&p[0]<=d.b;}); if(!seg.length)return; var ey=d.up?Math.max.apply(null,seg.map(function(p){return p[1];})):Math.min.apply(null,seg.map(function(p){return p[1];})); var cx=X((d.a+d.b)/2), cy=Math.max(top+6,Math.min(bot-6,Y(ey)+(d.up?-11:11)));
+    s+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="7.5" fill="'+(d.hard?trap:line)+'" stroke="'+ring+'" stroke-width="1.5"/><text x="'+cx.toFixed(1)+'" y="'+(cy+3.4).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-weight="800" fill="#fff" style="fill:#fff">'+(i+1)+'</text>';});
   if(o.pos!=null)s+='<circle cx="'+X(o.pos)+'" cy="'+Y(m.elevAt(o.pos))+'" r="6" fill="'+line+'" stroke="'+ring+'" stroke-width="3"/>';
   var ticks=L>30?[0,10,20,30]:L>12?[0,5,10,15,20,25].filter(function(k){return k<L-2;}):[0,Math.round(L/2)]; ticks.push(L);
   ticks.forEach(function(k){s+='<text x="'+Math.min(W-14,Math.max(14,X(k)))+'" y="'+(H-6)+'" text-anchor="middle" font-size="10" fill="'+txt+'">'+kmS(k)+'</text>';});
@@ -771,12 +780,23 @@ function vCourse(){
   var gref=estGoal(m.L,m.dp), gmin=Math.max(20,Math.round(Math.min(gref*0.6,m.goal)/5)*5), gmax=Math.round(Math.max(gref*1.5,m.goal)/5)*5;
   var est=estNow(f), auto=goalAuto(f);
   h+='<div class="card"><h2>Objectif</h2><div class="goal"><b class="num" id="goalv">'+hm(m.goal)+'</b><input type="range" id="goal" min="'+gmin+'" max="'+gmax+'" step="5" value="'+m.goal+'" aria-label="Objectif de temps"></div><p class="small muted" style="margin:0" id="goalnote">'+(auto?'Estimation actuelle · '+esc(est.src)+'. Tu peux la changer.':'Modifié par toi · estimation actuelle '+hm(est.min)+' ('+esc(est.src)+') <button class="btn sm" data-act="goalauto" style="margin-left:6px">Utiliser l’estimation</button>')+'</p></div>';
-  h+='<div class="card"><h2>Le parcours</h2>'+profileSVG(m,{id:"profsvg"})+(m.prof?'<div id="profinfo" class="profinfo muted">Touche le profil : km, altitude, D+ et passage visé.</div><div class="legend"><span><i style="background:var(--brand)"></i>Profil</span>'+(m.traps.length?'<span><i style="background:var(--off)"></i>'+m.trapTxt+'</span>':'')+(m.cps.length>1?'<span>R = ravito</span>':'')+'</div>':'<p class="small muted" style="margin:6px 0 0">Ajoute la trace GPX (Modifier la course) pour voir le profil, les montées et les descentes.</p>')+'</div>';
+  h+='<div class="card"><h2>Le parcours</h2>'+profileSVG(m,{id:"profsvg",diff:true})+(m.prof?'<div id="profinfo" class="profinfo muted">Touche le profil : km, altitude, D+ et passage visé.</div><div class="legend"><span><i style="background:var(--brand)"></i>Profil</span>'+(m.traps.length?'<span><i style="background:var(--off)"></i>'+m.trapTxt+'</span>':'')+(m.cps.length>1?'<span>R = ravito</span>':'')+'</div>':'<p class="small muted" style="margin:6px 0 0">Ajoute la trace GPX (Modifier la course) pour voir le profil, les montées et les descentes.</p>')+'</div>';
+  h+=diffCard(m)+aidCard(m);
   var near=daysTo(f)>=0&&daysTo(f)<=21; // course proche : les deux blocs s’ouvrent seuls ; sinon repliés, choix mémorisé
   function fo(key,ttl,sub,id,html){var o=FOLD[key]!=null?FOLD[key]:near; return '<details class="card fold" data-fold="'+key+'"'+(o?" open":"")+'><summary><h2>'+ttl+'</h2><span class="small muted">'+sub+'</span></summary><div style="padding:0 16px 16px" id="'+id+'">'+html+'</div></details>';}
   h+=fo("pass","Estimation actuelle",near?"":"toucher pour ouvrir","passwrap",passHTML(f,m));
   h+=fo("strat","Stratégie",near?"":"toucher pour ouvrir","stratwrap",stratHTML(m));
   return h+'<div class="row" style="margin-bottom:12px"><button class="btn" data-act="editrace" data-r="'+f.id+'">'+I.pen+' Modifier la course</button><button class="btn" data-race="'+f.id+'" data-practice="1">'+I.play+' Essayer le mode Course</button></div>';
+}
+function diffCard(m){
+  if(!m.prof)return '<div class="card"><h2>Difficultés</h2><p class="small muted" style="margin:0">Ajoute la trace GPX pour voir le profil, les montées et les descentes techniques.</p><button class="btn sm" data-act="editrace" data-r="'+m.r.id+'" style="margin-top:10px">'+I.pen+' Ajouter la trace</button></div>';
+  var h='<div class="card"><h2>Difficultés</h2>';
+  if(!m.diff.length)return h+'<p class="small muted" style="margin:0">Pas de montée ou de descente marquée sur ce parcours.</p></div>';
+  return h+m.diff.map(function(d,i){return '<div class="dfrow"><span class="dfn'+(d.hard?' hard':'')+'">'+(i+1)+'</span><span><b>'+(d.up?'Montée':'Descente')+(d.hard?(d.up?' raide':' technique'):'')+'</b><small>km '+kmS(d.a)+' → '+kmS(d.b)+' · '+kmS(Math.round((d.b-d.a)*100)/100)+' km</small></span><em>'+(d.up?'+':'−')+d.g+' m<small>'+d.p+' %</small></em></div>';}).join("")+'</div>';
+}
+function aidCard(m){
+  var C=m.cps.slice(0,-1); if(!C.length)return '';
+  return '<div class="card"><h2>Ravitaillements</h2>'+C.map(function(c,i){var nx=m.cps[i+1], sec=nx&&{a:c.km,b:nx.km,up:m.dplus(c.km,nx.km),dn:m.dminus(c.km,nx.km)}; return '<div class="dfrow"><span class="dfn aid">R'+(i+1)+'</span><span><b>'+esc(c.n)+'</b><small>km '+kmS(c.km)+(m.prof?' · '+Math.round(m.elevAt(c.km))+' m':'')+' · vers '+tod(m.r,m.cumMin(c.km))+'</small></span><em>'+(sec?'→ '+kmS(Math.round((sec.b-sec.a)*10)/10)+' km<small>+'+sec.up+' / −'+sec.dn+'</small>':'')+'</em></div>';}).join("")+'</div>';
 }
 function passHTML(r,m){
   var h='<p class="small" style="margin:0 0 8px">Allure moyenne : <b>'+mmss(m.goal*60/m.L)+'/km</b>, soit <b>'+mmss(m.eff)+' par km-effort</b>.</p><table class="tbl num"><tr><th>Section</th><th>D+ / D−</th><th>Passage</th></tr>';
@@ -1531,8 +1551,11 @@ function parseGpx(txt,fname){
     for(var x=0;x<=total+1e-6;x+=step){var a=(x-step/2)*1000,bb=(x+step/2)*1000,s=0,c=0; while(j<raw.length&&raw[j][2]<a)j++; for(var q=j;q<raw.length&&raw[q][2]<=bb;q++)if(!isNaN(raw[q][3])){s+=raw[q][3];c++;} if(c)prof.push([Math.round(x*100)/100,Math.round(s/c)]);}
     var le=raw[raw.length-1][3]; if(prof.length&&prof[prof.length-1][0]<total-0.05&&!isNaN(le))prof.push([Math.round(total*100)/100,Math.round(le)]);
     for(var z=1;z<prof.length;z++){var d=prof[z][1]-prof[z-1][1]; if(d>0)dp+=d;}}
+  var wp=[]; Array.prototype.forEach.call(doc.getElementsByTagName("wpt"),function(w){var n=(w.getElementsByTagName("name")[0]||{}).textContent||""; if(!/ravit|aid|food|eau|water|refuge|check|cp\b/i.test(n))return;
+    var la=+w.getAttribute("lat"),lo=+w.getAttribute("lon"),bi=-1,bd=1e9; raw.forEach(function(p,i){var d=Math.abs(p[0]-la)+Math.abs(p[1]-lo); if(d<bd){bd=d;bi=i;}}); if(bi<0||distM(raw[bi][0],raw[bi][1],la,lo)>400)return;
+    var km=Math.round(raw[bi][2]/10)/100; if(km>0.3&&km<total-0.3&&!wp.some(function(x){return Math.abs(x.km-km)<0.3;}))wp.push({km:km,n:n.trim().slice(0,40)});}); wp.sort(function(a,b){return a.km-b.km;});
   var nm=doc.getElementsByTagName("name")[0];
-  return {name:(nm&&nm.textContent.trim().slice(0,60))||fname.replace(/\.gpx$/i,""),total:total,pts:out,prof:prof,dp:Math.round(dp)};
+  return {name:(nm&&nm.textContent.trim().slice(0,60))||fname.replace(/\.gpx$/i,""),total:total,pts:out,prof:prof,dp:Math.round(dp),wpts:wp};
 }
 function scalePts(pts,total,km){var f=km/total; return pts.map(function(p){return [p[0],p[1],Math.round(p[2]*f*1000)/1000];});}
 $("fileGpxRace").addEventListener("change",function(){readFile(this,function(txt,f){
@@ -1541,6 +1564,7 @@ $("fileGpxRace").addEventListener("change",function(){readFile(this,function(txt
   if(n&&!n.disabled&&!n.value)n.value=g.name; if(k&&!k.disabled&&!k.value)k.value=kmS(g.total); if(d&&!d.disabled&&!d.value&&g.dp)d.value=Math.round(g.dp/10)*10;
   var gi=$("gpxinfo"); if(gi)gi.textContent="Trace lue : "+kmS(g.total)+" km"+(g.prof?", environ +"+nb(g.dp)+" m (GPS). Profil, montées et descentes seront calculés.":", sans altitude : utilisée pour le GPS seulement.");
   var gl=$("gpxlab"); if(gl)gl.textContent="Trace chargée · remplacer";
+  var cp=$("rCps"); if(cp&&g.wpts&&g.wpts.length&&!cp.value.trim()){cp.value=g.wpts.map(function(w){return kmS(w.km)+" "+w.n;}).join("\n"); if(gi)gi.textContent+=" "+g.wpts.length+" ravitaillement"+(g.wpts.length>1?"s":"")+" repéré"+(g.wpts.length>1?"s":"")+" dans le fichier.";}
 });});
 function distM(a,b,c,d){var R=6371000,toR=Math.PI/180,x=(d-b)*toR*Math.cos((a+c)/2*toR),y=(c-a)*toR; return Math.sqrt(x*x+y*y)*R;}
 function exportData(){
