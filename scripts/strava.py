@@ -2,6 +2,7 @@
 """Lit les sorties de course Strava et écrit activities.json (mode sync),
 ou échange le code d'autorisation contre un jeton (mode setup).
 Aucun secret n'est écrit dans le dépôt : tout passe par les Secrets GitHub."""
+import re
 import json, os, sys, time, datetime, urllib.error, urllib.parse, urllib.request
 
 API = "https://www.strava.com"
@@ -71,13 +72,48 @@ def explore(lieu, access):
     return sorted(out.values(), key=lambda c: -c["e"])[:12]
 
 
-def cotes_for(prev, access, now):
+def load_lieux():
     try:
-        lieux = json.load(open("lieux.json"))
+        cfg = json.load(open("lieux.json"))
     except Exception:
-        return prev or {}
+        return {"canal": "", "lieux": []}
+    if isinstance(cfg, list):
+        cfg = {"canal": "", "lieux": cfg}
+    return cfg
+
+
+def lieux_demandes(cfg):
+    """Villes demandées depuis l'appli : elle les publie sur un canal ntfy, lu ici (6 lieux au plus)."""
+    if not cfg.get("canal"):
+        return False
+    try:
+        raw = urllib.request.urlopen("https://ntfy.sh/" + cfg["canal"] + "/json?poll=1&since=3d", timeout=15).read().decode()
+    except Exception as e:
+        print("::warning::Demandes de lieu non lues : " + str(e)[:80])
+        return False
+    changed = False
+    for line in raw.splitlines():
+        try:
+            m = json.loads(json.loads(line).get("message", ""))
+            lid, nom = str(m["id"]), str(m["nom"]).strip()[:30]
+            lat, lng = float(m["lat"]), float(m["lng"])
+            if not re.fullmatch(r"[a-z0-9-]{1,30}", lid) or not nom or not (-90 <= lat <= 90 and -180 <= lng <= 180):
+                continue
+        except Exception:
+            continue
+        if len(cfg["lieux"]) < 6 and all(l["id"] != lid for l in cfg["lieux"]):
+            cfg["lieux"].append({"id": lid, "nom": nom, "lat": round(lat, 5), "lng": round(lng, 5), "r": 5})
+            changed = True
+    if changed:
+        json.dump(cfg, open("lieux.json", "w"), ensure_ascii=False, indent=1)
+    return changed
+
+
+def cotes_for(prev, access, now):
+    cfg = load_lieux()
+    lieux_demandes(cfg)
     res = {}
-    for l in lieux:
+    for l in cfg["lieux"]:
         old = (prev or {}).get(l["id"]) or {}
         fresh = old.get("items") and old.get("maj") and (now - datetime.datetime.fromisoformat(old["maj"])).days < COTE_REFRESH_J
         if fresh and old.get("nom") == l["nom"]:

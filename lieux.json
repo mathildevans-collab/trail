@@ -1,3 +1,12 @@
-[
- {"id": "pin-rolland", "nom": "Pin Rolland", "lat": 43.0868, "lng": 5.9340, "r": 5}
-]
+{
+ "canal": "cadenzo-lieux-def79f15a0c4a14c40b8",
+ "lieux": [
+  {
+   "id": "pin-rolland",
+   "nom": "Pin Rolland",
+   "lat": 43.0868,
+   "lng": 5.934,
+   "r": 5
+  }
+ ]
+}

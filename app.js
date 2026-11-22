@@ -5,6 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
+var APPV=72;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -504,7 +505,7 @@ function ctAgo(d){if(!d)return "Jamais faite"; var n=Math.round((Date.parse(isoT
 function cotesCard(){
   var L=cotesList(); if(!L)return "";
   var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><button class="ctch" data-ctl="1">📍 '+esc(L.nom)+'</button>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Autres côtes">↻</button>':'')+'</div>';
-  if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 0">Côtes prêtes à la prochaine synchro (environ 15 min).</p></div>';
+  if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 0">Côtes prêtes dans environ 5 min.</p></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
   var x=v[0], c=x.c;
   h+='<div class="cthero"><span class="cts">CONSEILLÉE'+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><b>'+esc(c.n)+'</b><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctAgo(x.last)+'</p></div>';
@@ -513,9 +514,22 @@ function cotesCard(){
     h+='<button class="ctmore" data-ctt="1">'+(CTS.open?"Masquer":"Voir les "+(v.length-1)+" autres")+(CTS.open?" ▴":" ▾")+'</button>';}
   return h+'</div>';
 }
+var CT_TOPIC="cadenzo-lieux-def79f15a0c4a14c40b8";
+function ctSlug(n){return n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"lieu";}
+function ctAdd(q){
+  var msg=document.getElementById("ctMsg"); function say(t){if(msg)msg.textContent=t;}
+  if(!q){return;} if(Object.keys(COTES).length>=6){say("6 lieux au maximum.");return;} say("Recherche…");
+  fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q),{headers:{"Accept-Language":"fr"}}).then(function(r){return r.json();}).then(function(j){
+    if(!j.length){say("Ville introuvable.");return;}
+    var nom=(j[0].name||q).slice(0,30), id=ctSlug(nom), m={id:id,nom:nom,lat:+j[0].lat,lng:+j[0].lon};
+    return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0;
+      if(!COTES[id])COTES[id]={nom:nom,items:[],pend:1}; CTS.l=id; CTS.off=0; ctSave(); try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}
+      closeSheet(); render(true); toast(nom+" ajoutée · côtes prêtes dans environ 5 min.");});
+  }).catch(function(){say("Impossible pour l’instant. Réessaie.");});
+}
 function ctSheet(){
   var ids=Object.keys(COTES);
-  openSheet('<h3 style="margin:0 0 6px">Lieu des côtes</h3>'+ids.map(function(id){var o=COTES[id], k=(o.items||[]).length; return '<button class="ctlieu'+(id===CTS.l?" on":"")+'" data-ctp="'+esc(id)+'"><span><b>'+esc(o.nom)+'</b><small>'+(k?k+" côtes · rayon 5 km":"prêt à la prochaine synchro")+'</small></span><span>'+(id===CTS.l?"✓":"")+'</span></button>';}).join(""));
+  openSheet('<h3 style="margin:0 0 6px">Lieu des côtes</h3>'+ids.map(function(id){var o=COTES[id], k=(o.items||[]).length; return '<button class="ctlieu'+(id===CTS.l?" on":"")+'" data-ctp="'+esc(id)+'"><span><b>'+esc(o.nom)+'</b><small>'+(k?k+(k>1?" côtes":" côte")+" · rayon 5 km":"prêt à la prochaine synchro")+'</small></span><span>'+(id===CTS.l?"✓":"")+'</span></button>';}).join("")+'<form class="ctadd" id="ctForm"><input id="ctVille" type="text" maxlength="30" placeholder="Ajouter une ville" autocomplete="off" aria-label="Ville à ajouter"><button class="btn primary" type="submit">Ajouter</button></form><p class="small muted" id="ctMsg" style="margin:8px 2px 0"></p>');
 }
 function vPrep(r,pl){
   var ti=planIdx(pl), tw=ti>=0?Math.floor(ti/7)+1:0, td=ti>=0?ti%7:-1;
@@ -876,6 +890,7 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
   if(b.dataset.ctp){CTS.l=b.dataset.ctp; CTS.off=0; ctSave(); closeSheet(); render(true); return;}
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
   if(b.dataset.sact)sheetAct(b.dataset.sact,b);});
+$("sheet").addEventListener("submit",function(e){if(e.target.id!=="ctForm")return; e.preventDefault(); ctAdd(($("ctVille").value||"").trim());});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!$("sheet").hidden)closeSheet();});
 document.addEventListener("click",function(e){var b=e.target.closest("[data-wo]"); if(!b||!window.WORKOUT)return; e.preventDefault(); var v=b.dataset.wo.split(":"); WORKOUT.start(v[0],v[1]||null,{RENFO:RENFO,MOB:MOB,MOBS:MOBS,MOBFOR:MOBFOR,closeSheet:closeSheet});});
 function showInfo(key){
@@ -1384,11 +1399,24 @@ function toast(m,undo){var t=$("toast"), ms=undo?6000:3200; UNDO=undo||null; var
   t.hidden=false; clearTimeout(toastT); toastT=setTimeout(function(){t.hidden=true; UNDO=null;},ms);}
 
 // ---------- Strava (coupé, gardé pour plus tard) ----------
+
+// Mise à jour : à chaque retour dans l’appli, on compare avec la version publiée et on recharge toute seule (sauf pendant une course ou une feuille ouverte)
+function checkUpdate(){
+  if(location.protocol!=="https:")return;
+  fetch("index.html?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){
+    var m=t.match(/app\.js\?v=(\d+)/); if(!m||+m[1]<=APPV)return;
+    var busy=(typeof RS!=="undefined"&&RS&&!RS.done)||!$("sheet").hidden, g="cadenzo-reloaded"; try{if(sessionStorage.getItem(g)===m[1])return;}catch(e){}
+    if(busy){toast("Nouvelle version prête. Elle s’installe à ta prochaine ouverture.");return;}
+    try{sessionStorage.setItem(g,m[1]);}catch(e){} location.reload();
+  }).catch(function(){});
+}
+document.addEventListener("visibilitychange",function(){if(!document.hidden)checkUpdate();});
+setTimeout(checkUpdate,2500);
 var syncing=false;
 function sync(manual){
   if(!STRAVA||syncing)return; syncing=true;
   var urls=[D.set.json||DEF_JSON]; if(urls[0]!==DEF_JSON)urls.push(DEF_JSON); if(/github\.io$/.test(location.hostname))urls.push("activities.json");
-  function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); if(j.cotes&&typeof j.cotes==="object"){COTES=j.cotes; try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}} return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
+  function get(i){return fetch(urls[i]+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); if(j.cotes&&typeof j.cotes==="object"){var pe={}; Object.keys(COTES).forEach(function(k){if(COTES[k].pend&&!j.cotes[k])pe[k]=COTES[k];}); COTES=Object.assign({},j.cotes,pe); try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}} return j;}).catch(function(e){if(i+1<urls.length)return get(i+1); throw e;});}
   ghCheck();
   get(0).then(function(j){
     var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
