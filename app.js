@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=81;
+var APPV=82;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1477,12 +1477,16 @@ function sync(manual){
     D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err=""; var n=applyActs(runs); if(manual)toast(runs.length+" sorties lues · "+n+" séances du plan");
   }).catch(function(e){var m=String(e&&e.message||e); D.sync.err=/failed to fetch|network|load failed/i.test(m)?"pas de réseau":/json|position|unexpected/i.test(m)?"fichier illisible":m.slice(0,40); if(manual)toast("Synchro impossible.");}).then(function(){syncing=false; save(); render(true);});
 }
-// état de la dernière exécution de l’Action « Strava sync » (API publique GitHub, sans jeton)
+// État de la dernière exécution terminée de l’Action « Strava sync ».
 function ghCheck(){
   fetch("https://api.github.com/repos/"+REPO+"/actions/workflows/strava-sync.yml/runs?per_page=5&status=completed",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0; return r.json();}).then(function(j){
-    var runs=(j.workflow_runs||[]).filter(function(r){return r.conclusion==="success"||r.conclusion==="failure";}); if(!runs.length)return;
-    var ok=runs.filter(function(r){return r.conclusion==="success";})[0], ko=runs[0].conclusion==="failure"&&runs[1]&&runs[1].conclusion==="failure";
-    D.sync.gh=ko?"ko":"ok"; D.sync.ght=ok?Date.parse(ok.updated_at)||0:0; save(); render(true);
+    var runs=j.workflow_runs||[]; if(!runs.length)return;
+    // GitHub renvoie les exécutions les plus récentes en premier : ne pas ignorer un échec isolé.
+    var last=runs[0], conclusion=last.conclusion;
+    if(conclusion!=="success"&&conclusion!=="failure")return;
+    D.sync.gh=conclusion==="failure"?"ko":"ok";
+    D.sync.ght=Date.parse(last.updated_at||last.created_at)||0;
+    save(); render(true);
   }).catch(function(){});
 }
 function stravaSub(){
