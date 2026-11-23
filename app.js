@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=87;
+var APPV=88;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -517,12 +517,16 @@ var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStora
 function ctSave(){try{localStorage.setItem("cadenzo-ct",JSON.stringify(CTS));}catch(e){}}
 function cotesList(){ // côtes du lieu choisi, les plus anciennes (ou jamais faites) d'abord
   var ids=Object.keys(COTES); if(!ids.length)return null; if(!COTES[CTS.l])CTS.l=ids[0]; var cur=CTS.l;
-  if(CTS.pos){var bd=10,bi=null; ids.forEach(function(id){var o=COTES[id]; if(o.lat==null)return; var d=ctHav(CTS.pos.la,CTS.pos.ln,o.lat,o.lng); if(d<bd){bd=d;bi=id;}}); if(bi)cur=bi; else return {nom:"Ma position",items:[],far:true};}
-  var L=COTES[cur], last={}, best={};
+  var L=COTES[cur], last={}, best={}, src=(L.items||[]), nom=L.nom;
+  if(CTS.pos){ // autour de toi : toutes les côtes connues, les plus proches d’abord (10 km)
+    var seen={}, bd=1e9, bn=""; src=[];
+    ids.forEach(function(id){var o=COTES[id]; (o.items||[]).forEach(function(c){if(seen[c.i]||c.la==null)return; var d=ctHav(CTS.pos.la,CTS.pos.ln,c.la,c.ln); if(d<=10){seen[c.i]=1; src.push(c); if(d<bd){bd=d; bn=o.nom;}}});});
+    if(!src.length)return {nom:"Ma position",items:[],far:true}; nom=bn;
+  }
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date; if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;});});
-  var it=(L.items||[]).map(function(c){var l=last[c.i]||"", age=l?Math.min(60,Math.round((Date.parse(isoToday())-Date.parse(l))/864e5)):60, k=ctDist(c); return {c:c,last:l,p:best[c.i]||0,sc:age/10-(k==null?0:k)};});
+  var it=src.map(function(c){var l=last[c.i]||"", age=l?Math.min(60,Math.round((Date.parse(isoToday())-Date.parse(l))/864e5)):60, k=ctDist(c); return {c:c,last:l,p:best[c.i]||0,sc:age/10-(k==null?0:k)};});
   it.sort(function(a,b){return b.sc-a.sc||b.c.e-a.c.e;});
-  return {nom:L.nom,items:it};
+  return {nom:nom,items:it};
 }
 function ctAgo(d){if(!d)return "Jamais faite"; var n=Math.round((Date.parse(isoToday())-Date.parse(d))/864e5); return n<14?"Il y a "+n+" j":"Il y a "+Math.round(n/7)+" sem.";}
 function ctHav(a,b,c,d){var R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r*Math.cos((a+c)/2*r); return Math.sqrt(x*x+y*y)*R;}
