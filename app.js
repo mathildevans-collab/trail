@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=83;
+var APPV=84;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1270,7 +1270,7 @@ function pvBars(pl,x,ac){ // prévu contre réalisé, en une seconde
   return R.length?'<details class="pvs" open><summary class="small muted" style="cursor:pointer;min-height:32px;list-style:none">Prévu contre réalisé</summary>'+R.join("")+'<p class="small muted" style="margin:2px 0 0">Le trait marque le prévu (100 %).</p></details>':"";
 }
 function weekEndCard(r,pl,ti){
-  var w=nowWeek(pl), td=ti-(w-1)*7, hr=new Date().getHours(), tw=(td===6&&hr>=17)?w:(td===0&&w>1)?w-1:0; if(!tw)return "";
+  var w=nowWeek(pl), td=ti-(w-1)*7, hr=new Date().getHours(), tw=(td===0&&w>1)?w-1:0; if(!tw)return "";
   var wk=P(pl,tw), t=weekTot(r,wk,6), dn=weekDone(r,wk), ns=nSess(wk), pc=t.pk>0?Math.round(t.ak/t.pk*100):0;
   var badge=t.pk<=0?null:pc>=90&&pc<=115?["ok","Semaine réussie"]:pc>115?["warn","Semaine chargée"]:pc>=75?["warn","Un peu en dessous"]:["off","Semaine allégée"];
   var h='<div class="card"><div class="verdict"><h2>Bilan de ta semaine '+tw+'</h2>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(Math.round(t.pk*10)/10)+'</i></i></span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(t.pd)+'</i></i></span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
