@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=120;
+var APPV=121;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -559,6 +559,7 @@ function cotesCard(){
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte enregistrée dans ce secteur pour le moment.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Rechercher à nouveau')+'</button></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
   var x=v[0], c=x.c;
+  h+='<div class="ctdots" role="group" aria-label="Position dans les segments">' + Array.from({length:n},function(_,i){return '<span class="ctdot'+(i===(CTS.off%n)?' on':'')+'" aria-label="Segment '+(i+1)+' sur '+n+'"></span>';}).join("") + '</div>';
   h+='<div class="cthero"><span class="cts">CONSEILLÉE · '+ctLvl(c).toUpperCase()+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><a class="ctlk" href="https://www.strava.com/segments/'+c.i+'" target="_blank" rel="noopener"><b>'+esc(c.n)+' ↗</b></a><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctWhere(c)+' · '+ctAgo(x.last)+'</p></div>';
   if(v.length>1){
     if(CTS.open)h+=v.slice(1).map(function(y){return '<a class="ctrow" href="https://www.strava.com/segments/'+y.c.i+'" target="_blank" rel="noopener">'+(y.p?medal(y.p===1?"or":y.p===2?"ar":"br","",""):'<span class="ctg">'+Math.round(y.c.g)+'%</span>')+'<span><b>'+esc(y.c.n)+'</b><small>'+ctWhere(y.c)+'</small><small>'+ctAgo(y.last)+'</small></span><em>'+y.c.d+' m ↗</em></a>';}).join("");
