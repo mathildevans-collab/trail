@@ -275,7 +275,7 @@ function html(ctx){
   A.months.forEach(function(m,k){h+='<div class="wm-col'+(k===11?" today":"")+'"><div class="wm-plot">'+(m.km?'<i class="a" style="height:'+Math.max(4,m.km/mx*100)+'%"></i>':'<i class="rest"></i>')+'</div><b class="fm-l">'+m.l+'</b></div>';});
   h+='</div><p class="small muted num" style="margin:8px 0 0">Maximum : '+Math.round(mx)+' km.</p></div>';}
   // intensité
-  if(A.z8||A.z14){h+='<div class="card"><h2>Intensité réelle</h2><p class="small muted" style="margin:0 0 10px">Temps passé dans chaque zone de fréquence cardiaque'+(A.zones?' (zones de la montre : Z2 dès '+A.zones.f[1]+', Z4 dès '+A.zones.f[3]+' bpm, max '+A.zones.max+')':'')+'.</p>'+
+  if(A.z8||A.z14){h+='<div class="card"><h2>Intensité réelle</h2><p class="small muted" style="margin:0 0 14px">Temps passé dans chaque zone de fréquence cardiaque'+(A.zones?' (zones de la montre : Z2 dès '+A.zones.f[1]+', Z4 dès '+A.zones.f[3]+' bpm, max '+A.zones.max+')':'')+'.</p>'+
     (A.z8?'<p class="small" style="margin:0 0 4px"><b>8 dernières semaines</b></p>'+zbar(A.z8):'')+(A.z14?'<p class="small" style="margin:10px 0 4px"><b>2 dernières semaines</b></p>'+zbar(A.z14):'')+
     '<p class="small muted" style="margin:10px 0 0">Repère pour le trail : environ 80 % du temps en Z1-Z2, le reste surtout en Z4-Z5 lors des séances de qualité.</p>';
     var lk=Object.keys(A.labels); if(lk.length)h+='<h3 class="sub" style="margin:14px 0 6px">Effet principal des sorties (mois en cours)</h3><div class="g-chips">'+lk.sort(function(a,b){return A.labels[b]-A.labels[a];}).map(function(k){return '<span class="chip">'+k+' · '+A.labels[k]+'</span>';}).join("")+'</div>';
