@@ -79,9 +79,7 @@ function loadApp(user){
   tabs.hidden=false;
   client.from("cadenzo_profiles").select("display_name,username,profile_picture").eq("user_id",user.id).maybeSingle().then(function(result){
     window.CADENZO_PROFILE_PICTURE=result.data&&result.data.profile_picture||"";
-    var name=result.data&&(result.data.display_name||result.data.username)||user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name)||user.email&&user.email.split("@")[0]||"";
-    var parts=name.trim().split(/[\s._-]+/).filter(Boolean);
-    window.CADENZO_USER_INITIALS=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts.length?parts[0].slice(0,2).toUpperCase():"";
+    window.CADENZO_PROFILE_PICTURE=result.data&&result.data.profile_picture||"";
   }).catch(function(){
     var fallback=user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name)||user.email&&user.email.split("@")[0]||"";
     window.CADENZO_PROFILE_PICTURE="";
