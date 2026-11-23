@@ -936,6 +936,7 @@ function vSettings(){
   return h;
 }
 function ago(t){var m=Math.round((Date.now()-t)/60000); if(m<1)return "à l’instant"; if(m<60)return "il y a "+m+" min"; var h=Math.round(m/60); return h<24?"il y a "+h+" h":"il y a "+Math.round(h/24)+" j";}
+function inTime(t){var m=Math.max(1,Math.ceil((t-Date.now())/60000));if(m<60)return "dans "+m+" min";var h=Math.ceil(m/60);return h<24?"dans "+h+" h":"demain";}
 
 // ---------- feuilles ----------
 var SH=null;
@@ -1496,7 +1497,7 @@ function sync(manual){
 function ghCheck(){} // L’ancienne synchronisation GitHub publique n’est plus utilisée.
 function stravaSub(){
   var s=D.sync;
-  if(s.err==="limite Strava temporaire"&&s.retryAt>Date.now())return "Limite temporaire Strava · reprise "+ago(s.retryAt)+"";
+  if(s.err==="limite Strava temporaire"&&s.retryAt>Date.now())return "Limite temporaire Strava · reprise "+inTime(s.retryAt);
   if(s.err)return "Dernière synchro ratée ("+esc(s.err)+"), nouvel essai automatique";
   return s.t?"Dernière synchro du compte connecté "+ago(s.t):"Compte Strava connecté · pas encore synchronisé";
 }
@@ -1506,7 +1507,7 @@ function syncNote(){
   if(!STRAVA)return ""; var s=D.sync, t=stravaAge(), old=!t||Date.now()-t>3600*1000||!!s.err;
   var limited=s.err==="limite Strava temporaire"&&s.retryAt>Date.now();
   var txt=limited?"Strava limite temporairement les synchronisations. Tes activités déjà enregistrées restent disponibles. Nouvelle tentative "+ago(s.retryAt)+".":s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
-  return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old?' <button class="link-btn" data-act="sync">Actualiser</button>':"")+'</p>';
+  return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old&&!limited?' <button class="link-btn" data-act="sync">Réessayer</button>':"")+'</p>';
 }
 var CTRY=0;
 function autoSync(){var need=Object.keys(COTES).every(function(k){return !(COTES[k].items||[]).length;})&&Date.now()-CTRY>60000; if(need)CTRY=Date.now();
