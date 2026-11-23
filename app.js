@@ -428,7 +428,7 @@ var I={
 };
 
 // ---------- petits blocs ----------
-function header(eyebrow,title){var initials=window.CADENZO_USER_INITIALS||"•";return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions"><button class="user-chip" type="button" data-account-menu aria-label="Compte connecté, se déconnecter"><span class="user-avatar">'+esc(initials)+'</span><span class="user-state"><i></i>Connecté</span></button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
+function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions"><button class="ibtn account-status" type="button" data-account-menu title="Connecté à Strava · Se déconnecter" aria-label="Connecté à Strava, se déconnecter"><span class="account-user-icon" aria-hidden="true">'+sv('<circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1.5a7 7 0 0 1 14 0V20z"/>')+'</span><i class="account-online" aria-hidden="true"></i></button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
 function todoBtn(key,label,store){var st=store||D.todo, on=!!st[key]; return '<button class="todo" data-todo="'+esc(key)+'"'+(store?' data-store="kit"':'')+' aria-pressed="'+on+'"><span class="box">'+(on?I.check:"")+'</span><span class="t">'+label+'</span></button>';}
 function woFor(s,wk){ // séance guidée proposée sur toute séance de renfo ou de mobilité
   if(!window.WORKOUT)return "";
