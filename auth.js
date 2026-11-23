@@ -115,17 +115,33 @@ function loadApp(user){
     var script=document.createElement("script");script.src="app.js?v=121";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
+
+window.CADENZO_CONFIRM_LOGOUT=function(){
+  return new Promise(function(resolve){
+    var old=document.querySelector(".logout-confirm");if(old)old.remove();
+    var overlay=document.createElement("div");overlay.className="logout-confirm";
+    overlay.innerHTML='<div class="logout-confirm-card" role="dialog" aria-modal="true" aria-labelledby="logoutConfirmTitle" aria-describedby="logoutConfirmText"><div class="logout-confirm-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg></div><span class="logout-confirm-kicker">Ton espace Cadenzo</span><h2 id="logoutConfirmTitle">Se déconnecter ?</h2><p id="logoutConfirmText">Tu vas être déconnecté de ton compte sur cet appareil.</p><div class="logout-confirm-actions"><button type="button" class="logout-cancel" data-logout-cancel>Annuler</button><button type="button" class="logout-accept" data-logout-accept>Me déconnecter</button></div></div>';
+    document.body.appendChild(overlay);document.body.style.overflow="hidden";
+    var cancel=overlay.querySelector("[data-logout-cancel]"),accept=overlay.querySelector("[data-logout-accept]"),done=false;
+    function finish(value){if(done)return;done=true;document.removeEventListener("keydown",key);document.body.style.overflow="";overlay.remove();resolve(value);}
+    function key(e){if(e.key==="Escape"){e.preventDefault();finish(false);}else if(e.key==="Tab"){e.preventDefault();(document.activeElement===cancel?accept:cancel).focus();}}
+    overlay.addEventListener("click",function(e){if(e.target===overlay)finish(false);});
+    cancel.addEventListener("click",function(){finish(false);});accept.addEventListener("click",function(){finish(true);});
+    document.addEventListener("keydown",key);cancel.focus();
+  });
+};
 document.addEventListener("click",function(event){
   var target=event.target&&event.target.closest?event.target.closest("[data-account-logout]"):null;
   if(!target)return;
-  event.preventDefault();event.stopPropagation();
-  if(target.disabled)return;
-  if(!window.confirm("Veux-tu vraiment te déconnecter de Cadenzo ?"))return;
+  event.preventDefault();event.stopPropagation();if(target.disabled)return;
   target.disabled=true;target.setAttribute("aria-busy","true");
-  client.auth.signOut({scope:"local"}).then(function(result){
-    if(result&&result.error)throw result.error;
-    window.CADENZO_USER_ID=null;window.CADENZO_USER_INITIALS="";
-    location.replace(location.pathname);
+  Promise.resolve(window.CADENZO_CONFIRM_LOGOUT()).then(function(confirmed){
+    if(!confirmed){target.disabled=false;target.removeAttribute("aria-busy");return;}
+    return client.auth.signOut({scope:"local"}).then(function(result){
+      if(result&&result.error)throw result.error;
+      window.CADENZO_USER_ID=null;window.CADENZO_USER_INITIALS="";
+      location.replace(location.pathname);
+    });
   }).catch(function(error){
     target.disabled=false;target.removeAttribute("aria-busy");
     alert("Déconnexion impossible : "+(error&&error.message||"réessaie"));
