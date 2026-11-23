@@ -41,11 +41,37 @@ function loadApp(user){
   window.CadenzoAuth={
     userId:user.id,
     sync:function(){
-      return client.auth.getSession().then(function(r){
-        var session=r.data&&r.data.session;
-        if(!session)throw new Error("Session expirée. Reconnecte-toi.");
-        return fetch(FUNCTION_URL+"?action=sync",{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"},cache:"no-store"});
-      }).then(function(r){return r.json().then(function(data){if(!r.ok){var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";error.retryAfter=data.retryAfter||0;error.retryAt=data.retryAt||null;if(error.code==="STRAVA_REAUTH_REQUIRED"){location.href=FUNCTION_URL+"?action=start";}throw error;}return data;});});
+      function validSession(){
+        return client.auth.getSession().then(function(r){
+          if(r.error)throw r.error;
+          var session=r.data&&r.data.session;
+          if(session&&session.expires_at&&session.expires_at>Date.now()/1000+90)return session;
+          return client.auth.refreshSession().then(function(refreshed){
+            if(refreshed.error||!refreshed.data||!refreshed.data.session)throw new Error("Ta session Cadenzo a expiré. Reconnecte-toi.");
+            return refreshed.data.session;
+          });
+        });
+      }
+      function request(session){
+        return fetch(FUNCTION_URL+"?action=sync",{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"},cache:"no-store"}).then(function(r){
+          return r.json().catch(function(){return {};}).then(function(data){
+            if(!r.ok){
+              var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";error.retryAfter=data.retryAfter||0;error.retryAt=data.retryAt||null;
+              if(error.code==="STRAVA_REAUTH_REQUIRED"){location.href=FUNCTION_URL+"?action=start";throw error;}
+              if(r.status===401)error.sessionExpired=true;
+              throw error;
+            }
+            return data;
+          });
+        });
+      }
+      return validSession().then(request).catch(function(error){
+        if(error&&error.sessionExpired)return client.auth.refreshSession().then(function(r){
+          if(r.error||!r.data||!r.data.session)throw new Error("Ta session Cadenzo a expiré. Reconnecte-toi.");
+          return request(r.data.session);
+        });
+        throw error;
+      });
     },
     signOut:function(){return client.auth.signOut().then(function(){location.reload();});}
   };
@@ -56,7 +82,7 @@ function loadApp(user){
     var parts=name.trim().split(/\s+/).filter(Boolean);
     window.CADENZO_USER_INITIALS=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts.length?parts[0].slice(0,2).toUpperCase():"";
   }).catch(function(){window.CADENZO_USER_INITIALS="";}).then(function(){
-    var script=document.createElement("script");script.src="app.js?v=96";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=98";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("[data-account-menu]"):null;if(target&&window.CadenzoAuth&&confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
