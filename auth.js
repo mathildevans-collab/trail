@@ -88,7 +88,7 @@ function loadApp(user){
       function request(session){
         return fetch(FUNCTION_URL+"?action=segments",{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(position),cache:"no-store"}).then(function(r){
           return r.json().catch(function(){return {};}).then(function(data){
-            if(!r.ok)throw new Error(data.error||("Erreur "+r.status));
+            if(!r.ok){var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;throw error;}
             return data;
           });
         });
