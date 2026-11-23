@@ -747,3 +747,12 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
  .course-metrics .sd-tx b{font-size:12px}
  .course-metrics .sd-tx small{font-size:8px}
 }
+
+/* Identité du compte : compacte, intégrée à l'en-tête */
+.top-actions{display:flex;align-items:center;gap:8px;flex:none}
+.user-chip{display:flex;align-items:center;gap:7px;min-height:42px;padding:4px 10px 4px 4px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer}
+.user-avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--brand-ink);color:var(--brand);font:800 11px var(--display);letter-spacing:.3px}
+.user-state{display:flex;align-items:center;gap:5px;color:var(--muted);font:600 10px var(--body);white-space:nowrap}
+.user-state i{width:6px;height:6px;border-radius:50%;background:#36a66a;box-shadow:0 0 0 2px rgba(54,166,106,.13)}
+.top-actions .ibtn{width:42px;height:42px}
+@media(max-width:360px){.user-chip{gap:5px;padding-right:7px}.user-state{font-size:9px}.top-actions{gap:6px}}
