@@ -82,10 +82,10 @@ function loadApp(user){
     var parts=name.trim().split(/\s+/).filter(Boolean);
     window.CADENZO_USER_INITIALS=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts.length?parts[0].slice(0,2).toUpperCase():"";
   }).catch(function(){window.CADENZO_USER_INITIALS="";}).then(function(){
-    var script=document.createElement("script");script.src="app.js?v=98";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=99";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
-document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("[data-account-menu]"):null;if(target&&window.CadenzoAuth&&confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
+document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("[data-account-logout]"):null;if(target&&window.CadenzoAuth&&confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
 function start(){
   var params=new URLSearchParams(location.search),tokenHash=params.get("token_hash"),type=params.get("type");
   if(params.has("strava_error")){var err=params.get("strava_error");history.replaceState({},document.title,location.pathname);showError(err||"La connexion Strava a échoué.");return;}
