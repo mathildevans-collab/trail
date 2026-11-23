@@ -592,8 +592,10 @@ details.fold>*:last-child{margin-bottom:16px}
 .pj-how[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
 
 /* Plan : un accordéon par palier */
-.phs{padding:0 16px}
-.ph+.ph{border-top:1px solid var(--line)}
+.phs{padding:14px}
+.ph+.ph{margin-top:10px;border:1px solid var(--line);border-radius:14px;padding:0 12px}
+.ph.open{padding-bottom:8px}
+.phh .chev{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--bg);font-size:20px;line-height:1}
 .phh{display:grid;grid-template-columns:12px 1fr auto 20px;gap:12px;align-items:center;width:100%;min-height:64px;padding:10px 0;border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
 .phh .phd{width:12px;height:12px;border-radius:4px}
 .phh .pht b{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:18px}
@@ -818,3 +820,65 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .logout-accept{background:var(--brand);color:var(--brand-ink)}
 @keyframes logout-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.logout-confirm-card{animation:none}}
+
+
+/* Cadenzo desktop: même identité, navigation latérale et grille paysage.
+   Le layout mobile existant reste inchangé sous 900 px. */
+.desktop-brand{display:none}
+.nav-label{display:none}
+@media(min-width:900px){
+  body{min-width:760px}
+  .tabs.mini{width:218px;padding:22px 14px;bottom:0}
+  .tabs{left:0;right:auto;top:0;bottom:0;transform:none;width:218px;max-width:218px;padding:22px 14px;border:0;border-right:1px solid var(--line);border-radius:0;background:var(--card);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;display:flex;flex-direction:column;align-items:stretch;gap:30px}
+  .desktop-brand{display:flex;align-items:center;gap:10px;padding:2px 10px 22px;border-bottom:1px solid var(--line);font:800 20px/1 var(--display);letter-spacing:-.6px;color:var(--ink)}
+  .desktop-brand img{width:36px;height:36px;object-fit:contain}
+  .tabs-in{display:flex;flex-direction:column;align-items:stretch;gap:8px;height:auto;max-width:none;transition:none}
+  .tabs button,.tabs button[aria-current="page"]{min-height:48px;width:100%;padding:0 14px;display:flex;flex-direction:row;justify-content:flex-start;gap:12px;border-radius:14px;color:var(--muted);background:transparent;font:600 14px var(--body);text-align:left}
+  .tabs button svg{width:21px;height:21px;flex:none}
+  .tabs button .nav-label{display:inline}
+  .tabs button[aria-current="page"]{background:var(--brand-soft);color:var(--brand)}
+  .tabs button:active{transform:none}
+  #view{max-width:none;width:auto;margin:0 0 0 218px;padding:30px 34px 42px;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-content:start}
+  #view>.top{grid-column:1/-1;align-items:center;margin-bottom:2px}
+  #view>.top h1,#view>.top h2{font-size:32px}
+  #view>.banner,#view>.wnav,#view>.strip{grid-column:1/-1}
+  #view>.hero{grid-column:span 7;margin:0}
+  #view>.ct{grid-column:span 5;margin:0}
+  #view>.wm{grid-column:span 5;margin:0}
+  #view>.week-end-card,#view>.bilan-card{grid-column:span 6;margin:0}
+  #view>.week-card,#view>.checkin-card{grid-column:span 6;margin:0}
+  #view>.card:not(.hero):not(.ct):not(.wm):not(.week-end-card):not(.bilan-card):not(.week-card):not(.checkin-card){grid-column:span 6;margin:0}
+  #view>.card.empty{grid-column:1/-1}
+  .phs{padding:14px}
+  .ph+.ph{margin-top:10px;border:1px solid var(--line);border-radius:14px;padding:0 12px}
+  .ph.open{padding-bottom:8px}
+  .phh{padding:12px 0}
+  .phh .chev{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--bg);font-size:20px}
+  .course-metrics .sd-t{padding:14px;min-height:76px}
+  .course-metrics .sd-t .sd-tx b{font-size:17px}
+  .course-metrics .sd-t .sd-tx small{font-size:14px}
+  .course-objective .btn{margin-top:12px}
+}
+@media(min-width:1200px){#view{padding:34px 42px 48px;gap:16px}}
+@media(max-width:899px){.desktop-brand{display:none}.nav-label{display:none}}
+/* Espacements demandés dans les vues Forme et Mes courses */
+.intensity-real,.real-intensity{gap:12px}
+.course-metrics .sd-t{padding:12px}
+.course-metrics .sd-t .sd-tx b{font-size:clamp(16px,4vw,19px)}
+.course-metrics .sd-t .sd-tx small{font-size:13px}
+.course-objective #goalnote .btn{margin:10px 0 2px;min-height:44px;padding-inline:14px}
+.course-objective #goalnote{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+
+.pref-check{display:flex;align-items:center;gap:10px;padding:12px 0;font-weight:700}
+.pref-check input,.pref-day input{accent-color:var(--acc);width:18px;height:18px}
+.pref-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 0 16px}
+.pref-day{position:relative;display:grid;place-items:center;min-width:0}
+.pref-day input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}
+.pref-day span{width:100%;min-height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:11px;background:var(--bg);font-size:12px;font-weight:700;color:var(--muted);text-transform:capitalize}
+.pref-day input:checked+span{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+.pref-day input:focus-visible+span{outline:3px solid var(--brand);outline-offset:2px}
+#prefClubNameWrap{margin:8px 0}
+
+/* Intensité réelle : espacer le libellé des valeurs de zones. */
+.gz-bar{margin-top:8px}
+.gz-bar+.small,.gz-bar+p{margin-top:10px}

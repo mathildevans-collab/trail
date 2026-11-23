@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=124;
+var APPV=127;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -66,6 +66,7 @@ function migrate(o,n){
   return n;
 }
 var D=load(), VER=0;
+var TRAIN_PREF=window.CADENZO_TRAINING_PREFS||null;
 function save(){
   D.ownerId=USER_ID;
   VER++; var cur=null; try{cur=localStorage.getItem(KEY);}catch(e){}
@@ -279,7 +280,8 @@ function genWeek(w,n,taper,r,m){
 var PC={};
 function planOf(r){
   if(!r)return null;
-  var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r);
+  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed]):"default";
+  var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r)+"|"+prefKey;
   if(PC[r.id]&&PC[r.id].key===key)return PC[r.id].p;
   var m=model(r), rws=mondayOf(dms(r.date)), start=r.builtin?dms(r.start):mondayOf(dms(isoOk(r.start)?r.start:nextMonday()));
   if(start>rws)start=rws;
@@ -302,6 +304,32 @@ function planOf(r){
     wk.s.sort(function(a,b){return a.dow-b.dow;});
     wk.km=0; wk.dp=0; wk.s.forEach(function(s){if(!s.race){wk.km+=s.km||0; wk.dp+=s.dp||0;}}); wk.km=Math.round(wk.km); wk.dp=Math.round(wk.dp);
   });
+  if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed){
+    var pref=TRAIN_PREF, days=(pref.training_days||[1,2,3,5,6]).map(Number), clubDays=pref.has_club?(pref.club_days||[]).map(Number):[], target=Math.max(2,Math.min(7,+pref.sessions_per_week||4));
+    weeks.forEach(function(wk){
+      var byDow={}; wk.s.forEach(function(s){byDow[s.dow]=s;});
+      var mandatory=clubDays.filter(function(d){return days.indexOf(d)>=0;});
+      wk.s.forEach(function(s){if(s.race||s.type==="Course B")if(days.indexOf(s.dow)>=0&&mandatory.indexOf(s.dow)<0)mandatory.push(s.dow);});
+      var ranked=days.slice().sort(function(a,b){
+        function score(d){if(mandatory.indexOf(d)>=0)return 1000;var s=byDow[d];if(!s)return 0;if(s.tag==="q")return 90;if(s.tag==="l")return 80;if(s.type==="Endurance + renfo")return 65;return 40;}
+        return score(b)-score(a)||a-b;
+      });
+      var chosen=ranked.slice(0,target);
+      mandatory.forEach(function(d){if(chosen.indexOf(d)<0)chosen.push(d);});
+      chosen.sort(function(a,b){return a-b;});
+      var planned=[];
+      chosen.forEach(function(d){
+        var s=byDow[d];
+        if(clubDays.indexOf(d)>=0){
+          planned.push(sess({k:KEYS[d],dow:d,tag:"q",type:"Club · piste",km:s&&s.km||8,dp:s&&s.dp||0,club:true,steps:s&&s.steps||[],txt:"Séance du club. Elle remplace la séance prévue ce jour-là : ne la double pas avec une autre séance."}));
+        }else if(s)planned.push(s);
+        else planned.push(sess({k:KEYS[d],dow:d,tag:"e",type:"Footing",km:6,dp:0,steps:[[ "6 km","Footing facile en zone 2" ]],txt:"Footing facile en zone 2, ajouté selon tes disponibilités."}));
+      });
+      wk.s=planned;
+      wk.km=0;wk.dp=0;wk.s.forEach(function(s){if(!s.race){wk.km+=s.km||0;wk.dp+=s.dp||0;}});
+      wk.km=Math.round(wk.km);wk.dp=Math.round(wk.dp);
+    });
+  }
   var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date)};
   PC[r.id]={key:key,p:p}; return p;
 }
@@ -526,8 +554,11 @@ function ctSave(){try{localStorage.setItem(userKey("cadenzo-ct"),JSON.stringify(
 function cotesList(){ // liste de référence partagée ; GPS utilisé uniquement pour afficher la proximité
   var ids=Object.keys(COTES); if(!ids.length)return null;
   var shared=COTES["strava-cache"], cur=CTS.l;
-  if(!COTES[cur]){cur=shared?"strava-cache":ids[0];CTS.l=cur;}
-  var L=shared||COTES[cur], last={}, best={}, src=L.items||[], loc=CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
+  if(!COTES[cur]||cur==="strava-cache")cur=CTS.city?ctSlug(CTS.city):(shared?"strava-cache":ids[0]);
+  if(!COTES[cur]&&shared)cur="strava-cache";
+  if(!COTES[cur])cur=ids[0];
+  CTS.l=cur;
+  var L=COTES[cur]||shared, last={}, best={}, src=L.items||[], loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
     if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date;
     if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;
@@ -621,7 +652,7 @@ function vPrep(r,pl){
   var h=header(fmtL(todayUTC())+" · "+jx(r),isToday?"Aujourd’hui":fmtL(selD))+banners();
   if(ti<0&&!browsing)h+='<div class="banner">Ton plan '+esc(r.name)+' démarre le '+fmtL(pl.start).toLowerCase()+', dans '+(-ti)+' jour'+(-ti>1?"s":"")+'.</div>';
   var nw=nowWeek(pl);
-  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>‹</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+' · '+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>›</button></div>';
+  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>‹</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>›</button></div>';
   if(browsing&&cur!==nw)h+='<div class="banner mini"><span>'+(cur<nw?'Semaine passée':'Semaine à venir')+'</span><button data-act="now">Aujourd’hui</button></div>';
   h+='<div class="strip" role="group" aria-label="Jours de la semaine">';
   for(var i=0;i<7;i++){var s0=sessAt(wk,i), dn=s0&&D.done[sk(r,cur,s0.k)], tdy=cur===tw&&i===td;
@@ -644,7 +675,7 @@ function sessionHero(r,pl,wk,s){
   var tags=[]; if(isB)tags.push("Course B"); if(s.adjusted&&wk.adjLabel)tags.push(wk.adjLabel); if(s.cw)tags.push("⚠ Sortie club complète déconseillée"); if(s.rbd)tags.push("Ajustée : "+kmS(s.rbFrom)+" → "+kmS(s.km)+" km"); if(s.edited)tags.push(s.added?"Ajoutée par toi":"Modifiée par toi"); if(s.club)tags.push("Club : 15 km, 2 h, +500 m min.");
   if(tags.length)h+='<div class="tagline">'+tags.map(function(t){return '<span class="chip'+(t.indexOf("⚠")===0?' acc':'')+'">'+esc(t)+'</span>';}).join("")+'</div>';
   h+='<div class="facts num">'+(s.km?'<span>'+kmS(s.km)+' km</span>':'')+(s.dp?'<span>+'+nb(s.dp)+' m</span>':'')+(z?'<span>'+esc(z)+'</span>':'')+(ed&&s.type.indexOf("Club")<0?'<span>≈ '+dur(ed)+'</span>':'')+'</div>';
-  if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<details><summary>Consignes complètes</summary><div class="in"><p>'+esc(s.txt)+'</p></div></details>':'');
+  if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<p class="session-note">'+esc(s.txt)+'</p>':'');
   else if(s.txt)h+='<p>'+esc(s.txt)+'</p>';
   var a=adjFor(pl,wk.n); if(a&&a.mode==="z2"&&(s.tag==="e"||s.tag==="l"))h+='<p><b>Zone 2 stricte cette semaine :</b> reste sous 150 bpm.</p>';
   if(s.race)return h+'<button class="btn" data-go="today-race">'+I.play+' Voir le jour J</button></div>';
@@ -661,7 +692,7 @@ function bilanCard(r,pl,wk,sel,selD){
   var ttl=selD===t?"Bilan du jour":"Bilan de "+DOWL[sel];
   if(s&&ac){
     var rv=review(pl.m,s,ac), b=BADGE[rv.lvl];
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span>'+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(s.km)+'</i></i></span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(s.dp||0)+'</i></i></span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
+    return '<div class="card bilan-card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span>'+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(s.km)+'</i></i></span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(s.dp||0)+'</i></i></span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
   }
   if(ex){
     var di=iso(selD), hr=0, hn=0; HIST.forEach(function(q){if(q.date===di&&q.hr>0){hr+=q.hr*q.km;hn+=q.km;}}); hr=hn?hr/hn:0;
@@ -673,10 +704,10 @@ function bilanCard(r,pl,wk,sel,selD){
     if(ex.km>=10){lvl=1;}
     if(wk.rb&&wk.rb.items&&wk.rb.items.length&&!wk.rbOff)L.push("Le reste de ta semaine a été ajusté en conséquence.");
     var bd=BADGE[lvl]; var chip=lvl?'<span class="chip warn">Hors plan</span>':'<span class="chip off">Hors plan</span>';
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2>'+chip+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ex.km)+'</b><span>km · non prévu</span></div><div class="stat"><b>+'+nb(ex.dp||0)+'</b><span>m</span></div><div class="stat"><b>'+(ex.t?mmss(ex.t/ex.km):"–")+'</b><span>/km'+(ex.t?" · "+dur(ex.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(L.join(" "))+'</p></div>';
+    return '<div class="card bilan-card"><div class="verdict"><h2>'+ttl+'</h2>'+chip+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ex.km)+'</b><span>km · non prévu</span></div><div class="stat"><b>+'+nb(ex.dp||0)+'</b><span>m</span></div><div class="stat"><b>'+(ex.t?mmss(ex.t/ex.km):"–")+'</b><span>/km'+(ex.t?" · "+dur(ex.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(L.join(" "))+'</p></div>';
   }
   if(s&&!ac&&selD<t&&!s.race&&s.km>0&&!D.done[sk(r,wk.n,s.k)]){
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip off">Non faite</span></div><p class="small" style="margin:8px 0 0">Aucune sortie reçue de Strava ce jour-là pour « '+esc(s.type)+' ». '+(s.club||s.type.indexOf("Club")===0?'Si tu y es allée sans enregistrer, marque-la faite depuis la séance.':'Si tu l’as faite sans Strava, marque-la faite depuis la séance. Sinon, ne la rattrape pas d’un coup : le plan s’adapte.')+'</p></div>';
+    return '<div class="card bilan-card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip off">Non faite</span></div><p class="small" style="margin:8px 0 0">Aucune sortie reçue de Strava ce jour-là pour « '+esc(s.type)+' ». '+(s.club||s.type.indexOf("Club")===0?'Si tu y es allée sans enregistrer, marque-la faite depuis la séance.':'Si tu l’as faite sans Strava, marque-la faite depuis la séance. Sinon, ne la rattrape pas d’un coup : le plan s’adapte.')+'</p></div>';
   }
   return "";
 }
@@ -708,7 +739,7 @@ function weekMeter(r,pl,wk,td){
 }
 function weekCard(r,pl,wk,s,noMeter){
   var t0=weekTot(r,wk,6), pk=t0.pk, ak=t0.ak, pd=t0.pd, ad=t0.ad;
-  var h=noMeter?'<div class="card"><div>':'<div class="card"><h2>Ta semaine</h2><div class="sb num small" style="margin-bottom:6px"><span>'+kmS(ak)+' / '+kmS(pk)+' km</span><span class="muted">'+nb(ad)+' / '+nb(pd)+' m D+</span></div><div class="bar"><i style="width:'+Math.min(100,pk?ak/pk*100:0)+'%"></i></div><div style="margin-top:8px">';
+  var h=noMeter?'<div class="card week-card"><div>':'<div class="card week-card"><h2>Ta semaine</h2><div class="sb num small" style="margin-bottom:6px"><span>'+kmS(ak)+' / '+kmS(pk)+' km</span><span class="muted">'+nb(ad)+' / '+nb(pd)+' m D+</span></div><div class="bar"><i style="width:'+Math.min(100,pk?ak/pk*100:0)+'%"></i></div><div style="margin-top:8px">';
   h+='<details class="more"'+(MOREOPEN?' open':'')+'><summary><span>Plus pour aujourd’hui<small>renfo · montre · boucles</small></span></summary>';
   var t=todayUTC(), rf=null; wk.s.forEach(function(x){if(x.renfo&&!rf&&sessDate(pl,wk.n,x)>=t)rf=x;}); if(!rf)wk.s.forEach(function(x){if(x.renfo&&!rf)rf=x;});
   if(rf){var R0=RENFO[rf.renfo], dd=Math.round((sessDate(pl,wk.n,rf)-t)/DAY), parts=R0.name.split(" · "); h+='<button class="link" data-sheet="renfo:'+rf.renfo+'"><span class="ico">'+I.dumb+'</span><span class="tx"><b>'+esc(parts[0])+' '+(dd===0?"aujourd’hui":dd===1?"demain":DOWL[rf.dow])+'</b><small>'+esc(parts[1]||"")+' · '+woMin("renfo",rf.renfo)+' min · une chaise</small></span><span class="chev">›</span></button>';}
@@ -724,8 +755,8 @@ function checkinCard(r,pl,w){
   function scale(k,l,lo,hi){var h='<div class="ci-row"><span>'+l+'</span><div class="scale">'; for(var i=1;i<=5;i++)h+='<button data-ci="'+k+'" data-v="'+i+'" aria-pressed="'+(c[k]===i)+'">'+i+'</button>'; return h+'</div><div class="scalelab"><span>'+lo+'</span><span>'+hi+'</span></div></div>';}
   var dow=((ti%7)+7)%7, full=!!(c.f&&c.s), edit=dow===0||!(c.f||c.s), h;
   if(dow!==0&&(c.f||c.s))return "";
-  if(edit)h='<div class="card"><h2>Check-in du lundi</h2><p class="small muted" style="margin:0 0 10px">'+(dow===0?"10 secondes. Le coach ajuste la semaine avec tes réponses.":"Oublié lundi ? Tu peux le remplir maintenant.")+'</p>'+scale("f","Fatigue","fraîche","épuisée")+scale("s","Sommeil","mauvais","excellent")+(full?'<p class="small ci-ok" style="margin:8px 0 0"><span class="chip ok">✓ Enregistré</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>':(c.f||c.s?'<p class="small muted" style="margin:8px 0 0">Réponds aux deux pour que le coach ajuste.</p>':''));
-  else h='<div class="card"><h2>Check-in de la semaine</h2><p class="small" style="margin:0"><span class="chip ok">✓ Enregistré lundi</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>';
+  if(edit)h='<div class="card checkin-card"><h2>Check-in du lundi</h2><p class="small muted" style="margin:0 0 10px">'+(dow===0?"10 secondes. Le coach ajuste la semaine avec tes réponses.":"Oublié lundi ? Tu peux le remplir maintenant.")+'</p>'+scale("f","Fatigue","fraîche","épuisée")+scale("s","Sommeil","mauvais","excellent")+(full?'<p class="small ci-ok" style="margin:8px 0 0"><span class="chip ok">✓ Enregistré</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>':(c.f||c.s?'<p class="small muted" style="margin:8px 0 0">Réponds aux deux pour que le coach ajuste.</p>':''));
+  else h='<div class="card checkin-card"><h2>Check-in de la semaine</h2><p class="small" style="margin:0"><span class="chip ok">✓ Enregistré lundi</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>';
   if(a){var dec=a.mode==="light"||a.mode==="micro", B={normal:["ok","Semaine maintenue"],light:["warn","Semaine allégée proposée"],z2:["warn","Zone 2 stricte"],micro:["warn","Micro-récupération proposée"]}[a.mode];
     if(dec&&st==="on")B=["warn",a.mode==="light"?"Semaine allégée":"Micro-récupération"]; if(dec&&st==="off")B=["ok","Plan normal gardé"];
     h+='<p class="small" style="margin:6px 0 0"><span class="chip '+B[0]+'">'+B[1]+'</span></p><p class="small" style="margin:8px 0 0">'+esc(a.lead+" "+a.prop)+'</p>';
@@ -954,6 +985,25 @@ function segSheet(id){
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 document.addEventListener("scroll",function(e){var t=e.target; if(!t.classList||!t.classList.contains("tro-st"))return; var w=t.children[0]?t.children[0].offsetWidth+10:150, i=Math.round(t.scrollLeft/w), d=t.parentNode.querySelectorAll(".tro-dots i"); for(var k=0;k<d.length;k++)d[k].classList.toggle("on",k===i);},true);
 var SSUB=null;
+
+function prefDaysHtml(selected,kind){
+  return DOWL.map(function(name,i){return '<label class="pref-day"><input type="checkbox" data-pref-day="'+kind+'" value="'+i+'" '+(selected.indexOf(i)>=0?'checked':'')+'><span>'+name.slice(0,3)+'</span></label>';}).join("");
+}
+function openTrainingPrefs(first){
+  var p=TRAIN_PREF||{has_club:false,club_name:"",club_days:[],sessions_per_week:4,training_days:[0,1,2,3,5,6],rest_days:[4],onboarding_completed:false};
+  var h='<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Le plan s’adapte à tes jours disponibles et tient compte des séances de ton club pour éviter les doublons.</p>'+
+  '<label class="pref-check"><input id="prefClub" type="checkbox" '+(p.has_club?'checked':'')+'> Je fais partie d’un club de course</label>'+
+  '<label class="field" id="prefClubNameWrap">Nom du club<input id="prefClubName" maxlength="80" value="'+esc(p.club_name||'')+'" placeholder="Nom de ton club"></label>'+
+  '<p class="eyebrow">Jours avec le club</p><div class="pref-days" id="prefClubDays">'+prefDaysHtml((p.club_days||[]).map(Number),"club")+'</div>'+
+  '<label class="field">Nombre de séances souhaitées<select id="prefCount">'+[2,3,4,5,6,7].map(function(n){return '<option value="'+n+'" '+(n===+p.sessions_per_week?'selected':'')+'>'+n+' séances par semaine</option>';}).join('')+'</select></label>'+
+  '<p class="eyebrow">Jours où tu peux t’entraîner</p><div class="pref-days">'+prefDaysHtml((p.training_days||[]).map(Number),"train")+'</div>'+
+  '<p class="small muted">Les jours non sélectionnés deviennent tes jours de repos. Les séances du club comptent dans ton total hebdomadaire.</p>'+
+  '<p class="small" id="prefError" role="alert" style="color:var(--bad)"></p><button class="btn primary" data-sact="saveprefs" style="width:100%">Enregistrer mes disponibilités</button>';
+  openSheet(h,{kind:"prefs",first:!!first});
+  var club=$("prefClub"),wrap=$("prefClubNameWrap"),days=$("prefClubDays");
+  function showClub(){wrap.hidden=!club.checked;days.hidden=!club.checked;}
+  club.addEventListener("change",showClub);showClub();
+}
 function vSettings(){
   var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
   function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
@@ -972,6 +1022,7 @@ function vSettings(){
   h+='<button class="sd-t sd-w sd-row" data-ssub="trophees" style="min-height:0"><span class="sd-ic" style="background:color-mix(in srgb,var(--sun) 22%,var(--card));color:var(--ink)">'+sv('<circle cx="12" cy="10" r="6"/><path d="M8.5 15L7 22l5-3 5 3-1.5-7"/>')+'</span><span class="sd-tx"><b>Trophées</b><small>'+(TR.length?TR.length+(TR.length>1?" médailles":" médaille"):"Records et étapes")+'</small></span>'+(nNew?'<span class="sd-st"><i style="background:var(--acc)"></i>'+nNew+(nNew>1?" nouvelles":" nouvelle")+'</span>':'')+'</button>';
   h+=tile('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',"Export Garmin",(G&&G.last)?"Import du "+fmtD(dayN(G.last)*864e5).replace(/^\S+\s/,""):"Aucun import",{tag:"button",attr:' data-ssub="sorties"',st:[(gOld==null||gOld>9)?"w":"",gOld==null?"—":gOld+" j"]});
   h+=tile('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',"Données",lastExportTxt().replace(/\.$/,"").replace("Dernier export ","Export "),{tag:"button",attr:' data-ssub="donnees"'});
+  h+=tile('<path d="M3 5h18M6 3v4M18 3v4M5 10h14M5 15h8"/>',"Entraînement",TRAIN_PREF&&TRAIN_PREF.onboarding_completed?(TRAIN_PREF.sessions_per_week+' séances · '+(TRAIN_PREF.has_club?esc(TRAIN_PREF.club_name||'club'):'sans club')):'Configurer mes disponibilités',{tag:"button",w:1,row:1,attr:' data-act="trainingprefs"'});
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>')+'</span><span class="sd-tx"><b>Apparence</b></span><div class="sd-seg" role="radiogroup" aria-label="Thème">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>')+'</span><span class="sd-tx"><b>Check-in du lundi</b></span>'+tg("checkin",D.set.checkin,"Check-in du lundi")+'</div>';
   h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",w:1,row:1,attr:' data-ssub="course"'});
@@ -995,6 +1046,19 @@ document.addEventListener("keydown",function(e){ if(e.key!=="Tab"||$("sheet").hi
   if(e.shiftKey&&ae===first){e.preventDefault(); last.focus();} else if(!e.shiftKey&&ae===last){e.preventDefault(); first.focus();}});
 $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close]")){closeSheet();return;} var b=e.target.closest("button"); if(!b)return;
 
+  if(b.dataset.sact==="saveprefs"){
+    var hasClub=$("prefClub").checked, clubName=$("prefClubName").value.trim();
+    var training=Array.from(document.querySelectorAll('[data-pref-day="train"]:checked')).map(function(x){return +x.value;});
+    var clubDays=Array.from(document.querySelectorAll('[data-pref-day="club"]:checked')).map(function(x){return +x.value;});
+    var count=+$("prefCount").value, err=$("prefError");
+    if(hasClub&&!clubName){err.textContent="Indique le nom de ton club.";return;}
+    if(training.length<count){err.textContent="Sélectionne au moins autant de jours que de séances souhaitées.";return;}
+    if(clubDays.some(function(d){return training.indexOf(d)<0;})){err.textContent="Les jours du club doivent aussi être disponibles pour l’entraînement.";return;}
+    var rest=[0,1,2,3,4,5,6].filter(function(d){return training.indexOf(d)<0;});
+    var next={has_club:hasClub,club_name:hasClub?clubName:null,club_days:hasClub?clubDays:[],sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
+    b.disabled=true;window.CadenzoAuth.saveTrainingPreferences(next).then(function(saved){TRAIN_PREF=saved;window.CADENZO_TRAINING_PREFS=saved;PC={};closeSheet();render(true);toast("Tes disponibilités sont enregistrées.");if(!D.races.length)setTimeout(function(){if(!SH)editRace(null);},250);}).catch(function(e){b.disabled=false;err.textContent="Enregistrement impossible : "+(e.message||"réessaie.");});
+    return;
+  }
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
   if(b.dataset.sact)sheetAct(b.dataset.sact,b);});
 
@@ -1032,7 +1096,7 @@ function editSession(w,k,dow){
   var h='<h2>'+(isNew?"Nouvelle séance":"Modifier la séance")+'</h2><p class="small muted" style="margin:-4px 0 10px">'+esc(r.name)+' · semaine '+w+' · '+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+'</p>';
   h+='<div class="fields"><label class="field">Jour<select id="eDow">'+DOWL.map(function(d,i){return '<option value="'+i+'"'+(i===base.dow?" selected":"")+'>'+d+' '+new Date(wk.start+i*DAY).getUTCDate()+'</option>';}).join("")+'</select></label><label class="field">Type<select id="eType">'+TYPELIST.concat(TYPELIST.indexOf(base.type)<0?[base.type]:[]).map(function(t){return '<option'+(t===base.type?" selected":"")+'>'+esc(t)+'</option>';}).join("")+'</select></label></div>';
   h+='<div class="fields"><label class="field">Km<input id="eKm" inputmode="decimal" value="'+(base.km?kmS(base.km):"0")+'"></label><label class="field">D+ (m)<input id="eDp" inputmode="numeric" value="'+(base.dp||0)+'"></label></div>';
-  h+='<label class="field" style="margin-bottom:12px">Consignes<textarea id="eTxt">'+esc(base.txt||"")+'</textarea></label><button class="btn primary" data-sact="saveses">Enregistrer</button>';
+  h+='<button class="btn primary" data-sact="saveses">Enregistrer</button>';
   if(!isNew)h+='<div class="row" style="margin-top:8px">'+(s.edited&&!s.added?'<button class="btn sm" data-sact="restoreses">Rétablir l’original</button>':'')+'<button class="btn sm danger" data-sact="delses">Supprimer la séance</button></div>';
   h+='<p class="muted xs" style="margin:10px 0 0">Seule cette séance change. Le coach compare tes sorties à ta version.</p>';
   openSheet(h,{kind:"ses",rid:r.id,w:w,k:k||null,added:!!(s&&s.added)});
@@ -1102,7 +1166,7 @@ function sheetAct(a,b){
     var r=raceById(SH.rid), E=D.edits[r.id]||(D.edits[r.id]={}), w=SH.w, ek=w+"-"+SH.k;
     if(a==="restoreses"){delete E[ek]; save(); closeSheet(); toast("Séance d’origine rétablie.",U); render(true); return;}
     if(a==="delses"){if(SH.added)delete E[ek]; else E[ek]={del:true}; delete D.done[sk(r,w,SH.k)]; delete D.actual[sk(r,w,SH.k)]; save(); closeSheet(); toast("Séance supprimée.",U); render(true); return;}
-    var type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:$("eTxt").value.trim(),tag:tagOf(type)};
+    var baseSess=SH.k?sessByKey(planOf(r).weeks[w-1],SH.k):null, type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:baseSess&&baseSess.txt||"",tag:tagOf(type)};
     if(SH.k&&!SH.added){var keep=E[ek]; delete E[ek]; PC={}; var orig=sessByKey(planOf(r).weeks[w-1],SH.k); PC={};
       if(orig){var diff={}; ["dow","type","km","dp","txt"].forEach(function(f){if(o[f]!==orig[f])diff[f]=o[f];}); if(diff.type){diff.tag=o.tag;} if(Object.keys(diff).length)E[ek]=diff;} else if(keep)E[ek]=keep;}
     else E[w+"-"+(SH.k||("x"+Date.now().toString(36)))]=o;
@@ -1333,7 +1397,7 @@ function weekEndCard(r,pl,ti){
   var w=nowWeek(pl), td=ti-(w-1)*7, hr=new Date().getHours(), tw=(td===0&&w>1)?w-1:0; if(!tw)return "";
   var wk=P(pl,tw), t=weekTot(r,wk,6), dn=weekDone(r,wk), ns=nSess(wk), pc=t.pk>0?Math.round(t.ak/t.pk*100):0;
   var badge=t.pk<=0?null:pc>=90&&pc<=115?["ok","Semaine réussie"]:pc>115?["warn","Semaine chargée"]:pc>=75?["warn","Un peu en dessous"]:["off","Semaine allégée"];
-  var h='<div class="card"><div class="verdict"><h2>Bilan de ta semaine '+tw+'</h2>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(Math.round(t.pk*10)/10)+'</i></i></span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(t.pd)+'</i></i></span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
+  var h='<div class="card week-end-card"><div class="verdict"><h2>Bilan de ta semaine '+tw+'</h2>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(Math.round(t.pk*10)/10)+'</i></i></span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(t.pd)+'</i></i></span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
   try{var S=formeSeries(); if(S&&S.pts.length>8){var q=S.pts[S.pts.length-1], q0=S.pts[S.pts.length-8], df=Math.round(q.f-q0.f), dz=Math.round(q.z);
     h+='<p class="small" style="margin:10px 0 0">'+(Math.abs(df)<1?'Forme stable sur la semaine':'Forme '+(df>0?'+':'−')+Math.abs(df)+' sur la semaine')+' · fraîcheur '+(dz>=0?'+':'−')+Math.abs(dz)+'.</p>';}}catch(e){}
   var nx=tw<pl.n?P(pl,tw+1):null;
@@ -1462,6 +1526,7 @@ function act(a,b){
   else if(a==="resetedits"){var r=activeRace(); if(!confirm("Rétablir toutes les séances d’origine du plan "+r.name+" ?"))return; var U2=snapU(); delete D.edits[r.id]; save(); render(true); toast("Séances d’origine rétablies.",U2);}
   else if(a==="import")$("fileJson").click();
   else if(a==="export")exportData();
+  else if(a==="trainingprefs")openTrainingPrefs(false);
   else if(a==="gsetup")gSetupSheet();
   else if(a==="gmanage")gManageSheet();
   else if(a==="backups")openBackups();
@@ -1734,6 +1799,7 @@ function onPos(p){
 // reclasse tout de suite les sorties déjà lues avec la logique de cette version (sorties hors plan comprises)
 try{if(HIST.length){applyActs(HIST.map(function(q){return {date:q.date,km:q.km,dp:q.dp,t:q.t,src:"strava"};}));}}catch(e){}
 save(); goNow(); render();
+if(window.CADENZO_TRAINING_PREFS_LOADED&&(!TRAIN_PREF||!TRAIN_PREF.onboarding_completed)&&navigator.onLine!==false)setTimeout(function(){openTrainingPrefs(true);},300);
 if(!D.races.length)setTimeout(function(){if(!D.races.length&&!SH)editRace(null);},500);
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
