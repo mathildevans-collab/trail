@@ -756,3 +756,11 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .user-state i{width:6px;height:6px;border-radius:50%;background:#36a66a;box-shadow:0 0 0 2px rgba(54,166,106,.13)}
 .top-actions .ibtn{width:42px;height:42px}
 @media(max-width:360px){.user-chip{gap:5px;padding-right:7px}.user-state{font-size:9px}.top-actions{gap:6px}}
+
+/* Statut Strava discret, dans le groupe d'actions de l'en-tête */
+.top-actions{display:flex;align-items:center;gap:8px;flex:none}
+.account-status{position:relative;width:42px;height:42px;padding:0;color:var(--brand);background:var(--card);border-color:var(--line)}
+.account-user-icon svg{width:19px;height:19px;display:block}
+.account-online{position:absolute;right:1px;bottom:1px;width:10px;height:10px;border:2px solid var(--card);border-radius:50%;background:#35a96a}
+.account-status:active{transform:scale(.96)}
+.user-chip,.user-avatar,.user-state{display:none!important}
