@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=108;
+var APPV=110;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -110,7 +110,6 @@ function hmc(m){m=Math.round(m); var h=Math.floor(m/60); return h+"h"+pz(m-h*60)
 function hmi(m){m=Math.round(m); var h=Math.floor(m/60); return h+":"+pz(m-h*60);}
 function hms(s){s=Math.max(0,Math.floor(s)); return Math.floor(s/3600)+":"+pz(Math.floor(s/60)%60)+":"+pz(s%60);}
 function dur(sec){var h=Math.floor(sec/3600), m=Math.round((sec%3600)/60); if(m===60){h++;m=0;} return h>0?h+"\u00A0h\u00A0"+pz(m):m+"\u00A0min";}
-function mmss(x){x=Math.round(x); var m=Math.floor(x/60); return m+":"+pz(x-m*60);}
 function sgn(m){m=Math.round(m); return (m>0?"+":m<0?"−":"±")+Math.abs(m)+" min";}
 function tod(r,min){var t=Math.round(startMin(r)+min); return Math.floor(t/60)%24+":"+pz(t%60);}
 function fmtS(ms){var d=new Date(ms); return d.getUTCDate()+" "+MON[d.getUTCMonth()];}
@@ -1473,17 +1472,6 @@ function toast(m,undo){var t=$("toast"), ms=undo?6000:3200; UNDO=undo||null; var
 // ---------- Strava (coupé, gardé pour plus tard) ----------
 
 // Mise à jour : à chaque retour dans l’appli, on compare avec la version publiée et on recharge toute seule (sauf pendant une course ou une feuille ouverte)
-function checkUpdate(){
-  if(location.protocol!=="https:")return;
-  fetch("index.html?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){
-    var m=t.match(/app\.js\?v=(\d+)/); if(!m||+m[1]<=APPV)return;
-    var busy=(typeof RS!=="undefined"&&RS&&!RS.done)||!$("sheet").hidden, g="cadenzo-reloaded"; try{if(sessionStorage.getItem(g)===m[1])return;}catch(e){}
-    if(busy){toast("Nouvelle version prête. Elle s’installe à ta prochaine ouverture.");return;}
-    try{sessionStorage.setItem(g,m[1]);}catch(e){} location.reload();
-  }).catch(function(){});
-}
-document.addEventListener("visibilitychange",function(){if(!document.hidden)checkUpdate();});
-setTimeout(checkUpdate,2500);
 var syncing=false;
 function sync(manual){
   if(!STRAVA||syncing||!window.CadenzoAuth)return;
@@ -1712,7 +1700,7 @@ function checkUpdate(){
   var cur=runV(); if(updating||!cur||navigator.onLine===false)return;
   if($("rm")&&!$("rm").hidden)return;                       // jamais pendant le chrono de course
   var ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return; // pas pendant une saisie
-  fetch("index.html?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";}).then(function(t){
+  fetch("auth.js?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";}).then(function(t){ // auth.js charge app.js?v=N : c’est lui qui porte la version
     var m=/app\.js\?v=(\d+)/.exec(t), nv=m?+m[1]:0; if(!nv||nv<=cur)return;
     try{if(sessionStorage.getItem(userKey("thp40upd"))===String(nv))return; sessionStorage.setItem(userKey("thp40upd"),String(nv));}catch(e){}
     updating=true; var go=function(){location.reload();};

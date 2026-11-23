@@ -31,7 +31,7 @@ function screen(message,buttonText,action){
     `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=63" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=110" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
   var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
@@ -77,14 +77,14 @@ function loadApp(user){
   };
   if(window.SAFE&&SAFE.setUser)SAFE.setUser(user.id);
   tabs.hidden=false;
-  client.from("cadenzo_profiles").select("display_name,username,profile_picture").eq("user_id",user.id).maybeSingle().then(function(result){
+  Promise.race([client.from("cadenzo_profiles").select("display_name,username,profile_picture").eq("user_id",user.id).maybeSingle(),new Promise(function(_,no){setTimeout(function(){no(new Error("délai"));},navigator.onLine===false?200:3500);})]).then(function(result){
     window.CADENZO_PROFILE_PICTURE=result.data&&result.data.profile_picture||"";
   }).catch(function(){
     var fallback=user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name)||user.email&&user.email.split("@")[0]||"";
     window.CADENZO_PROFILE_PICTURE="";
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=108";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=110";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 document.addEventListener("click",function(event){
@@ -114,11 +114,19 @@ function start(){
     }).catch(function(e){showError("Connexion impossible : "+(e.message||"lien expiré")+". Relance la connexion.");});
     return;
   }
-  client.auth.getSession().then(function(r){
+  function storedUser(){ // session déjà enregistrée sur cet appareil : permet d’ouvrir l’appli sans réseau
+    try{var s=JSON.parse(localStorage.getItem("sb-psotpksrdlkivauxdiad-auth-token")||"null"); return s&&s.user&&s.user.id&&s.refresh_token?s.user:null;}catch(e){return null;}
+  }
+  var waitSession=Promise.race([client.auth.getSession(),new Promise(function(_,no){setTimeout(function(){no(new Error("délai dépassé"));},navigator.onLine===false?300:4000);})]); // réseau absent : getSession() peut attendre longtemps
+  waitSession.then(function(r){
     if(r.error)throw r.error;
     if(r.data.session&&r.data.session.user){loadApp(r.data.session.user);return;}
+    var su=navigator.onLine===false?storedUser():null; if(su){loadApp(su);return;}
     screen("","Se connecter avec Strava",function(){location.href=FUNCTION_URL+"?action=start";});
-  }).catch(function(e){showError("Supabase est momentanément inaccessible : "+(e.message||"réessaie dans un instant."));});
+  }).catch(function(e){
+    var su=storedUser(); if(su){loadApp(su);return;} // réseau coupé ou Supabase injoignable : on ouvre avec la session locale
+    showError("Supabase est momentanément inaccessible : "+(e.message||"réessaie dans un instant."));
+  });
 }
 start();
 })();
