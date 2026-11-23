@@ -51,12 +51,12 @@ function loadApp(user){
   };
   if(window.SAFE&&SAFE.setUser)SAFE.setUser(user.id);
   tabs.hidden=false;
-  client.from("cadenzo_profiles").select("display_name").eq("user_id",user.id).maybeSingle().then(function(result){
-    var name=result.data&&result.data.display_name||"";
-    var parts=name.trim().split(/\\s+/).filter(Boolean);
+  client.from("cadenzo_profiles").select("display_name,username").eq("user_id",user.id).maybeSingle().then(function(result){
+    var name=result.data&&(result.data.display_name||result.data.username)||"";
+    var parts=name.trim().split(/\s+/).filter(Boolean);
     window.CADENZO_USER_INITIALS=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts.length?parts[0].slice(0,2).toUpperCase():"";
   }).catch(function(){window.CADENZO_USER_INITIALS="";}).then(function(){
-    var script=document.createElement("script");script.src="app.js?v=94";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=95";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("[data-account-menu]"):null;if(target&&window.CadenzoAuth&&confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
@@ -75,7 +75,7 @@ function start(){
   client.auth.getSession().then(function(r){
     if(r.error)throw r.error;
     if(r.data.session&&r.data.session.user){loadApp(r.data.session.user);return;}
-    screen("Connecte-toi avec ton compte Strava pour accéder à tes séances et à tes statistiques. Chaque compte ne voit que ses propres activités.","Se connecter avec Strava",function(){location.href=FUNCTION_URL+"?action=start";});
+    screen("","Se connecter avec Strava",function(){location.href=FUNCTION_URL+"?action=start";});
   }).catch(function(e){showError("Supabase est momentanément inaccessible : "+(e.message||"réessaie dans un instant."));});
 }
 start();
