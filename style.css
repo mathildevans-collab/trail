@@ -876,3 +876,7 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .pref-day input:checked+span{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
 .pref-day input:focus-visible+span{outline:3px solid var(--brand);outline-offset:2px}
 #prefClubNameWrap{margin:8px 0}
+
+/* Intensité réelle : espacer le libellé des valeurs de zones. */
+.gz-bar{margin-top:8px}
+.gz-bar+.small,.gz-bar+p{margin-top:10px}
