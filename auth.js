@@ -79,13 +79,12 @@ function loadApp(user){
   tabs.hidden=false;
   client.from("cadenzo_profiles").select("display_name,username,profile_picture").eq("user_id",user.id).maybeSingle().then(function(result){
     window.CADENZO_PROFILE_PICTURE=result.data&&result.data.profile_picture||"";
-    window.CADENZO_PROFILE_PICTURE=result.data&&result.data.profile_picture||"";
   }).catch(function(){
     var fallback=user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name)||user.email&&user.email.split("@")[0]||"";
     window.CADENZO_PROFILE_PICTURE="";
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=104";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=105";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 document.addEventListener("click",function(event){
