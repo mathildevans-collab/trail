@@ -189,15 +189,44 @@ async function findSegments(req: Request) {
   const dLng = radiusKm / (111 * Math.cos(lat * Math.PI / 180));
   const bounds = [lat - dLat, lng - dLng, lat + dLat, lng + dLng].map(v => v.toFixed(5)).join(",");
   const found = await strava("/segments/explore?" + new URLSearchParams({ bounds, activity_type: "running" }).toString(), access);
-  const items = (found.segments || []).map((s: any) => ({
+  let items = (found.segments || []).map((s: any) => ({
     i: Number(s.id), n: String(s.name || "Segment"), d: Math.round(Number(s.distance || 0)),
     g: Math.round(Number(s.avg_grade || 0) * 10) / 10, e: Math.round(Number(s.elev_difference || 0)),
     v: String(s.city || ""), la: Number(s.start_latlng?.[0] || 0), ln: Number(s.start_latlng?.[1] || 0), s: "e"
   })).filter((s: any) => s.i && s.la && s.ln && s.d >= 100 && s.d <= 800 && s.g >= 4 && s.e >= 8)
     .sort((a: any, b: any) => b.e - a.e || b.g - a.g).slice(0, 10);
-  return json({ items, count: items.length, radiusKm, searchedAt: new Date().toISOString() });
+  if (!items.length) {
+    const cached = await cachedClimbs(user.id);
+    const rad = Math.PI / 180, earth = 6371;
+    items = cached.map((s: any) => {
+      const dLat = (s.la - lat) * rad, dLng = (s.ln - lng) * rad;
+      const q = Math.sin(dLat/2)**2 + Math.cos(lat*rad)*Math.cos(s.la*rad)*Math.sin(dLng/2)**2;
+      return { ...s, km: earth * 2 * Math.atan2(Math.sqrt(q), Math.sqrt(1-q)) };
+    }).filter((s: any) => s.km <= radiusKm).sort((a: any,b: any) => a.km-b.km).slice(0,10)
+      .map(({km,...s}: any) => s);
+  }
+  return json({ items, count: items.length, radiusKm, source: found.segments?.length ? "strava" : "cache", searchedAt: new Date().toISOString() });
 }
 
+
+
+async function cachedClimbs(userId: string) {
+  const { data, error } = await admin.from("cadenzo_segments")
+    .select("strava_segment_id,name,distance,average_grade,elevation_high,elevation_low,city,raw")
+    .eq("user_id", userId).limit(500);
+  if (error) throw error;
+  return (data || []).map((s: any) => {
+    const raw = s.raw || {};
+    const coords = raw.start_latlng || [];
+    const lat = Number(coords[0] || 0), lng = Number(coords[1] || 0);
+    const distance = Math.round(Number(s.distance || 0));
+    const grade = Number(s.average_grade || 0);
+    const gain = Math.round(Number(s.elevation_high || 0) - Number(s.elevation_low || 0));
+    return { i: Number(s.strava_segment_id), n: String(s.name || "Segment"), d: distance,
+      g: Math.round(grade * 10) / 10, e: gain, v: String(s.city || ""),
+      la: lat, ln: lng, s: "e" };
+  }).filter((s: any) => s.i && s.la && s.ln && s.d >= 100 && s.d <= 800 && s.g >= 4 && s.e >= 8);
+}
 
 async function sync(req: Request) {
   const auth = req.headers.get("Authorization") || "";
@@ -234,7 +263,8 @@ async function sync(req: Request) {
       t: Number(a.moving_time || 0), hr: Math.round(Number(a.raw?.average_heartrate || 0)),
       sg: Array.isArray(a.raw?.sg) ? a.raw.sg : [], be: Array.isArray(a.raw?.be) ? a.raw.be : []
     }));
-    return json({ updated: account.last_sync_at, runs, cotes: {}, cached: true });
+    const cotes = await cachedClimbs(user.id);
+    return json({ updated: account.last_sync_at, runs, cotes, cached: true });
   }
   const retryAt = account.sync_retry_after ? Date.parse(account.sync_retry_after) : 0;
   if (retryAt > now) {
@@ -367,7 +397,8 @@ async function sync(req: Request) {
       last_sync_at: completedAt, sync_retry_after: null, sync_last_error: null, sync_lock_until: null
     }).eq("user_id", user.id);
     if (doneErr) throw doneErr;
-    return json({ updated: completedAt, runs: completeRuns, cotes: {}, fetched: activities.length, historyCount: completeRuns.length, detailsProcessed: detailedCount });
+    const cotes = await cachedClimbs(user.id);
+    return json({ updated: completedAt, runs: completeRuns, cotes, fetched: activities.length, historyCount: completeRuns.length, detailsProcessed: detailedCount });
   } catch (err) {
     if (err instanceof StravaReauthError) {
       await admin.from("cadenzo_strava_accounts").update({ sync_lock_until: null, sync_last_error: "STRAVA_REAUTH_REQUIRED" }).eq("user_id", user.id);
