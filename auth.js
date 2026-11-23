@@ -120,6 +120,7 @@ document.addEventListener("click",function(event){
   if(!target)return;
   event.preventDefault();event.stopPropagation();
   if(target.disabled)return;
+  if(!window.confirm("Veux-tu vraiment te déconnecter de Cadenzo ?"))return;
   target.disabled=true;target.setAttribute("aria-busy","true");
   client.auth.signOut({scope:"local"}).then(function(result){
     if(result&&result.error)throw result.error;
