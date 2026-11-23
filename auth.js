@@ -7,8 +7,9 @@ var client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persist
 var view=document.getElementById("view"),tabs=document.getElementById("tabs"),rm=document.getElementById("rm");
 function screen(message,buttonText,action){
   tabs.hidden=true;rm.hidden=true;
-  view.innerHTML='<section style="min-height:75vh;display:grid;place-items:center;padding:24px"><div style="width:min(420px,100%);background:var(--card,#fff);border:1px solid var(--line,#ddd);border-radius:24px;padding:28px;box-shadow:0 12px 40px #00000012;text-align:center"><div style="font-size:34px;margin-bottom:10px">🏃</div><h1 style="margin:0 0 8px;font-size:28px">Cadenzo</h1><p style="color:var(--muted,#777);margin:0 0 22px">Ton espace trail, avec tes données personnelles.</p><p id="auth-message" role="status" style="font-size:14px;margin:0 0 18px">'+message+'</p><button id="auth-action" class="btn primary" style="width:100%;min-height:48px">'+buttonText+'</button><p style="font-size:12px;color:var(--muted,#777);margin:16px 0 0">La connexion est sécurisée par Supabase et Strava.</p></div></section>';
-  document.getElementById("auth-action").addEventListener("click",action);
+  view.innerHTML='<section style="min-height:75vh;display:grid;place-items:center;padding:24px"><div style="width:min(420px,100%);background:var(--card,#fff);border:1px solid var(--line,#ddd);border-radius:24px;padding:28px;box-shadow:0 12px 40px #00000012;text-align:center"><div style="font-size:34px;margin-bottom:10px">🏃</div><h1 style="margin:0 0 8px;font-size:28px">Cadenzo</h1><p style="color:var(--muted,#777);margin:0 0 22px">Ton espace trail, avec tes données personnelles.</p><p id="auth-message" role="status" style="font-size:14px;margin:0 0 18px"></p><button id="auth-action" class="btn primary" style="width:100%;min-height:48px"></button><p style="font-size:12px;color:var(--muted,#777);margin:16px 0 0">La connexion est sécurisée par Supabase et Strava.</p></div></section>';
+  document.getElementById("auth-message").textContent=message;
+  var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
 function showError(message){screen(message,"Réessayer avec Strava",function(){location.href=FUNCTION_URL+"?action=start";});}
 function loadApp(user){
