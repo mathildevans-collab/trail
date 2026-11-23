@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=112;
+var APPV=113;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1502,6 +1502,13 @@ function sync(manual){
     var runs=source.map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
     histSave(source.map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0,id:r.id||0,sg:Array.isArray(r.sg)?r.sg:null,be:Array.isArray(r.be)?r.be:[]};}));
     D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err=""; D.sync.retryAt=0;
+    if(Array.isArray(j.cotes)&&j.cotes.length){
+      var known={}; (COTES["strava-cache"]&&COTES["strava-cache"].items||[]).forEach(function(x){known[x.i]=1;});
+      var merged=(COTES["strava-cache"]&&COTES["strava-cache"].items||[]).slice();
+      j.cotes.forEach(function(x){if(x&&x.i&&!known[x.i]){merged.push(x);known[x.i]=1;}});
+      COTES["strava-cache"]={nom:"Côtes Strava enregistrées",items:merged,updated:j.updated||new Date().toISOString()};
+      try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
+    }
     var n=applyActs(runs);
     if(manual)toast(runs.length+" sorties du compte connecté · "+n+" séances du plan");
   }).catch(function(e){
