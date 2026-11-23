@@ -537,7 +537,7 @@ function ctDist(c){return CTS.pos&&c.la!=null?Math.round(ctHav(CTS.pos.la,CTS.po
 function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
-  ctWatch(); var L=cotesList(); if(!L)return "";
+  ctWatch(); var L=cotesList(); if(!L)return '<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 Autour de toi</span></div><p class="small muted" style="margin:10px 0 8px">Retrouve des côtes à proximité et choisis ton prochain segment.</p><button class="ctmore" data-ctg="1" style="margin:0">Trouver les segments autour de moi</button></div>';
   var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><span class="ctch">📍 '+esc(L.nom)+'</span>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Côte suivante">Suivante<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">Côtes prêtes dans environ 5 min. <span style="opacity:.6">v'+APPV+'</span></p><button class="ctmore" data-act="sync" style="margin:0">Relire maintenant</button></div>';
@@ -586,7 +586,7 @@ function vPrep(r,pl){
   h+='</div>';
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
-  h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel); if(s&&s.type==="Côtes")h+=cotesCard();
+  h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel); h+=cotesCard();
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
 
