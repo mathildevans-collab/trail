@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=89;
+var APPV=90;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1596,6 +1596,7 @@ function openRace(rid,pr){
   RR=raceById(rid); if(!RR)return; RM=model(RR);
   if(pr){if(!D.practice||D.practice.done||D.practice.rid!==rid)D.practice=newRS(rid,true); RS=D.practice;}
   else{if(D.race&&D.race.rid!==rid){if(D.race.t0&&!D.race.done&&!confirm("Un chrono est en cours pour "+((raceById(D.race.rid)||{}).name||"une autre course")+". Le remplacer ?"))return; D.race=null;} if(!D.race)D.race=newRS(rid,false); RS=D.race;}
+  if(RS.t0&&!RS.done&&nowMs()-RS.t0>36*36e5){if(pr)RS=D.practice=newRS(rid,true); else RS=D.race=newRS(rid,false);} // chrono oublié depuis plus de 36 h : on repart de zéro
   save(); $("rm").hidden=false; document.body.style.overflow="hidden"; applyTheme(); rmRender(); clearInterval(rmTimer); rmTimer=setInterval(rmTick,1000); askWake(); if(D.set.gps!==false&&RR.gpx&&gpsWatch==null)startGps();
   try{history.pushState({rm:1},"");}catch(e){}
 }
