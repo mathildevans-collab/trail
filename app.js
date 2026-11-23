@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=86;
+var APPV=87;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -547,7 +547,12 @@ function ctWatch(){
   if(CTW!==null||!navigator.geolocation||!window.isSecureContext)return;
   CTW=navigator.geolocation.watchPosition(function(p){var o=CTS.pos, moved=!o||ctHav(o.la,o.ln,p.coords.latitude,p.coords.longitude)>0.15; CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)}; if(moved&&document.querySelector(".ct")&&$("sheet").hidden)render(true);},function(){CTW=null;},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
 }
-document.addEventListener("visibilitychange",function(){if(document.hidden&&CTW!==null){try{navigator.geolocation.clearWatch(CTW);}catch(e){} CTW=null;}});
+document.addEventListener("visibilitychange",function(){
+  if(document.hidden){if(CTW!==null){try{navigator.geolocation.clearWatch(CTW);}catch(e){} CTW=null;} return;}
+  if(!navigator.geolocation||!window.isSecureContext||!document.querySelector(".ct"))return;
+  ctWatch(); // position fraîche dès le retour dans l’appli
+  navigator.geolocation.getCurrentPosition(function(p){var o=CTS.pos; CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)}; if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);},function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
+});
 function ctPost(m,done){return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0; if(!COTES[m.id])COTES[m.id]={nom:m.nom,items:[],pend:1,lat:m.lat,lng:m.lng}; try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){} done&&done();});}
 function ctHere(){
   if(!CTS.pos){toast("Position introuvable. Autorise la localisation.");return;}
