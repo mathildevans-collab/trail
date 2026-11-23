@@ -4,12 +4,12 @@
 var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
+var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
+function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
 var APPV=92;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
-var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
-function userKey(k){return k+":"+USER_ID;}
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
 var KEYS=["mon","tue","wed","thu","fri","sat","sun"];
 var MON=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
@@ -28,7 +28,7 @@ function tagOf(t){return QT[t]?"q":LT[t]?"l":"e";}
 // ---------- état ----------
 function thpRace(){return {id:"thp40",name:"THP40",full:"Trail de Haute Provence",place:"Forcalquier",date:"2027-05-08",time:"08:00",km:38.8,dp:1279,goal:295,prio:"A",builtin:true,start:"2026-11-09"};}
 function blank(){return {v:3,races:[thpRace()],active:"thp40",focus:"thp40",done:{},undone:{},actual:{},ci:{},adj:{},edits:{},tseen:"",kit:{},todo:{},
-  set:{theme:"auto",json:DEF_JSON,gel:35,water:15,vib:true,checkin:true,fake:""},race:null,practice:null,results:{},sync:{t:0,upd:"",err:"",gh:""}};}
+  set:{theme:"auto",gel:35,water:15,vib:true,checkin:true,fake:""},race:null,practice:null,results:{},sync:{t:0,upd:"",err:"",gh:""}};}
 var OBJ={set:1,sync:1};
 function assignState(n,o){for(var k in n){if(o[k]==null)continue; if(OBJ[k]&&typeof o[k]==="object")Object.assign(n[k],o[k]); else n[k]=o[k];} return n;}
 var LOADNOTE="", SEEN="";
@@ -1476,22 +1476,21 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)chec
 setTimeout(checkUpdate,2500);
 var syncing=false;
 function sync(manual){
-  if(!STRAVA||syncing)return; syncing=true;
-  var urls=[D.set.json||DEF_JSON]; if(urls[0]!==DEF_JSON)urls.push(DEF_JSON); if(/github\.io$/.test(location.hostname))urls.push("activities.json");
-  function one(u){var c=window.AbortController?new AbortController():null, t=setTimeout(function(){if(c)c.abort();},8000);
-    return fetch(u+"?t="+Date.now(),{cache:"no-store",signal:c?c.signal:undefined}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){clearTimeout(t); if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); return j;},function(e){clearTimeout(t); throw e;});}
-  // les deux sources en parallèle (GitHub direct et le site) : on garde la plus récente, et une source lente ou en panne ne bloque plus
-  function get(){return new Promise(function(res,rej){var got=[],fail=0,timer=null,done=false;
-      function fin(){if(done)return; done=true; clearTimeout(timer); got.sort(function(a,b){return String(b.updated||"").localeCompare(String(a.updated||""));}); var j=got[0]; if(j.cotes&&typeof j.cotes==="object"){var pe={}; Object.keys(COTES).forEach(function(k){if(COTES[k].pend&&!j.cotes[k])pe[k]=COTES[k];}); COTES=Object.assign({},j.cotes,pe); try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}} res(j);}
-      urls.forEach(function(u){one(u).then(function(j){got.push(j); if(got.length===urls.length)fin(); else if(!timer)timer=setTimeout(fin,1500);},function(e){fail++; if(fail===urls.length)rej(e); else if(got.length+fail===urls.length)fin();});});});}
-  ghCheck();
-  get().then(function(j){
-    var runs=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
-    histSave((j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;}).map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0,id:r.id||0,sg:Array.isArray(r.sg)?r.sg:null,be:Array.isArray(r.be)?r.be:[]};}));
-    D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err=""; var n=applyActs(runs); if(manual)toast(runs.length+" sorties lues · "+n+" séances du plan");
-  }).catch(function(e){var m=String(e&&e.message||e); D.sync.err=/failed to fetch|network|load failed/i.test(m)?"pas de réseau":/json|position|unexpected/i.test(m)?"fichier illisible":m.slice(0,40); if(manual)toast("Synchro impossible.");}).then(function(){syncing=false; save(); render(true);});
+  if(!STRAVA||syncing||!window.CadenzoAuth)return;
+  syncing=true;
+  window.CadenzoAuth.sync().then(function(j){
+    var source=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;});
+    var runs=source.map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
+    histSave(source.map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0,id:r.id||0,sg:Array.isArray(r.sg)?r.sg:null,be:Array.isArray(r.be)?r.be:[]};}));
+    D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err="";
+    var n=applyActs(runs);
+    if(manual)toast(runs.length+" sorties du compte connecté · "+n+" séances du plan");
+  }).catch(function(e){
+    var m=String(e&&e.message||e);
+    D.sync.err=/401|session/i.test(m)?"session expirée":/failed to fetch|network|load failed/i.test(m)?"pas de réseau":m.slice(0,55);
+    if(manual)toast("Synchro Strava impossible : "+D.sync.err);
+  }).then(function(){syncing=false;save();render(true);});
 }
-// État de la dernière exécution terminée de l’Action « Strava sync ».
 function ghCheck(){} // L’ancienne synchronisation GitHub publique n’est plus utilisée.
 function stravaSub(){
   var s=D.sync;
