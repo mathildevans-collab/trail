@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=119;
+var APPV=120;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -527,7 +527,7 @@ function cotesList(){ // liste de référence partagée ; GPS utilisé uniquemen
   var ids=Object.keys(COTES); if(!ids.length)return null;
   var shared=COTES["strava-cache"], cur=CTS.l;
   if(!COTES[cur]){cur=shared?"strava-cache":ids[0];CTS.l=cur;}
-  var L=shared||COTES[cur], last={}, best={}, src=L.items||[], nom=CTS.city||"Autour de toi";
+  var L=shared||COTES[cur], last={}, best={}, src=L.items||[], loc=CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
     if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date;
     if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;
