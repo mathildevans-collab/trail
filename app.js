@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=88;
+var APPV=89;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -911,6 +911,7 @@ function vSettings(){
   var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
   function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
   function gCourse(){return group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
+    swItem("pin","GPS auto","Te situe sur la trace dès l’ouverture","gps",D.set.gps!==false)+
     swItem("vib","Vibration au ravito","Android seulement : l’iPhone ne vibre pas depuis le web","vib",D.set.vib)+
     (D.race?sitem("trash","Réinitialiser le chrono de course",esc((raceById(D.race.rid)||{}).name||"")+" · "+(D.race.done?"terminée":D.race.t0?"chrono lancé":"prêt"),"",' data-act="racereset"',"danger"):""));}
   function gDonnees(){return group("Données",sitem("down","Exporter mes données","Fichier complet : plan, séances, Garmin. "+lastExportTxt(),null,' data-act="export"')+sitem("up","Importer une sauvegarde","Fusionner ou remplacer, avec copie de sécurité avant",null,' data-act="import"')+sitem("down","Copies automatiques","Revenir à une version précédente de ce téléphone",null,' data-act="backups"'));}
@@ -1396,7 +1397,7 @@ $("view").addEventListener("change",function(e){
   if(id==="gelmin"){D.set.gel=+v; save();} else if(id==="watermin"){D.set.water=+v; save();}
 
 });
-function toggleSw(k){D.set[k]=!D.set[k]; save(); render(true);}
+function toggleSw(k){D.set[k]=k==="gps"?D.set[k]===false:!D.set[k]; save(); render(true);}
 function act(a,b){
   var ds=b.dataset;
   if(a==="goalauto"){var fr=focusRace(); if(fr){fr.gm=false; fr.goal=0; save(); render(true);} return;}
@@ -1595,7 +1596,7 @@ function openRace(rid,pr){
   RR=raceById(rid); if(!RR)return; RM=model(RR);
   if(pr){if(!D.practice||D.practice.done||D.practice.rid!==rid)D.practice=newRS(rid,true); RS=D.practice;}
   else{if(D.race&&D.race.rid!==rid){if(D.race.t0&&!D.race.done&&!confirm("Un chrono est en cours pour "+((raceById(D.race.rid)||{}).name||"une autre course")+". Le remplacer ?"))return; D.race=null;} if(!D.race)D.race=newRS(rid,false); RS=D.race;}
-  save(); $("rm").hidden=false; document.body.style.overflow="hidden"; applyTheme(); rmRender(); clearInterval(rmTimer); rmTimer=setInterval(rmTick,1000); askWake();
+  save(); $("rm").hidden=false; document.body.style.overflow="hidden"; applyTheme(); rmRender(); clearInterval(rmTimer); rmTimer=setInterval(rmTick,1000); askWake(); if(D.set.gps!==false&&RR.gpx&&gpsWatch==null)startGps();
   try{history.pushState({rm:1},"");}catch(e){}
 }
 function closeRace(){$("rm").hidden=true; document.body.style.overflow=""; clearInterval(rmTimer); stopGps(); try{wake&&wake.release();}catch(e){} wake=null; RS=null; applyTheme(); render(true);}
