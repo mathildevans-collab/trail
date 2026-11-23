@@ -1477,36 +1477,40 @@ setTimeout(checkUpdate,2500);
 var syncing=false;
 function sync(manual){
   if(!STRAVA||syncing||!window.CadenzoAuth)return;
+  if(D.sync.retryAt&&Date.now()<D.sync.retryAt){if(manual)toast("Strava est temporairement limité. La prochaine tentative sera automatique.");return;}
   syncing=true;
   window.CadenzoAuth.sync().then(function(j){
     var source=(j.runs||[]).filter(function(r){return r&&isoOk(String(r.date))&&+r.km>0;});
     var runs=source.map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),src:"strava"};});
     histSave(source.map(function(r){return {date:r.date,km:+r.km,dp:Math.round(+r.dp||0),t:Math.round(+r.t||0),hr:+r.hr||0,id:r.id||0,sg:Array.isArray(r.sg)?r.sg:null,be:Array.isArray(r.be)?r.be:[]};}));
-    D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err="";
+    D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err=""; D.sync.retryAt=0;
     var n=applyActs(runs);
     if(manual)toast(runs.length+" sorties du compte connecté · "+n+" séances du plan");
   }).catch(function(e){
     var m=String(e&&e.message||e);
-    D.sync.err=/401|session/i.test(m)?"session expirée":/failed to fetch|network|load failed/i.test(m)?"pas de réseau":m.slice(0,55);
-    if(manual)toast("Synchro Strava impossible : "+D.sync.err);
+    if(e&&e.code==="STRAVA_RATE_LIMIT"){D.sync.retryAt=Date.now()+Math.max(60,+e.retryAfter||900)*1000;D.sync.err="limite Strava temporaire";}
+    else D.sync.err=/401|session/i.test(m)?"session expirée":/failed to fetch|network|load failed/i.test(m)?"pas de réseau":m.slice(0,55);
+    if(manual)toast(e&&e.code==="STRAVA_RATE_LIMIT"?"Limite Strava atteinte. Reprise automatique après le délai indiqué.":"Synchro Strava impossible : "+D.sync.err);
   }).then(function(){syncing=false;save();render(true);});
 }
 function ghCheck(){} // L’ancienne synchronisation GitHub publique n’est plus utilisée.
 function stravaSub(){
   var s=D.sync;
-  if(s.err)return "Dernière synchro ratée ("+esc(s.err)+"), nouvel essai à la prochaine ouverture";
+  if(s.err==="limite Strava temporaire"&&s.retryAt>Date.now())return "Limite temporaire Strava · reprise "+ago(s.retryAt)+"";
+  if(s.err)return "Dernière synchro ratée ("+esc(s.err)+"), nouvel essai automatique";
   return s.t?"Dernière synchro du compte connecté "+ago(s.t):"Compte Strava connecté · pas encore synchronisé";
 }
 // Fraîcheur des données Strava : heure à laquelle GitHub a lu Strava (sinon date du fichier). Au-delà d’1 h, rappel discret.
 function stravaAge(){var s=D.sync, t=s.upd?Date.parse(s.upd):s.t; return t&&!isNaN(t)?t:0;}
 function syncNote(){
   if(!STRAVA)return ""; var s=D.sync, t=stravaAge(), old=!t||Date.now()-t>3600*1000||!!s.err;
-  var txt=s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
+  var limited=s.err==="limite Strava temporaire"&&s.retryAt>Date.now();
+  var txt=limited?"Strava limite temporairement les synchronisations. Tes activités déjà enregistrées restent disponibles. Nouvelle tentative "+ago(s.retryAt)+".":s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
   return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old?' <button class="link-btn" data-act="sync">Actualiser</button>':"")+'</p>';
 }
 var CTRY=0;
 function autoSync(){var need=Object.keys(COTES).every(function(k){return !(COTES[k].items||[]).length;})&&Date.now()-CTRY>60000; if(need)CTRY=Date.now();
-  if(STRAVA&&!syncing&&(need||Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV()))sync(false);}
+  if(STRAVA&&!syncing&&!(D.sync.retryAt&&Date.now()<D.sync.retryAt)&&(need||Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV()))sync(false);}
 function applyActs(acts){
   var r=activeRace(); if(!r)return 0; var pl=planOf(r), bd=byDate(pl), byDay={}, n=0;
   acts.forEach(function(a){if(!a.date||!(a.km>0))return; var o=byDay[a.date]||(byDay[a.date]={km:0,dp:0,t:0,src:a.src}); o.km+=a.km; o.dp+=a.dp||0; o.t+=a.t||0;});
