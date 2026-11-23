@@ -429,7 +429,7 @@ var I={
 };
 
 // ---------- petits blocs ----------
-function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions"><span class="account-status" role="status" aria-label="Connecté à Strava"><span class="account-initials">'+esc(window.CADENZO_USER_INITIALS||"??")+'</span><i class="account-online" aria-hidden="true"></i></span><button class="ibtn account-logout" type="button" data-account-logout title="Se déconnecter" aria-label="Se déconnecter">'+I.logout+'</button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
+function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions"><span class="account-status" role="status" aria-label="Connecté à Strava">'+(window.CADENZO_PROFILE_PICTURE?'<img class="account-photo" src="'+esc(window.CADENZO_PROFILE_PICTURE)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true;this.nextElementSibling.hidden=false">' : "")+'<span class="account-initials" '+(window.CADENZO_PROFILE_PICTURE?'hidden':'')+' >'+esc(window.CADENZO_USER_INITIALS||"??")+'</span><i class="account-online" aria-hidden="true"></i></span><button class="ibtn account-logout" type="button" data-account-logout title="Se déconnecter" aria-label="Se déconnecter">'+I.logout+'</button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
 function todoBtn(key,label,store){var st=store||D.todo, on=!!st[key]; return '<button class="todo" data-todo="'+esc(key)+'"'+(store?' data-store="kit"':'')+' aria-pressed="'+on+'"><span class="box">'+(on?I.check:"")+'</span><span class="t">'+label+'</span></button>';}
 function woFor(s,wk){ // séance guidée proposée sur toute séance de renfo ou de mobilité
   if(!window.WORKOUT)return "";
@@ -587,6 +587,7 @@ function vPrep(r,pl){
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
+  if(s&&/c[oô]tes?/i.test([s.type,s.name,s.txt||""].join(" ")))h+=cotesCard();
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
 
@@ -1112,7 +1113,6 @@ function render(keep){
   var y=window.scrollY, v;
   if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else v=vSettings();
   if(tab==="today"||(tab==="forme"&&FSUB!=="garmin"))v+=syncNote();
-  if(tab==="today")v+=cotesCard();
   $("view").innerHTML=v;
   document.querySelectorAll("#tabs button").forEach(function(b){b.setAttribute("aria-current",b.dataset.t===tab?"page":"false");});
   if(tab==="course"){var f=focusRace(); if(f){var g=$("goal");
