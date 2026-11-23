@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=118;
+var APPV=119;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -527,7 +527,7 @@ function cotesList(){ // liste de référence partagée ; GPS utilisé uniquemen
   var ids=Object.keys(COTES); if(!ids.length)return null;
   var shared=COTES["strava-cache"], cur=CTS.l;
   if(!COTES[cur]){cur=shared?"strava-cache":ids[0];CTS.l=cur;}
-  var L=shared||COTES[cur], last={}, best={}, src=L.items||[], nom=CTS.city||L.nom||"Segments proposés";
+  var L=shared||COTES[cur], last={}, best={}, src=L.items||[], nom=CTS.city||"Autour de toi";
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
     if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date;
     if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;
@@ -553,7 +553,7 @@ function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5
 function cotesCard(){
   var L=cotesList();
   if(!L||!Array.isArray(L.items)||!L.items.length)return "";
-  var h='<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 '+esc(L&&L.nom||CTS.city||"Localisation indisponible")+'</span>'+(L&&L.items&&L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Segment suivant">Suivant<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
+  var h='<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 '+esc(L&&L.nom||CTS.city||"Localisation indisponible")+'</span>'+(L&&L.items&&L.items.length>1?'<button class="ctib" data-ctn="1" aria-label="Segment suivant">Suivant<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(!L||!L.items||!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte affichée pour le moment. Lance la recherche autour de ta position.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Trouver les côtes autour de moi')+'</button></div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte enregistrée dans ce secteur pour le moment.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Rechercher à nouveau')+'</button></div>';
@@ -1407,7 +1407,7 @@ $("view").addEventListener("click",function(e){
   var swi=e.target.closest("[data-sw]"); if(swi){toggleSw(swi.dataset.sw); return;}
   var b=e.target.closest("button"); if(!b)return; var ds=b.dataset;
   if(ds.ctt){CTS.open=!CTS.open; ctSave(); render(true); return;}
-  if(ds.ctn){CTS.off+=3; ctSave(); render(true); return;}
+  if(ds.ctn){var cl=cotesList();CTS.off=cl&&cl.items&&cl.items.length?(CTS.off+1)%cl.items.length:0;ctSave();render(true);return;}
 
   if(ds.ctg){ctLocate(); return;}
   if(ds.trpg){TRPG+=+ds.trpg; render(true); return;}
@@ -1521,10 +1521,10 @@ function sync(manual){
     D.sync.t=Date.now(); D.sync.v=runV(); D.sync.upd=j.updated||""; D.sync.err=""; D.sync.retryAt=0;
     if(Array.isArray(j.cotes)){
        var shared=[],seenShared={}; j.cotes.forEach(function(x){if(x&&x.i&&!seenShared[x.i]){shared.push(x);seenShared[x.i]=1;}});
-       COTES["strava-cache"]={nom:CTS.city||"Segments partagés",items:shared,updated:j.updated||new Date().toISOString()};
+       COTES["strava-cache"]={nom:CTS.city||"Autour de toi",items:shared,updated:j.updated||new Date().toISOString()};
        var totalShared=shared.length;
-       if(totalShared<=3)CTS.off=0;
-       else CTS.off=Math.min(Math.max(0,Math.floor((+CTS.off||0)/3)*3),Math.floor((totalShared-1)/3)*3);
+       if(totalShared<=1)CTS.off=0;
+       else CTS.off=Math.min(Math.max(0,+CTS.off||0),totalShared-1);
        ctSave();
        try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
      }
