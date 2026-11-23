@@ -771,3 +771,12 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .account-online{position:absolute;right:0;bottom:0;width:9px;height:9px;border:2px solid var(--card);border-radius:50%;background:#35a96a}
 .account-logout{color:var(--muted)}
 .account-logout svg{width:18px;height:18px;display:block}
+
+/* Avatar utilisateur : initiales nettes, compactes, alignées aux actions */
+.top-actions{gap:7px}
+.top-actions .account-status{width:36px!important;height:36px!important;min-width:36px;border:0!important;border-radius:50%;display:grid;place-items:center;background:var(--brand-ink)!important;color:#fff!important;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.account-initials{font:800 11px/1 var(--display);letter-spacing:.45px;color:#fff;transform:translateY(-.3px)}
+.top-actions .account-online{right:-1px;bottom:-1px;width:10px;height:10px;border:2px solid var(--card);background:#36ad70}
+.top-actions .account-logout{width:36px;height:36px;color:var(--muted);border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer}
+.top-actions .account-logout svg{width:17px;height:17px}
+.top-actions .account-logout:disabled{opacity:.55}
