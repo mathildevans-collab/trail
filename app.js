@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=126;
+var APPV=127;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -554,8 +554,11 @@ function ctSave(){try{localStorage.setItem(userKey("cadenzo-ct"),JSON.stringify(
 function cotesList(){ // liste de référence partagée ; GPS utilisé uniquement pour afficher la proximité
   var ids=Object.keys(COTES); if(!ids.length)return null;
   var shared=COTES["strava-cache"], cur=CTS.l;
-  if(!COTES[cur]){cur=shared?"strava-cache":ids[0];CTS.l=cur;}
-  var L=shared||COTES[cur], last={}, best={}, src=L.items||[], loc=CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
+  if(!COTES[cur]||cur==="strava-cache")cur=CTS.city?ctSlug(CTS.city):(shared?"strava-cache":ids[0]);
+  if(!COTES[cur]&&shared)cur="strava-cache";
+  if(!COTES[cur])cur=ids[0];
+  CTS.l=cur;
+  var L=COTES[cur]||shared, last={}, best={}, src=L.items||[], loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
     if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date;
     if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;
@@ -1053,7 +1056,7 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
     if(clubDays.some(function(d){return training.indexOf(d)<0;})){err.textContent="Les jours du club doivent aussi être disponibles pour l’entraînement.";return;}
     var rest=[0,1,2,3,4,5,6].filter(function(d){return training.indexOf(d)<0;});
     var next={has_club:hasClub,club_name:hasClub?clubName:null,club_days:hasClub?clubDays:[],sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
-    b.disabled=true;window.CadenzoAuth.saveTrainingPreferences(next).then(function(saved){TRAIN_PREF=saved;window.CADENZO_TRAINING_PREFS=saved;PC={};closeSheet();render(true);toast("Tes disponibilités sont enregistrées.");}).catch(function(e){b.disabled=false;err.textContent="Enregistrement impossible : "+(e.message||"réessaie.");});
+    b.disabled=true;window.CadenzoAuth.saveTrainingPreferences(next).then(function(saved){TRAIN_PREF=saved;window.CADENZO_TRAINING_PREFS=saved;PC={};closeSheet();render(true);toast("Tes disponibilités sont enregistrées.");if(!D.races.length)setTimeout(function(){if(!SH)editRace(null);},250);}).catch(function(e){b.disabled=false;err.textContent="Enregistrement impossible : "+(e.message||"réessaie.");});
     return;
   }
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
@@ -1796,7 +1799,7 @@ function onPos(p){
 // reclasse tout de suite les sorties déjà lues avec la logique de cette version (sorties hors plan comprises)
 try{if(HIST.length){applyActs(HIST.map(function(q){return {date:q.date,km:q.km,dp:q.dp,t:q.t,src:"strava"};}));}}catch(e){}
 save(); goNow(); render();
-if((!TRAIN_PREF||!TRAIN_PREF.onboarding_completed)&&navigator.onLine!==false)setTimeout(function(){openTrainingPrefs(true);},700);
+if(window.CADENZO_TRAINING_PREFS_LOADED&&(!TRAIN_PREF||!TRAIN_PREF.onboarding_completed)&&navigator.onLine!==false)setTimeout(function(){openTrainingPrefs(true);},300);
 if(!D.races.length)setTimeout(function(){if(!D.races.length&&!SH)editRace(null);},500);
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
