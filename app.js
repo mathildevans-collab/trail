@@ -414,6 +414,7 @@ function rbCard(r,wk){
 // ---------- icônes ----------
 function sv(p,w){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';}
 var I={
+ logout:sv('<path d="M10 17l5-5-5-5M15 12H3M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>'),
  gear:sv('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
  check:sv('<path d="M5 12l5 5 9-10"/>',3), play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>',
  back:sv('<path d="M15 5l-7 7 7 7"/>',2.4), sync:sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>'),
@@ -428,7 +429,7 @@ var I={
 };
 
 // ---------- petits blocs ----------
-function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions"><button class="ibtn account-status" type="button" data-account-menu title="Connecté à Strava · Se déconnecter" aria-label="Connecté à Strava, se déconnecter"><span class="account-user-icon" aria-hidden="true">'+sv('<circle cx="12" cy="8" r="3.5"/><path d="M5 20v-1.5a7 7 0 0 1 14 0V20z"/>')+'</span><i class="account-online" aria-hidden="true"></i></button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
+function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions"><span class="account-status" role="status" aria-label="Connecté à Strava"><span class="account-initials">'+esc(window.CADENZO_USER_INITIALS||"??")+</span><i class="account-online" aria-hidden="true"></i></span><button class="ibtn account-logout" type="button" data-account-logout title="Se déconnecter" aria-label="Se déconnecter">I.logout</button><button class="ibtn" data-go="settings" aria-label="Réglages">I.gear</button></div></div>';}
 function todoBtn(key,label,store){var st=store||D.todo, on=!!st[key]; return '<button class="todo" data-todo="'+esc(key)+'"'+(store?' data-store="kit"':'')+' aria-pressed="'+on+'"><span class="box">'+(on?I.check:"")+'</span><span class="t">'+label+'</span></button>';}
 function woFor(s,wk){ // séance guidée proposée sur toute séance de renfo ou de mobilité
   if(!window.WORKOUT)return "";
