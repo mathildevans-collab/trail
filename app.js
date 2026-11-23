@@ -1708,6 +1708,8 @@ function checkUpdate(){
 
 // ---------- synchro entre appareils (données chiffrées, sans compte ; voir csync.js) ----------
 var GKEY=userKey("cadenzo-gsync"), GS=null, GBUSY2=false, GT=null, ADOPT=false, GTRY=0;
+// Migration unique de l’ancienne clé globale vers le premier compte connecté, sans la partager aux suivants.
+try{var legacyOwner=localStorage.getItem("cadenzo-gsync-owner"); if(!legacyOwner){var legacySync=localStorage.getItem("cadenzo-gsync"); if(legacySync){localStorage.setItem(GKEY,legacySync);localStorage.removeItem("cadenzo-gsync");localStorage.setItem("cadenzo-gsync-owner",USER_ID);}}}catch(e){}
 try{var g0=JSON.parse(localStorage.getItem(GKEY)||"null"); if(g0&&g0.id&&g0.key&&g0.sb)GS=g0;}catch(e){} // sans .sb : ancienne liaison jsonblob, à refaire
 function gsave(){try{localStorage.setItem(GKEY,JSON.stringify(GS));}catch(e){}}
 function normShared(st){var c=JSON.parse(JSON.stringify(st)), v=SAFE.validate(c); return CSYNC.shared(v.ok?v.state:c);}
