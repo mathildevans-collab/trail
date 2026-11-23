@@ -1166,7 +1166,7 @@ function sheetAct(a,b){
     var r=raceById(SH.rid), E=D.edits[r.id]||(D.edits[r.id]={}), w=SH.w, ek=w+"-"+SH.k;
     if(a==="restoreses"){delete E[ek]; save(); closeSheet(); toast("Séance d’origine rétablie.",U); render(true); return;}
     if(a==="delses"){if(SH.added)delete E[ek]; else E[ek]={del:true}; delete D.done[sk(r,w,SH.k)]; delete D.actual[sk(r,w,SH.k)]; save(); closeSheet(); toast("Séance supprimée.",U); render(true); return;}
-    var type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:base.txt||"",tag:tagOf(type)};
+    var baseSess=SH.k?sessByKey(planOf(r).weeks[w-1],SH.k):null, type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:baseSess&&baseSess.txt||"",tag:tagOf(type)};
     if(SH.k&&!SH.added){var keep=E[ek]; delete E[ek]; PC={}; var orig=sessByKey(planOf(r).weeks[w-1],SH.k); PC={};
       if(orig){var diff={}; ["dow","type","km","dp","txt"].forEach(function(f){if(o[f]!==orig[f])diff[f]=o[f];}); if(diff.type){diff.tag=o.tag;} if(Object.keys(diff).length)E[ek]=diff;} else if(keep)E[ek]=keep;}
     else E[w+"-"+(SH.k||("x"+Date.now().toString(36)))]=o;
