@@ -11,40 +11,27 @@ function screen(message,buttonText,action){
   if(!style){
     style=document.createElement("style");style.id="cadenzo-auth-style";
     style.textContent=`
-      #view:has(.auth-page){max-width:none;min-height:100svh;padding:0;background:#f3f4f0}
-      .auth-page{position:relative;isolation:isolate;min-height:100svh;display:flex;align-items:center;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 22px calc(28px + env(safe-area-inset-bottom));overflow:hidden;background:radial-gradient(ellipse at 90% 8%,rgba(226,167,46,.16),transparent 32%),radial-gradient(ellipse at 0% 92%,rgba(47,93,70,.13),transparent 34%),#f3f4f0}
-      .auth-page:before,.auth-page:after{content:"";position:absolute;z-index:-1;border:1px solid rgba(47,93,70,.12);border-radius:50%;width:320px;height:320px;right:-190px;top:18%;box-shadow:0 0 0 28px rgba(47,93,70,.025),0 0 0 58px rgba(47,93,70,.02)}
-      .auth-page:after{width:240px;height:240px;right:auto;left:-170px;top:auto;bottom:8%}
-      .auth-wrap{width:min(100%,440px);margin:auto}
-      .auth-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 28px}
-      .auth-logo{width:66px;height:66px;border-radius:21px;object-fit:cover;box-shadow:0 8px 24px rgba(31,62,46,.16)}
-      .auth-brand-name{font:800 34px/1 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-1.3px;color:#203b2d}
-      .auth-brand-sub{font:700 10px/1.4 "Hanken Grotesk",sans-serif;letter-spacing:2px;text-transform:uppercase;color:#718076;margin-top:5px}
-      .auth-panel{position:relative;background:rgba(255,255,252,.94);border:1px solid rgba(35,63,47,.1);border-radius:30px;padding:30px 24px 24px;box-shadow:0 22px 70px rgba(32,53,40,.11),0 2px 8px rgba(32,53,40,.04);backdrop-filter:blur(16px)}
-      .auth-kicker{display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:7px 11px;background:#e5eee7;color:#2f5d46;font:700 11px "Hanken Grotesk",sans-serif;letter-spacing:.7px;text-transform:uppercase;margin-bottom:18px}
-      .auth-kicker i{width:7px;height:7px;border-radius:50%;background:#e2a72e}
-      .auth-title{font:800 clamp(30px,8vw,39px)/1.04 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-1.2px;color:#1d2c23;margin:0 0 12px}
-      .auth-copy{font:500 15px/1.55 "Hanken Grotesk",sans-serif;color:#657168;margin:0 0 24px}
-      .auth-visual{height:94px;border-radius:18px;background:linear-gradient(115deg,#244a36,#37664b);margin:0 0 22px;position:relative;overflow:hidden;display:flex;align-items:center;padding:16px 18px;color:white}
-      .auth-visual:after{content:"";position:absolute;width:170px;height:170px;border:1px solid rgba(255,255,255,.19);border-radius:50%;right:-18px;top:-66px;box-shadow:0 0 0 20px rgba(255,255,255,.045),0 0 0 42px rgba(255,255,255,.035)}
-      .auth-visual svg{width:100%;height:100%;position:absolute;inset:0;opacity:.7}
-      .auth-visual-label{position:relative;z-index:1;font:700 11px "Hanken Grotesk",sans-serif;letter-spacing:1.5px;text-transform:uppercase;color:#e8c66d}
-      .auth-visual strong{display:block;font:700 17px "Bricolage Grotesque",sans-serif;letter-spacing:.1px;color:white;margin-top:3px}
-      .auth-connect{width:100%;min-height:58px;border:0!important;border-radius:17px!important;background:#fc4c02!important;color:#fff!important;font:800 16px "Hanken Grotesk",sans-serif!important;box-shadow:0 8px 18px rgba(252,76,2,.22);display:flex;align-items:center;justify-content:center;gap:11px;transition:transform .18s,box-shadow .18s}
-      .auth-connect:active{transform:scale(.985);box-shadow:0 4px 10px rgba(252,76,2,.18)}
+      #view:has(.auth-page){max-width:none;min-height:100svh;padding:0;background:#101512}
+      .auth-page{position:relative;isolation:isolate;min-height:100svh;display:flex;align-items:center;justify-content:center;padding:calc(28px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));overflow:hidden;background:radial-gradient(ellipse at 50% 35%,rgba(49,91,66,.28),transparent 48%),#101512;color:#f4f6f2}
+      .auth-page:before{content:"";position:absolute;z-index:-1;width:420px;height:420px;border:1px solid rgba(153,188,157,.09);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 34px rgba(153,188,157,.025),0 0 0 72px rgba(153,188,157,.018)}
+      .auth-wrap{width:min(100%,360px);margin:auto;text-align:center}
+      .auth-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 12px}
+      .auth-logo{width:54px;height:54px;border-radius:17px;object-fit:cover;box-shadow:0 8px 28px rgba(0,0,0,.3)}
+      .auth-brand-name{font:800 39px/1 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-1.8px;color:#f3f5f0}
+      .auth-tagline{margin:0 0 42px;color:#9aa89d;font:500 14px "Hanken Grotesk",sans-serif;letter-spacing:.2px}
+      .auth-login{padding:0}
+      #auth-message{min-height:0;margin:0 0 14px;color:#c2ccc4;font:500 13px/1.5 "Hanken Grotesk",sans-serif}
+      #auth-message:empty{display:none}
+      .auth-connect{width:100%;min-height:56px;border:0!important;border-radius:15px!important;background:#fc4c02!important;color:#fff!important;font:800 15px "Hanken Grotesk",sans-serif!important;box-shadow:0 9px 28px rgba(252,76,2,.18);display:flex;align-items:center;justify-content:center;gap:11px;transition:transform .18s,filter .18s}
+      .auth-connect:active{transform:scale(.985);filter:brightness(.94)}
       .auth-strava-mark{font:900 20px Arial,sans-serif;letter-spacing:-1.4px}
-      .auth-perks{display:grid;gap:12px;margin:22px 2px 0}
-      .auth-perk{display:flex;align-items:center;gap:11px;color:#536158;font:600 13px "Hanken Grotesk",sans-serif}
-      .auth-perk-icon{width:29px;height:29px;border-radius:10px;background:#e8efe9;color:#2f5d46;display:grid;place-items:center;flex:none}
-      .auth-perk-icon svg{width:15px;height:15px}
-      .auth-foot{margin:20px 0 0;text-align:center;color:#879188;font:500 11px/1.5 "Hanken Grotesk",sans-serif}
-      .auth-foot b{color:#647368;font-weight:700}
-      @media(max-width:380px){.auth-panel{padding:25px 19px 21px;border-radius:25px}.auth-brand{margin-bottom:22px}.auth-logo{width:58px;height:58px}.auth-brand-name{font-size:31px}}
+      .auth-foot{margin:18px 0 0;color:#718078;font:500 11px "Hanken Grotesk",sans-serif;letter-spacing:.2px}
+      @media(max-width:380px){.auth-logo{width:49px;height:49px}.auth-brand-name{font-size:35px}.auth-tagline{margin-bottom:34px}}
       @media(prefers-reduced-motion:reduce){.auth-connect{transition:none}}
-    `;
+    `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=63" alt="Logo Cadenzo"><div><div class="auth-brand-name">cadenzo</div><div class="auth-brand-sub">Trouve ton rythme. Va plus loin.</div></div></div><div class="auth-panel"><div class="auth-kicker"><i></i> Ton espace running & trail</div><h1 class="auth-title">Chaque sortie<br>te rapproche.</h1><p class="auth-copy">Retrouve ton entraînement, tes statistiques et tes performances dans un espace pensé pour ta progression.</p><div class="auth-visual"><svg viewBox="0 0 390 100" preserveAspectRatio="none" fill="none"><path d="M-10 76 C38 72 46 22 88 38 S140 91 178 57 231 12 268 40 330 85 402 19" stroke="white" stroke-width="2" stroke-dasharray="5 7" opacity=".7"/><circle cx="178" cy="57" r="4" fill="#e2a72e"/><circle cx="268" cy="40" r="4" fill="#e2a72e"/></svg><div><div class="auth-visual-label">Ton terrain. Tes données.</div><strong>Une progression qui te ressemble.</strong></div></div><p id="auth-message" role="status" style="font-size:13px;color:#657168;margin:0 0 12px;text-align:center"></p><button id="auth-action" class="btn primary auth-connect"></button><div class="auth-perks"><div class="auth-perk"><span class="auth-perk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5 9.5 17 19 7.5"/></svg></span> Tes activités Run et TrailRun synchronisées</div><div class="auth-perk"><span class="auth-perk-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span> Un compte privé, tes données restent les tiennes</div></div></div><p class="auth-foot">Connexion sécurisée via <b>Strava</b> · Tu gardes le contrôle de tes autorisations</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=63" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Ton espace running &amp; trail.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
   var button=document.getElementById("auth-action");button.innerHTML='<span class="auth-strava-mark">S</span><span>'+buttonText+'</span>';button.addEventListener("click",action);
 }
@@ -64,14 +51,15 @@ function loadApp(user){
   };
   if(window.SAFE&&SAFE.setUser)SAFE.setUser(user.id);
   tabs.hidden=false;
-  var status=document.createElement("div");
-  status.id="cadenzo-account";
-  status.style.cssText="position:fixed;z-index:40;top:calc(10px + env(safe-area-inset-top));right:12px;display:flex;align-items:center;gap:9px;padding:6px 7px 6px 10px;border:1px solid rgba(47,93,70,.14);border-radius:999px;background:rgba(251,251,248,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 5px 22px rgba(25,45,33,.12);font:600 12px system-ui;color:#263b2d;max-width:calc(100vw - 24px)";
-  status.innerHTML='<span style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#e3ece6;color:#2f5d46;font-size:13px;font-weight:800">✓</span><span style="display:flex;flex-direction:column;line-height:1.1;min-width:0"><span style="font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#77857b;font-weight:800">Session</span><span style="font-size:12px;font-weight:800;white-space:nowrap">Connecté à Strava</span></span><span style="width:6px;height:6px;border-radius:50%;background:#2f9b60;box-shadow:0 0 0 3px #dcefe3;margin:0 5px 0 2px"></span><button type="button" aria-label="Se déconnecter" title="Se déconnecter" style="border:0;border-radius:50%;width:30px;height:30px;background:#f0f2ed;color:#58645b;font-size:16px;display:grid;place-items:center">↪</button>';
-  status.querySelector("button").addEventListener("click",function(){if(confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
-  document.body.appendChild(status);
-  var script=document.createElement("script");script.src="app.js?v=93";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+  client.from("cadenzo_profiles").select("display_name").eq("user_id",user.id).maybeSingle().then(function(result){
+    var name=result.data&&result.data.display_name||"";
+    var parts=name.trim().split(/\\s+/).filter(Boolean);
+    window.CADENZO_USER_INITIALS=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts.length?parts[0].slice(0,2).toUpperCase():"";
+  }).catch(function(){window.CADENZO_USER_INITIALS="";}).then(function(){
+    var script=document.createElement("script");script.src="app.js?v=94";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+  });
 }
+document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("[data-account-menu]"):null;if(target&&window.CadenzoAuth&&confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
 function start(){
   var params=new URLSearchParams(location.search),tokenHash=params.get("token_hash"),type=params.get("type");
   if(params.has("strava_error")){var err=params.get("strava_error");history.replaceState({},document.title,location.pathname);showError(err||"La connexion Strava a échoué.");return;}
