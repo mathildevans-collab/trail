@@ -27,13 +27,16 @@ function tagOf(t){return QT[t]?"q":LT[t]?"l":"e";}
 
 // ---------- état ----------
 function thpRace(){return {id:"thp40",name:"THP40",full:"Trail de Haute Provence",place:"Forcalquier",date:"2027-05-08",time:"08:00",km:38.8,dp:1279,goal:295,prio:"A",builtin:true,start:"2026-11-09"};}
-function blank(){return {v:3,races:[],active:null,focus:null,done:{},undone:{},actual:{},ci:{},adj:{},edits:{},tseen:"",kit:{},todo:{},
+var OWNER_USER_ID="73faf8ae-c637-4161-8f66-4aef8c67d88c";
+function blank(){return {v:3,ownerId:USER_ID,races:[],active:null,focus:null,done:{},undone:{},actual:{},ci:{},adj:{},edits:{},tseen:"",kit:{},todo:{},
   set:{theme:"auto",gel:35,water:15,vib:true,checkin:true,fake:""},race:null,practice:null,results:{},sync:{t:0,upd:"",err:"",gh:""}};}
 var OBJ={set:1,sync:1};
 function assignState(n,o){for(var k in n){if(o[k]==null)continue; if(OBJ[k]&&typeof o[k]==="object")Object.assign(n[k],o[k]); else n[k]=o[k];} return n;}
 var LOADNOTE="", SEEN="";
 function parseKey(k){try{var r=JSON.parse(localStorage.getItem(k)||"null"); return r&&typeof r==="object"&&!Array.isArray(r)?r:null;}catch(e){return null;}}
-function fromRaw(r){ // valide sans jamais tout jeter : les entrées invalides sont écartées
+function fromRaw(r){ // refuse explicitement toute sauvegarde provenant d’un autre compte
+  if(r.ownerId&&r.ownerId!==USER_ID)return blank();
+  if(!r.ownerId&&USER_ID!==OWNER_USER_ID)return blank();
   var v=window.SAFE?SAFE.validate(r):{ok:false}; if(v.ok){r=v.state; if(!r.races||!r.races.length)delete r.races;} return assignState(blank(),r);}
 function load(){
   var raw=null; try{raw=localStorage.getItem(KEY);}catch(e){}
@@ -43,8 +46,10 @@ function load(){
     r=parseKey(KEY+".prev"); if(r)LOADNOTE="prev";
   }
   if(r){SEEN=raw||""; return fromRaw(r);}
-  try{var old=JSON.parse(localStorage.getItem(OLDKEY)||"null"); if(old&&typeof old==="object")return migrate(old,blank());}catch(e){}
-  try{var v1=JSON.parse(localStorage.getItem(userKey("thp40-state"))||"null"); if(v1&&typeof v1==="object"){var kit=null; try{kit=JSON.parse(localStorage.getItem(userKey("thp40-kit"))||"null");}catch(e){} if(kit&&typeof kit==="object")v1.kit=kit; return migrate(v1,blank());}}catch(e){}
+  if(USER_ID===OWNER_USER_ID){
+    try{var old=JSON.parse(localStorage.getItem(OLDKEY)||"null"); if(old&&typeof old==="object")return migrate(old,blank());}catch(e){}
+    try{var v1=JSON.parse(localStorage.getItem(userKey("thp40-state"))||"null"); if(v1&&typeof v1==="object"){var kit=null; try{kit=JSON.parse(localStorage.getItem(userKey("thp40-kit"))||"null");}catch(e){} if(kit&&typeof kit==="object")v1.kit=kit; return migrate(v1,blank());}}catch(e){}
+  }
   return blank();
 }
 function migrate(o,n){
@@ -62,6 +67,7 @@ function migrate(o,n){
 }
 var D=load(), VER=0;
 function save(){
+  D.ownerId=USER_ID;
   VER++; var cur=null; try{cur=localStorage.getItem(KEY);}catch(e){}
   if(cur&&SEEN&&cur!==SEEN&&window.SAFE){ // une autre fenêtre a écrit entre-temps : on fusionne au lieu d’écraser
     try{var o=JSON.parse(cur); var v=SAFE.validate(o); if(v.ok){D=assignState(blank(),SAFE.merge(D,v.state).state); MC={}; PC={};}}catch(e){}
@@ -1717,8 +1723,7 @@ function checkUpdate(){
 
 // ---------- synchro entre appareils (données chiffrées, sans compte ; voir csync.js) ----------
 var GKEY=userKey("cadenzo-gsync"), GS=null, GBUSY2=false, GT=null, ADOPT=false, GTRY=0;
-// Migration unique de l’ancienne clé globale vers le premier compte connecté, sans la partager aux suivants.
-try{var legacyOwner=localStorage.getItem("cadenzo-gsync-owner"); if(!legacyOwner){var legacySync=localStorage.getItem("cadenzo-gsync"); if(legacySync){localStorage.setItem(GKEY,legacySync);localStorage.removeItem("cadenzo-gsync");localStorage.setItem("cadenzo-gsync-owner",USER_ID);}}}catch(e){}
+// Sécurité multi-comptes : aucune ancienne liaison globale n’est importée automatiquement.
 try{var g0=JSON.parse(localStorage.getItem(GKEY)||"null"); if(g0&&g0.id&&g0.key&&g0.sb)GS=g0;}catch(e){} // sans .sb : ancienne liaison jsonblob, à refaire
 function gsave(){try{localStorage.setItem(GKEY,JSON.stringify(GS));}catch(e){}}
 function normShared(st){var c=JSON.parse(JSON.stringify(st)), v=SAFE.validate(c); return CSYNC.shared(v.ok?v.state:c);}
