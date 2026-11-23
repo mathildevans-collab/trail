@@ -780,3 +780,8 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .top-actions .account-logout{width:36px;height:36px;color:var(--muted);border-radius:50%;border:1px solid var(--line);background:var(--card);cursor:pointer}
 .top-actions .account-logout svg{width:17px;height:17px}
 .top-actions .account-logout:disabled{opacity:.55}
+
+/* Centrage strict des initiales dans le médaillon de profil */
+.top-actions .account-status{position:relative;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;box-sizing:border-box;overflow:visible}
+.top-actions .account-status .account-initials{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0;padding:0;text-align:center;line-height:1;transform:none!important;pointer-events:none}
+.top-actions .account-status .account-online{z-index:2}
