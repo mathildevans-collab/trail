@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=117;
+var APPV=118;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -523,17 +523,26 @@ function vToday(){
 var COTES={}; try{COTES=JSON.parse(localStorage.getItem(userKey("cadenzo-cotes"))||"{}")||{};}catch(e){}
 var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStorage.getItem(userKey("cadenzo-ct"))||"{}"));}catch(e){}
 function ctSave(){try{localStorage.setItem(userKey("cadenzo-ct"),JSON.stringify(CTS));}catch(e){}}
-function cotesList(){ // côtes du lieu choisi, les plus anciennes (ou jamais faites) d'abord
-  var ids=Object.keys(COTES); if(!ids.length)return null; if(!COTES[CTS.l])CTS.l=ids[0]; var cur=CTS.l;
-  var L=COTES[cur], last={}, best={}, src=(L.items||[]), nom=L.nom;
-  if(CTS.pos){ // autour de toi : toutes les côtes connues, les plus proches d’abord (10 km)
-    var seen={}, bd=1e9, bn=""; src=[];
-    var pool=COTES["strava-cache"]?[COTES["strava-cache"]]:ids.map(function(id){return COTES[id];}); pool.forEach(function(o){(o.items||[]).forEach(function(c){if(seen[c.i]||c.la==null)return;var d=ctHav(CTS.pos.la,CTS.pos.ln,c.la,c.ln);if(d<=10){seen[c.i]=1;src.push(c);if(d<bd){bd=d;bn=o.nom;}}});});
-    if(!src.length)return {nom:CTS.city||"Ma position",items:[],far:true}; nom=CTS.city||bn;
-  }
-  HIST.forEach(function(r){(r.sg||[]).forEach(function(e){if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date; if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;});});
-  var it=src.map(function(c){var l=last[c.i]||"", age=l?Math.min(60,Math.round((Date.parse(isoToday())-Date.parse(l))/864e5)):60, k=ctDist(c); return {c:c,last:l,p:best[c.i]||0,sc:age/10-(k==null?0:k)};});
-  it.sort(function(a,b){return (b.last?Date.parse(b.last):0)-(a.last?Date.parse(a.last):0)||b.c.e-a.c.e||b.c.g-a.c.g||String(a.c.n).localeCompare(String(b.c.n));});
+function cotesList(){ // liste de référence partagée ; GPS utilisé uniquement pour afficher la proximité
+  var ids=Object.keys(COTES); if(!ids.length)return null;
+  var shared=COTES["strava-cache"], cur=CTS.l;
+  if(!COTES[cur]){cur=shared?"strava-cache":ids[0];CTS.l=cur;}
+  var L=shared||COTES[cur], last={}, best={}, src=L.items||[], nom=CTS.city||L.nom||"Segments proposés";
+  HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
+    if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date;
+    if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;
+  });});
+  var it=src.filter(function(c){return c&&c.i;}).map(function(c){
+    return {c:c,last:last[c.i]||"",p:best[c.i]||0};
+  });
+  // Priorité aux segments jamais réalisés, puis à ceux réalisés le plus anciennement.
+  // Les caractéristiques du segment départagent les égalités de façon identique sur chaque appareil.
+  it.sort(function(a,b){
+    var ad=a.last?Date.parse(a.last):0, bd=b.last?Date.parse(b.last):0;
+    return ad-bd || (+b.c.e||0)-(+a.c.e||0) || (+b.c.g||0)-(+a.c.g||0) ||
+      (+a.c.d||0)-(+b.c.d||0) || String(a.c.n||"").localeCompare(String(b.c.n||"")) ||
+      String(a.c.i).localeCompare(String(b.c.i));
+  });
   return {nom:nom,items:it};
 }
 function ctAgo(d){if(!d)return "Jamais faite"; var n=Math.round((Date.parse(isoToday())-Date.parse(d))/864e5); return n<14?"Il y a "+n+" j":"Il y a "+Math.round(n/7)+" sem.";}
@@ -1513,7 +1522,10 @@ function sync(manual){
     if(Array.isArray(j.cotes)){
        var shared=[],seenShared={}; j.cotes.forEach(function(x){if(x&&x.i&&!seenShared[x.i]){shared.push(x);seenShared[x.i]=1;}});
        COTES["strava-cache"]={nom:CTS.city||"Segments partagés",items:shared,updated:j.updated||new Date().toISOString()};
-       CTS.off=0;CTS.open=false;ctSave();
+       var totalShared=shared.length;
+       if(totalShared<=3)CTS.off=0;
+       else CTS.off=Math.min(Math.max(0,Math.floor((+CTS.off||0)/3)*3),Math.floor((totalShared-1)/3)*3);
+       ctSave();
        try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
      }
     var n=applyActs(runs);
