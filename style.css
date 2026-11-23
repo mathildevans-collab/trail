@@ -789,3 +789,10 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 /* Photo de profil Strava dans le médaillon connecté */
 .top-actions .account-status .account-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
 .top-actions .account-status .account-photo[hidden]{display:none}
+
+/* La photo Strava remplit le médaillon ; le fallback initiales reste masqué */
+.top-actions .account-status{overflow:hidden!important;background:transparent!important;padding:0!important}
+.top-actions .account-status .account-photo{z-index:1;width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.top-actions .account-status .account-initials[hidden]{display:none!important}
+.top-actions .account-status .account-initials:not([hidden]){z-index:1}
+.top-actions .account-status .account-online{z-index:3}
