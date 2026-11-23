@@ -58,7 +58,7 @@ function loadApp(user){
         var session=r.data&&r.data.session;
         if(!session)throw new Error("Session expirée. Reconnecte-toi.");
         return fetch(FUNCTION_URL+"?action=sync",{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"},cache:"no-store"});
-      }).then(function(r){return r.json().then(function(data){if(!r.ok)throw new Error(data.error||("Erreur "+r.status));return data;});});
+      }).then(function(r){return r.json().then(function(data){if(!r.ok){var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";error.retryAfter=data.retryAfter||0;error.retryAt=data.retryAt||null;throw error;}return data;});});
     },
     signOut:function(){return client.auth.signOut().then(function(){location.reload();});}
   };
@@ -70,7 +70,7 @@ function loadApp(user){
   status.innerHTML='<span style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#e3ece6;color:#2f5d46;font-size:13px;font-weight:800">✓</span><span style="display:flex;flex-direction:column;line-height:1.1;min-width:0"><span style="font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#77857b;font-weight:800">Session</span><span style="font-size:12px;font-weight:800;white-space:nowrap">Connecté à Strava</span></span><span style="width:6px;height:6px;border-radius:50%;background:#2f9b60;box-shadow:0 0 0 3px #dcefe3;margin:0 5px 0 2px"></span><button type="button" aria-label="Se déconnecter" title="Se déconnecter" style="border:0;border-radius:50%;width:30px;height:30px;background:#f0f2ed;color:#58645b;font-size:16px;display:grid;place-items:center">↪</button>';
   status.querySelector("button").addEventListener("click",function(){if(confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
   document.body.appendChild(status);
-  var script=document.createElement("script");script.src="app.js?v=92";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+  var script=document.createElement("script");script.src="app.js?v=93";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
 }
 function start(){
   var params=new URLSearchParams(location.search),tokenHash=params.get("token_hash"),type=params.get("type");
