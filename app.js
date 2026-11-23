@@ -621,7 +621,7 @@ function vPrep(r,pl){
   var h=header(fmtL(todayUTC())+" · "+jx(r),isToday?"Aujourd’hui":fmtL(selD))+banners();
   if(ti<0&&!browsing)h+='<div class="banner">Ton plan '+esc(r.name)+' démarre le '+fmtL(pl.start).toLowerCase()+', dans '+(-ti)+' jour'+(-ti>1?"s":"")+'.</div>';
   var nw=nowWeek(pl);
-  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>‹</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+' · '+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>›</button></div>';
+  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>‹</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>›</button></div>';
   if(browsing&&cur!==nw)h+='<div class="banner mini"><span>'+(cur<nw?'Semaine passée':'Semaine à venir')+'</span><button data-act="now">Aujourd’hui</button></div>';
   h+='<div class="strip" role="group" aria-label="Jours de la semaine">';
   for(var i=0;i<7;i++){var s0=sessAt(wk,i), dn=s0&&D.done[sk(r,cur,s0.k)], tdy=cur===tw&&i===td;
@@ -644,7 +644,7 @@ function sessionHero(r,pl,wk,s){
   var tags=[]; if(isB)tags.push("Course B"); if(s.adjusted&&wk.adjLabel)tags.push(wk.adjLabel); if(s.cw)tags.push("⚠ Sortie club complète déconseillée"); if(s.rbd)tags.push("Ajustée : "+kmS(s.rbFrom)+" → "+kmS(s.km)+" km"); if(s.edited)tags.push(s.added?"Ajoutée par toi":"Modifiée par toi"); if(s.club)tags.push("Club : 15 km, 2 h, +500 m min.");
   if(tags.length)h+='<div class="tagline">'+tags.map(function(t){return '<span class="chip'+(t.indexOf("⚠")===0?' acc':'')+'">'+esc(t)+'</span>';}).join("")+'</div>';
   h+='<div class="facts num">'+(s.km?'<span>'+kmS(s.km)+' km</span>':'')+(s.dp?'<span>+'+nb(s.dp)+' m</span>':'')+(z?'<span>'+esc(z)+'</span>':'')+(ed&&s.type.indexOf("Club")<0?'<span>≈ '+dur(ed)+'</span>':'')+'</div>';
-  if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<details><summary>Consignes complètes</summary><div class="in"><p>'+esc(s.txt)+'</p></div></details>':'');
+  if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<p class="session-note">'+esc(s.txt)+'</p>':'');
   else if(s.txt)h+='<p>'+esc(s.txt)+'</p>';
   var a=adjFor(pl,wk.n); if(a&&a.mode==="z2"&&(s.tag==="e"||s.tag==="l"))h+='<p><b>Zone 2 stricte cette semaine :</b> reste sous 150 bpm.</p>';
   if(s.race)return h+'<button class="btn" data-go="today-race">'+I.play+' Voir le jour J</button></div>';
@@ -661,7 +661,7 @@ function bilanCard(r,pl,wk,sel,selD){
   var ttl=selD===t?"Bilan du jour":"Bilan de "+DOWL[sel];
   if(s&&ac){
     var rv=review(pl.m,s,ac), b=BADGE[rv.lvl];
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span>'+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(s.km)+'</i></i></span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(s.dp||0)+'</i></i></span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
+    return '<div class="card bilan-card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip '+b[0]+'">'+b[1]+'</span>'+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ac.km)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(s.km)+'</i></i></span></div><div class="stat"><b>+'+nb(ac.dp||0)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(s.dp||0)+'</i></i></span></div><div class="stat"><b>'+(ac.t?mmss(ac.t/ac.km):"–")+'</b><span>/km'+(ac.t?" · "+dur(ac.t):"")+'</span></div></div>'+pvBars(pl,s,ac)+'<p class="small" style="margin:10px 0 0">'+esc(rv.lines.join(" "))+'</p></div>';
   }
   if(ex){
     var di=iso(selD), hr=0, hn=0; HIST.forEach(function(q){if(q.date===di&&q.hr>0){hr+=q.hr*q.km;hn+=q.km;}}); hr=hn?hr/hn:0;
@@ -673,10 +673,10 @@ function bilanCard(r,pl,wk,sel,selD){
     if(ex.km>=10){lvl=1;}
     if(wk.rb&&wk.rb.items&&wk.rb.items.length&&!wk.rbOff)L.push("Le reste de ta semaine a été ajusté en conséquence.");
     var bd=BADGE[lvl]; var chip=lvl?'<span class="chip warn">Hors plan</span>':'<span class="chip off">Hors plan</span>';
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2>'+chip+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ex.km)+'</b><span>km · non prévu</span></div><div class="stat"><b>+'+nb(ex.dp||0)+'</b><span>m</span></div><div class="stat"><b>'+(ex.t?mmss(ex.t/ex.km):"–")+'</b><span>/km'+(ex.t?" · "+dur(ex.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(L.join(" "))+'</p></div>';
+    return '<div class="card bilan-card"><div class="verdict"><h2>'+ttl+'</h2>'+chip+medalBadge(selD)+'</div><div class="stats num"><div class="stat"><b>'+kmS(ex.km)+'</b><span>km · non prévu</span></div><div class="stat"><b>+'+nb(ex.dp||0)+'</b><span>m</span></div><div class="stat"><b>'+(ex.t?mmss(ex.t/ex.km):"–")+'</b><span>/km'+(ex.t?" · "+dur(ex.t):"")+'</span></div></div><p class="small" style="margin:10px 0 0">'+esc(L.join(" "))+'</p></div>';
   }
   if(s&&!ac&&selD<t&&!s.race&&s.km>0&&!D.done[sk(r,wk.n,s.k)]){
-    return '<div class="card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip off">Non faite</span></div><p class="small" style="margin:8px 0 0">Aucune sortie reçue de Strava ce jour-là pour « '+esc(s.type)+' ». '+(s.club||s.type.indexOf("Club")===0?'Si tu y es allée sans enregistrer, marque-la faite depuis la séance.':'Si tu l’as faite sans Strava, marque-la faite depuis la séance. Sinon, ne la rattrape pas d’un coup : le plan s’adapte.')+'</p></div>';
+    return '<div class="card bilan-card"><div class="verdict"><h2>'+ttl+'</h2><span class="chip off">Non faite</span></div><p class="small" style="margin:8px 0 0">Aucune sortie reçue de Strava ce jour-là pour « '+esc(s.type)+' ». '+(s.club||s.type.indexOf("Club")===0?'Si tu y es allée sans enregistrer, marque-la faite depuis la séance.':'Si tu l’as faite sans Strava, marque-la faite depuis la séance. Sinon, ne la rattrape pas d’un coup : le plan s’adapte.')+'</p></div>';
   }
   return "";
 }
@@ -708,7 +708,7 @@ function weekMeter(r,pl,wk,td){
 }
 function weekCard(r,pl,wk,s,noMeter){
   var t0=weekTot(r,wk,6), pk=t0.pk, ak=t0.ak, pd=t0.pd, ad=t0.ad;
-  var h=noMeter?'<div class="card"><div>':'<div class="card"><h2>Ta semaine</h2><div class="sb num small" style="margin-bottom:6px"><span>'+kmS(ak)+' / '+kmS(pk)+' km</span><span class="muted">'+nb(ad)+' / '+nb(pd)+' m D+</span></div><div class="bar"><i style="width:'+Math.min(100,pk?ak/pk*100:0)+'%"></i></div><div style="margin-top:8px">';
+  var h=noMeter?'<div class="card week-card"><div>':'<div class="card week-card"><h2>Ta semaine</h2><div class="sb num small" style="margin-bottom:6px"><span>'+kmS(ak)+' / '+kmS(pk)+' km</span><span class="muted">'+nb(ad)+' / '+nb(pd)+' m D+</span></div><div class="bar"><i style="width:'+Math.min(100,pk?ak/pk*100:0)+'%"></i></div><div style="margin-top:8px">';
   h+='<details class="more"'+(MOREOPEN?' open':'')+'><summary><span>Plus pour aujourd’hui<small>renfo · montre · boucles</small></span></summary>';
   var t=todayUTC(), rf=null; wk.s.forEach(function(x){if(x.renfo&&!rf&&sessDate(pl,wk.n,x)>=t)rf=x;}); if(!rf)wk.s.forEach(function(x){if(x.renfo&&!rf)rf=x;});
   if(rf){var R0=RENFO[rf.renfo], dd=Math.round((sessDate(pl,wk.n,rf)-t)/DAY), parts=R0.name.split(" · "); h+='<button class="link" data-sheet="renfo:'+rf.renfo+'"><span class="ico">'+I.dumb+'</span><span class="tx"><b>'+esc(parts[0])+' '+(dd===0?"aujourd’hui":dd===1?"demain":DOWL[rf.dow])+'</b><small>'+esc(parts[1]||"")+' · '+woMin("renfo",rf.renfo)+' min · une chaise</small></span><span class="chev">›</span></button>';}
@@ -724,8 +724,8 @@ function checkinCard(r,pl,w){
   function scale(k,l,lo,hi){var h='<div class="ci-row"><span>'+l+'</span><div class="scale">'; for(var i=1;i<=5;i++)h+='<button data-ci="'+k+'" data-v="'+i+'" aria-pressed="'+(c[k]===i)+'">'+i+'</button>'; return h+'</div><div class="scalelab"><span>'+lo+'</span><span>'+hi+'</span></div></div>';}
   var dow=((ti%7)+7)%7, full=!!(c.f&&c.s), edit=dow===0||!(c.f||c.s), h;
   if(dow!==0&&(c.f||c.s))return "";
-  if(edit)h='<div class="card"><h2>Check-in du lundi</h2><p class="small muted" style="margin:0 0 10px">'+(dow===0?"10 secondes. Le coach ajuste la semaine avec tes réponses.":"Oublié lundi ? Tu peux le remplir maintenant.")+'</p>'+scale("f","Fatigue","fraîche","épuisée")+scale("s","Sommeil","mauvais","excellent")+(full?'<p class="small ci-ok" style="margin:8px 0 0"><span class="chip ok">✓ Enregistré</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>':(c.f||c.s?'<p class="small muted" style="margin:8px 0 0">Réponds aux deux pour que le coach ajuste.</p>':''));
-  else h='<div class="card"><h2>Check-in de la semaine</h2><p class="small" style="margin:0"><span class="chip ok">✓ Enregistré lundi</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>';
+  if(edit)h='<div class="card checkin-card"><h2>Check-in du lundi</h2><p class="small muted" style="margin:0 0 10px">'+(dow===0?"10 secondes. Le coach ajuste la semaine avec tes réponses.":"Oublié lundi ? Tu peux le remplir maintenant.")+'</p>'+scale("f","Fatigue","fraîche","épuisée")+scale("s","Sommeil","mauvais","excellent")+(full?'<p class="small ci-ok" style="margin:8px 0 0"><span class="chip ok">✓ Enregistré</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>':(c.f||c.s?'<p class="small muted" style="margin:8px 0 0">Réponds aux deux pour que le coach ajuste.</p>':''));
+  else h='<div class="card checkin-card"><h2>Check-in de la semaine</h2><p class="small" style="margin:0"><span class="chip ok">✓ Enregistré lundi</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>';
   if(a){var dec=a.mode==="light"||a.mode==="micro", B={normal:["ok","Semaine maintenue"],light:["warn","Semaine allégée proposée"],z2:["warn","Zone 2 stricte"],micro:["warn","Micro-récupération proposée"]}[a.mode];
     if(dec&&st==="on")B=["warn",a.mode==="light"?"Semaine allégée":"Micro-récupération"]; if(dec&&st==="off")B=["ok","Plan normal gardé"];
     h+='<p class="small" style="margin:6px 0 0"><span class="chip '+B[0]+'">'+B[1]+'</span></p><p class="small" style="margin:8px 0 0">'+esc(a.lead+" "+a.prop)+'</p>';
@@ -1032,7 +1032,7 @@ function editSession(w,k,dow){
   var h='<h2>'+(isNew?"Nouvelle séance":"Modifier la séance")+'</h2><p class="small muted" style="margin:-4px 0 10px">'+esc(r.name)+' · semaine '+w+' · '+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+'</p>';
   h+='<div class="fields"><label class="field">Jour<select id="eDow">'+DOWL.map(function(d,i){return '<option value="'+i+'"'+(i===base.dow?" selected":"")+'>'+d+' '+new Date(wk.start+i*DAY).getUTCDate()+'</option>';}).join("")+'</select></label><label class="field">Type<select id="eType">'+TYPELIST.concat(TYPELIST.indexOf(base.type)<0?[base.type]:[]).map(function(t){return '<option'+(t===base.type?" selected":"")+'>'+esc(t)+'</option>';}).join("")+'</select></label></div>';
   h+='<div class="fields"><label class="field">Km<input id="eKm" inputmode="decimal" value="'+(base.km?kmS(base.km):"0")+'"></label><label class="field">D+ (m)<input id="eDp" inputmode="numeric" value="'+(base.dp||0)+'"></label></div>';
-  h+='<label class="field" style="margin-bottom:12px">Consignes<textarea id="eTxt">'+esc(base.txt||"")+'</textarea></label><button class="btn primary" data-sact="saveses">Enregistrer</button>';
+  h+='<button class="btn primary" data-sact="saveses">Enregistrer</button>';
   if(!isNew)h+='<div class="row" style="margin-top:8px">'+(s.edited&&!s.added?'<button class="btn sm" data-sact="restoreses">Rétablir l’original</button>':'')+'<button class="btn sm danger" data-sact="delses">Supprimer la séance</button></div>';
   h+='<p class="muted xs" style="margin:10px 0 0">Seule cette séance change. Le coach compare tes sorties à ta version.</p>';
   openSheet(h,{kind:"ses",rid:r.id,w:w,k:k||null,added:!!(s&&s.added)});
@@ -1102,7 +1102,7 @@ function sheetAct(a,b){
     var r=raceById(SH.rid), E=D.edits[r.id]||(D.edits[r.id]={}), w=SH.w, ek=w+"-"+SH.k;
     if(a==="restoreses"){delete E[ek]; save(); closeSheet(); toast("Séance d’origine rétablie.",U); render(true); return;}
     if(a==="delses"){if(SH.added)delete E[ek]; else E[ek]={del:true}; delete D.done[sk(r,w,SH.k)]; delete D.actual[sk(r,w,SH.k)]; save(); closeSheet(); toast("Séance supprimée.",U); render(true); return;}
-    var type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:$("eTxt").value.trim(),tag:tagOf(type)};
+    var type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:base.txt||"",tag:tagOf(type)};
     if(SH.k&&!SH.added){var keep=E[ek]; delete E[ek]; PC={}; var orig=sessByKey(planOf(r).weeks[w-1],SH.k); PC={};
       if(orig){var diff={}; ["dow","type","km","dp","txt"].forEach(function(f){if(o[f]!==orig[f])diff[f]=o[f];}); if(diff.type){diff.tag=o.tag;} if(Object.keys(diff).length)E[ek]=diff;} else if(keep)E[ek]=keep;}
     else E[w+"-"+(SH.k||("x"+Date.now().toString(36)))]=o;
@@ -1333,7 +1333,7 @@ function weekEndCard(r,pl,ti){
   var w=nowWeek(pl), td=ti-(w-1)*7, hr=new Date().getHours(), tw=(td===0&&w>1)?w-1:0; if(!tw)return "";
   var wk=P(pl,tw), t=weekTot(r,wk,6), dn=weekDone(r,wk), ns=nSess(wk), pc=t.pk>0?Math.round(t.ak/t.pk*100):0;
   var badge=t.pk<=0?null:pc>=90&&pc<=115?["ok","Semaine réussie"]:pc>115?["warn","Semaine chargée"]:pc>=75?["warn","Un peu en dessous"]:["off","Semaine allégée"];
-  var h='<div class="card"><div class="verdict"><h2>Bilan de ta semaine '+tw+'</h2>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(Math.round(t.pk*10)/10)+'</i></i></span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(t.pd)+'</i></i></span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
+  var h='<div class="card week-end-card"><div class="verdict"><h2>Bilan de ta semaine '+tw+'</h2>'+(badge?'<span class="chip '+badge[0]+'">'+badge[1]+'</span>':'')+'</div><div class="stats num"><div class="stat"><b>'+kmS(Math.round(t.ak*10)/10)+'</b><span>km<i class=\"pvu\">prévu <i class=\"nw\">'+kmS(Math.round(t.pk*10)/10)+'</i></i></span></div><div class="stat"><b>+'+nb(t.ad)+'</b><span>m<i class=\"pvu\">prévu <i class=\"nw\">'+nb(t.pd)+'</i></i></span></div><div class="stat"><b>'+dn+'/'+ns+'</b><span>séances faites</span></div></div>';
   try{var S=formeSeries(); if(S&&S.pts.length>8){var q=S.pts[S.pts.length-1], q0=S.pts[S.pts.length-8], df=Math.round(q.f-q0.f), dz=Math.round(q.z);
     h+='<p class="small" style="margin:10px 0 0">'+(Math.abs(df)<1?'Forme stable sur la semaine':'Forme '+(df>0?'+':'−')+Math.abs(df)+' sur la semaine')+' · fraîcheur '+(dz>=0?'+':'−')+Math.abs(dz)+'.</p>';}}catch(e){}
   var nx=tw<pl.n?P(pl,tw+1):null;
