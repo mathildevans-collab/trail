@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=115;
+var APPV=116;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -544,7 +544,7 @@ function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5
 function cotesCard(){
   var L=cotesList();
   if(!L||!Array.isArray(L.items)||!L.items.length)return "";
-  var h='<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 '+esc(L&&L.nom||"Autour de moi")+'</span>'+(L&&L.items&&L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Segment suivant">Suivant<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
+  var h='<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 '+esc(L&&L.nom||CTS.city||"Localisation indisponible")+'</span>'+(L&&L.items&&L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Segment suivant">Suivant<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(!L||!L.items||!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte affichée pour le moment. Lance la recherche autour de ta position.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Trouver les côtes autour de moi')+'</button></div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte enregistrée dans ce secteur pour le moment.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Rechercher à nouveau')+'</button></div>';
@@ -595,7 +595,7 @@ function ctHere(){
   CTS.loading=true;render(true);
   var place=fetch("https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat="+lat+"&lon="+lng,{headers:{"Accept-Language":"fr"}}).then(function(r){if(!r.ok)throw 0;return r.json();}).catch(function(){return null;});
   Promise.all([CadenzoAuth.segments({lat:lat,lng:lng,radiusKm:5}),place]).then(function(results){
-    var j=results[1],a=j&&j.address||{},nom=(a.village||a.town||a.city||a.municipality||j&&j.name||"Autour de moi").slice(0,30),id=ctSlug(nom);
+    var j=results[1],a=j&&j.address||{},nom=(a.city||a.town||a.municipality||a.village||a.city_district||a.suburb||j&&j.name||"Commune non identifiée").slice(0,40),id=ctSlug(nom);
     COTES[id]={nom:nom,lat:lat,lng:lng,items:results[0].items||[],updated:results[0].searchedAt||new Date().toISOString()};
     CTS.l=id;CTS.city=nom;CTS.off=0;CTS.open=false;CTS.loading=false;ctSave();
     try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
