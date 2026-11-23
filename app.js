@@ -280,7 +280,8 @@ function genWeek(w,n,taper,r,m){
 var PC={};
 function planOf(r){
   if(!r)return null;
-  var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r);
+  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed]):"default";
+  var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r)+"|"+prefKey;
   if(PC[r.id]&&PC[r.id].key===key)return PC[r.id].p;
   var m=model(r), rws=mondayOf(dms(r.date)), start=r.builtin?dms(r.start):mondayOf(dms(isoOk(r.start)?r.start:nextMonday()));
   if(start>rws)start=rws;
@@ -303,6 +304,32 @@ function planOf(r){
     wk.s.sort(function(a,b){return a.dow-b.dow;});
     wk.km=0; wk.dp=0; wk.s.forEach(function(s){if(!s.race){wk.km+=s.km||0; wk.dp+=s.dp||0;}}); wk.km=Math.round(wk.km); wk.dp=Math.round(wk.dp);
   });
+  if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed){
+    var pref=TRAIN_PREF, days=(pref.training_days||[1,2,3,5,6]).map(Number), clubDays=pref.has_club?(pref.club_days||[]).map(Number):[], target=Math.max(2,Math.min(7,+pref.sessions_per_week||4));
+    weeks.forEach(function(wk){
+      var byDow={}; wk.s.forEach(function(s){byDow[s.dow]=s;});
+      var mandatory=clubDays.filter(function(d){return days.indexOf(d)>=0;});
+      wk.s.forEach(function(s){if(s.race||s.type==="Course B")if(days.indexOf(s.dow)>=0&&mandatory.indexOf(s.dow)<0)mandatory.push(s.dow);});
+      var ranked=days.slice().sort(function(a,b){
+        function score(d){if(mandatory.indexOf(d)>=0)return 1000;var s=byDow[d];if(!s)return 0;if(s.tag==="q")return 90;if(s.tag==="l")return 80;if(s.type==="Endurance + renfo")return 65;return 40;}
+        return score(b)-score(a)||a-b;
+      });
+      var chosen=ranked.slice(0,target);
+      mandatory.forEach(function(d){if(chosen.indexOf(d)<0)chosen.push(d);});
+      chosen.sort(function(a,b){return a-b;});
+      var planned=[];
+      chosen.forEach(function(d){
+        var s=byDow[d];
+        if(clubDays.indexOf(d)>=0){
+          planned.push(sess({k:KEYS[d],dow:d,tag:"q",type:"Club · piste",km:s&&s.km||8,dp:s&&s.dp||0,club:true,steps:s&&s.steps||[],txt:"Séance du club. Elle remplace la séance prévue ce jour-là : ne la double pas avec une autre séance."}));
+        }else if(s)planned.push(s);
+        else planned.push(sess({k:KEYS[d],dow:d,tag:"e",type:"Footing",km:6,dp:0,steps:[[ "6 km","Footing facile en zone 2" ]],txt:"Footing facile en zone 2, ajouté selon tes disponibilités."}));
+      });
+      wk.s=planned;
+      wk.km=0;wk.dp=0;wk.s.forEach(function(s){if(!s.race){wk.km+=s.km||0;wk.dp+=s.dp||0;}});
+      wk.km=Math.round(wk.km);wk.dp=Math.round(wk.dp);
+    });
+  }
   var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date)};
   PC[r.id]={key:key,p:p}; return p;
 }
@@ -1769,7 +1796,7 @@ function onPos(p){
 // reclasse tout de suite les sorties déjà lues avec la logique de cette version (sorties hors plan comprises)
 try{if(HIST.length){applyActs(HIST.map(function(q){return {date:q.date,km:q.km,dp:q.dp,t:q.t,src:"strava"};}));}}catch(e){}
 save(); goNow(); render();
-if(TRAIN_PREF&&!TRAIN_PREF.onboarding_completed)setTimeout(function(){openTrainingPrefs(true);},700);
+if((!TRAIN_PREF||!TRAIN_PREF.onboarding_completed)&&navigator.onLine!==false)setTimeout(function(){openTrainingPrefs(true);},700);
 if(!D.races.length)setTimeout(function(){if(!D.races.length&&!SH)editRace(null);},500);
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
