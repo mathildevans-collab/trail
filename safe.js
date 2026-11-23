@@ -103,6 +103,7 @@ function hash(str){var h=5381,i; for(i=0;i<str.length;i++)h=((h<<5)+h+str.charCo
 
 // ---------- sauvegardes automatiques (IndexedDB) ----------
 var DB=null, DBNAME="cadenzo-safe";
+function setUser(id){ DB=null; DBNAME="cadenzo-safe-"+String(id||"anonymous").replace(/[^a-zA-Z0-9_-]/g,""); }
 function idb(){
   if(DB)return DB;
   DB=new Promise(function(res){
@@ -139,6 +140,6 @@ function persisted(){
   return Promise.resolve(false);
 }
 
-var API={wrap:wrap,unwrap:unwrap,validate:validate,merge:merge,summary:summary,counts:counts,hash:hash,snap:snap,list:list,get:get,persist:persist,persisted:persisted,clone:clone};
+var API={wrap:wrap,unwrap:unwrap,validate:validate,merge:merge,summary:summary,counts:counts,hash:hash,snap:snap,list:list,get:get,persist:persist,persisted:persisted,clone:clone,setUser:setUser};
 if(typeof module!=="undefined"&&module.exports)module.exports=API; else root.SAFE=API;
 })(typeof window!=="undefined"?window:globalThis);
