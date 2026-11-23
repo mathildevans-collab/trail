@@ -73,6 +73,34 @@ function loadApp(user){
         throw error;
       });
     },
+    segments:function(position){
+      function validSession(){
+        return client.auth.getSession().then(function(r){
+          if(r.error)throw r.error;
+          var session=r.data&&r.data.session;
+          if(session&&session.expires_at&&session.expires_at>Date.now()/1000+90)return session;
+          return client.auth.refreshSession().then(function(refreshed){
+            if(refreshed.error||!refreshed.data||!refreshed.data.session)throw new Error("Ta session Cadenzo a expiré. Reconnecte-toi.");
+            return refreshed.data.session;
+          });
+        });
+      }
+      function request(session){
+        return fetch(FUNCTION_URL+"?action=segments",{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(position),cache:"no-store"}).then(function(r){
+          return r.json().catch(function(){return {};}).then(function(data){
+            if(!r.ok)throw new Error(data.error||("Erreur "+r.status));
+            return data;
+          });
+        });
+      }
+      return validSession().then(request).catch(function(error){
+        if(error&&error.status===401)return client.auth.refreshSession().then(function(r){
+          if(r.error||!r.data||!r.data.session)throw new Error("Ta session Cadenzo a expiré. Reconnecte-toi.");
+          return request(r.data.session);
+        });
+        throw error;
+      });
+    },
     signOut:function(){return client.auth.signOut().then(function(){location.reload();});}
   };
   if(window.SAFE&&SAFE.setUser)SAFE.setUser(user.id);
@@ -84,7 +112,7 @@ function loadApp(user){
     window.CADENZO_PROFILE_PICTURE="";
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=110";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=111";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 document.addEventListener("click",function(event){
