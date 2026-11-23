@@ -31,9 +31,9 @@ function screen(message,buttonText,action){
     `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=63" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Ton espace running &amp; trail.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=63" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
-  var button=document.getElementById("auth-action");button.innerHTML='<span class="auth-strava-mark">S</span><span>'+buttonText+'</span>';button.addEventListener("click",action);
+  var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
 function showError(message){screen(message,"Réessayer avec Strava",function(){location.href=FUNCTION_URL+"?action=start";});}
 function loadApp(user){
@@ -45,7 +45,7 @@ function loadApp(user){
         var session=r.data&&r.data.session;
         if(!session)throw new Error("Session expirée. Reconnecte-toi.");
         return fetch(FUNCTION_URL+"?action=sync",{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"},cache:"no-store"});
-      }).then(function(r){return r.json().then(function(data){if(!r.ok){var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";error.retryAfter=data.retryAfter||0;error.retryAt=data.retryAt||null;throw error;}return data;});});
+      }).then(function(r){return r.json().then(function(data){if(!r.ok){var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";error.retryAfter=data.retryAfter||0;error.retryAt=data.retryAt||null;if(error.code==="STRAVA_REAUTH_REQUIRED"){location.href=FUNCTION_URL+"?action=start";}throw error;}return data;});});
     },
     signOut:function(){return client.auth.signOut().then(function(){location.reload();});}
   };
@@ -56,7 +56,7 @@ function loadApp(user){
     var parts=name.trim().split(/\s+/).filter(Boolean);
     window.CADENZO_USER_INITIALS=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts.length?parts[0].slice(0,2).toUpperCase():"";
   }).catch(function(){window.CADENZO_USER_INITIALS="";}).then(function(){
-    var script=document.createElement("script");script.src="app.js?v=95";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=96";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("[data-account-menu]"):null;if(target&&window.CadenzoAuth&&confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
