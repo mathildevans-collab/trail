@@ -882,3 +882,58 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 /* Intensité réelle : espacer le libellé des valeurs de zones. */
 .gz-bar{margin-top:8px}
 .gz-bar+.small,.gz-bar+p{margin-top:10px}
+
+/* Cadenzo desktop refinement — same components, typography and color tokens. */
+@media(min-width:900px){
+  body{min-width:0}
+  .tabs{width:232px;max-width:232px;padding:26px 16px;gap:28px}
+  .tabs.mini{width:232px}
+  .desktop-brand{padding:2px 12px 24px}
+  .tabs-in{gap:6px}
+  .tabs button,.tabs button[aria-current="page"]{min-height:50px;padding:0 14px;font-size:14px}
+  #view{margin-left:232px;width:calc(100% - 232px);max-width:1600px;padding:30px clamp(24px,3vw,52px) 48px;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:18px;row-gap:16px}
+  #view>.top{grid-column:1/-1;margin-bottom:6px}
+  #view>.top h1,#view>.top h2{font-size:34px;letter-spacing:-.5px}
+  #view>.banner,#view>.wnav,#view>.strip{grid-column:1/-1}
+  #view>.hero{grid-column:span 7}
+  #view>.ct{grid-column:span 5}
+  #view>.week-end-card,#view>.bilan-card{grid-column:span 6}
+  #view>.week-card,#view>.checkin-card{grid-column:span 6}
+  #view>.card:not(.hero):not(.ct):not(.wm):not(.week-end-card):not(.bilan-card):not(.week-card):not(.checkin-card){grid-column:span 6}
+  #view>.card.empty{grid-column:1/-1}
+  #view:has(.phs)>.card{grid-column:1/-1!important}
+  #view:has(.phs)>.phs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px}
+  #view:has(.phs)>.phs>.ph{margin:0;border:1px solid var(--line);border-radius:15px;padding:0 14px}
+  #view:has(.phs)>.phs>.ph.open{padding-bottom:10px}
+  #view:has(.phs)>.phs>.ph .wkx{padding-bottom:8px}
+  #view:has(.wm)>.wm{grid-column:1/-1}
+  #view:has(.wm)>.wm .fm-tiles{grid-template-columns:repeat(6,minmax(0,1fr))}
+  #view:has(.race)>.race{grid-column:1/-1}
+  #view>.course-detail-dashboard{grid-column:1/-1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px;align-items:start}
+  .course-detail-dashboard>.course-metrics{grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .course-detail-dashboard>.course-objective{grid-column:span 5;margin:0}
+  .course-detail-dashboard>.course-chart-card{grid-column:span 7;margin:0}
+  .course-detail-dashboard>.course-panel{grid-column:span 6;margin:0}
+  #view>.course-actions{grid-column:1/-1}
+  #view:has(.sd)>.sd{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+  .sd>.sd-w{grid-column:1/-1}
+  .sd>.sd-t:not(.sd-w){min-height:86px}
+  .sd>.training-summary{grid-column:1/-1}
+  #view:has(.sd)>.sd-dz,#view:has(.sd)>.foot{grid-column:1/-1}
+  .card{padding:20px;border-radius:20px}
+  .hero h2{font-size:27px}
+  .strip{gap:10px}
+  .strip .day{min-height:76px}
+  .wnav{max-width:none}
+  .ct{min-width:0}
+  .cthero{padding:18px}
+  .wm-bars{min-height:160px}
+  .phs{padding:16px}
+}
+@media(min-width:1400px){
+  #view{padding-top:36px;padding-bottom:56px;column-gap:20px;row-gap:18px}
+  #view:has(.phs)>.phs{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .course-detail-dashboard>.course-objective{grid-column:span 4}
+  .course-detail-dashboard>.course-chart-card{grid-column:span 8}
+}
+@media(max-width:899px){.desktop-brand{display:none}.nav-label{display:none}}

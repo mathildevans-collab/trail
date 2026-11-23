@@ -31,7 +31,7 @@ function screen(message,buttonText,action){
     `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=127" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=128" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
   var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
@@ -113,18 +113,19 @@ function loadApp(user){
   if(window.SAFE&&SAFE.setUser)SAFE.setUser(user.id);
   tabs.hidden=false;
   Promise.all([
-    Promise.race([client.from("cadenzo_profiles").select("display_name,username,profile_picture").eq("user_id",user.id).maybeSingle(),new Promise(function(_,no){setTimeout(function(){no(new Error("délai"));},navigator.onLine===false?200:3500);})]),
-    Promise.race([client.from("cadenzo_training_preferences").select("*").eq("user_id",user.id).maybeSingle(),new Promise(function(_,no){setTimeout(function(){no(new Error("délai"));},navigator.onLine===false?200:3500);})])
+    Promise.race([client.from("cadenzo_profiles").select("display_name,username,profile_picture").eq("user_id",user.id).maybeSingle(),new Promise(function(_,no){setTimeout(function(){no(new Error("délai"));},navigator.onLine===false?200:3500);})]).catch(function(error){return {data:null,error:error};}),
+    Promise.race([client.from("cadenzo_training_preferences").select("*").eq("user_id",user.id).maybeSingle(),new Promise(function(_,no){setTimeout(function(){no(new Error("délai"));},navigator.onLine===false?200:3500);})]).catch(function(error){return {data:null,error:error};})
   ]).then(function(results){
     var profile=results[0],prefs=results[1];
     window.CADENZO_PROFILE_PICTURE=profile.data&&profile.data.profile_picture||"";
-    window.CADENZO_TRAINING_PREFS=prefs.data||null;window.CADENZO_TRAINING_PREFS_LOADED=true;
+    window.CADENZO_TRAINING_PREFS=prefs.data||null;
+    window.CADENZO_TRAINING_PREFS_LOADED=!prefs.error;
   }).catch(function(){
-    var fallback=user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name)||user.email&&user.email.split("@")[0]||"";
-    window.CADENZO_PROFILE_PICTURE="";window.CADENZO_TRAINING_PREFS_LOADED=false;
+    window.CADENZO_PROFILE_PICTURE="";
+    window.CADENZO_TRAINING_PREFS_LOADED=false;
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=127";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=128";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 

@@ -1022,7 +1022,7 @@ function vSettings(){
   h+='<button class="sd-t sd-w sd-row" data-ssub="trophees" style="min-height:0"><span class="sd-ic" style="background:color-mix(in srgb,var(--sun) 22%,var(--card));color:var(--ink)">'+sv('<circle cx="12" cy="10" r="6"/><path d="M8.5 15L7 22l5-3 5 3-1.5-7"/>')+'</span><span class="sd-tx"><b>Trophées</b><small>'+(TR.length?TR.length+(TR.length>1?" médailles":" médaille"):"Records et étapes")+'</small></span>'+(nNew?'<span class="sd-st"><i style="background:var(--acc)"></i>'+nNew+(nNew>1?" nouvelles":" nouvelle")+'</span>':'')+'</button>';
   h+=tile('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',"Export Garmin",(G&&G.last)?"Import du "+fmtD(dayN(G.last)*864e5).replace(/^\S+\s/,""):"Aucun import",{tag:"button",attr:' data-ssub="sorties"',st:[(gOld==null||gOld>9)?"w":"",gOld==null?"—":gOld+" j"]});
   h+=tile('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',"Données",lastExportTxt().replace(/\.$/,"").replace("Dernier export ","Export "),{tag:"button",attr:' data-ssub="donnees"'});
-  h+=tile('<path d="M3 5h18M6 3v4M18 3v4M5 10h14M5 15h8"/>',"Entraînement",TRAIN_PREF&&TRAIN_PREF.onboarding_completed?(TRAIN_PREF.sessions_per_week+' séances · '+(TRAIN_PREF.has_club?esc(TRAIN_PREF.club_name||'club'):'sans club')):'Configurer mes disponibilités',{tag:"button",w:1,row:1,attr:' data-act="trainingprefs"'});
+  h+='<div class="sd-t sd-w sd-row training-summary"><span class="sd-ic">'+sv('<path d="M3 5h18M6 3v4M18 3v4M5 10h14M5 15h8"/>')+'</span><span class="sd-tx"><b>Organisation d’entraînement</b><small>'+(TRAIN_PREF&&TRAIN_PREF.onboarding_completed?TRAIN_PREF.sessions_per_week+' séances · '+(TRAIN_PREF.has_club?esc(TRAIN_PREF.club_name||'club'):'sans club'):'À définir lors de ta première connexion')+'</small></span></div>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>')+'</span><span class="sd-tx"><b>Apparence</b></span><div class="sd-seg" role="radiogroup" aria-label="Thème">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>')+'</span><span class="sd-tx"><b>Check-in du lundi</b></span>'+tg("checkin",D.set.checkin,"Check-in du lundi")+'</div>';
   h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",w:1,row:1,attr:' data-ssub="course"'});
@@ -1526,7 +1526,6 @@ function act(a,b){
   else if(a==="resetedits"){var r=activeRace(); if(!confirm("Rétablir toutes les séances d’origine du plan "+r.name+" ?"))return; var U2=snapU(); delete D.edits[r.id]; save(); render(true); toast("Séances d’origine rétablies.",U2);}
   else if(a==="import")$("fileJson").click();
   else if(a==="export")exportData();
-  else if(a==="trainingprefs")openTrainingPrefs(false);
   else if(a==="gsetup")gSetupSheet();
   else if(a==="gmanage")gManageSheet();
   else if(a==="backups")openBackups();
@@ -1799,7 +1798,7 @@ function onPos(p){
 // reclasse tout de suite les sorties déjà lues avec la logique de cette version (sorties hors plan comprises)
 try{if(HIST.length){applyActs(HIST.map(function(q){return {date:q.date,km:q.km,dp:q.dp,t:q.t,src:"strava"};}));}}catch(e){}
 save(); goNow(); render();
-if(window.CADENZO_TRAINING_PREFS_LOADED&&(!TRAIN_PREF||!TRAIN_PREF.onboarding_completed)&&navigator.onLine!==false)setTimeout(function(){openTrainingPrefs(true);},300);
+if(window.CADENZO_TRAINING_PREFS_LOADED&&(!TRAIN_PREF||TRAIN_PREF.onboarding_completed!==true)&&navigator.onLine!==false&&!window.CADENZO_ONBOARDING_SHOWN){window.CADENZO_ONBOARDING_SHOWN=true;setTimeout(function(){if(!TRAIN_PREF||TRAIN_PREF.onboarding_completed!==true)openTrainingPrefs(true);},300);}
 if(!D.races.length)setTimeout(function(){if(!D.races.length&&!SH)editRace(null);},500);
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
