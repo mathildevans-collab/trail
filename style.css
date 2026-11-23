@@ -796,3 +796,9 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .top-actions .account-status .account-initials[hidden]{display:none!important}
 .top-actions .account-status .account-initials:not([hidden]){z-index:1}
 .top-actions .account-status .account-online{z-index:3}
+
+
+/* Badge profil : conserver le point de présence visible au-dessus du bord de la photo */
+.top-actions .account-status{position:relative;overflow:visible!important;border-radius:50%;isolation:isolate}
+.top-actions .account-status .account-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;z-index:1}
+.top-actions .account-status .account-online{position:absolute;right:-2px;bottom:-2px;width:11px;height:11px;border:2px solid var(--card);border-radius:50%;background:#36ad70;z-index:5;display:block}
