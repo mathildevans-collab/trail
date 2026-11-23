@@ -1512,7 +1512,7 @@ function syncNote(){
 }
 var CTRY=0;
 function autoSync(){var need=Object.keys(COTES).every(function(k){return !(COTES[k].items||[]).length;})&&Date.now()-CTRY>60000; if(need)CTRY=Date.now();
-  if(STRAVA&&!syncing&&!(D.sync.retryAt&&Date.now()<D.sync.retryAt)&&(need||Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV()))sync(false);}
+  if(STRAVA&&!syncing&&!(D.sync.retryAt&&Date.now()<D.sync.retryAt)&&(window.CADENZO_FORCE_SYNC||need||Date.now()-(D.sync.t||0)>5*60*1000||D.sync.v!==runV())){window.CADENZO_FORCE_SYNC=false;sync(false);}}
 function applyActs(acts){
   var r=activeRace(); if(!r)return 0; var pl=planOf(r), bd=byDate(pl), byDay={}, n=0;
   acts.forEach(function(a){if(!a.date||!(a.km>0))return; var o=byDay[a.date]||(byDay[a.date]={km:0,dp:0,t:0,src:a.src}); o.km+=a.km; o.dp+=a.dp||0; o.t+=a.t||0;});
