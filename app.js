@@ -542,7 +542,7 @@ function ctDist(c){return CTS.pos&&c.la!=null?Math.round(ctHav(CTS.pos.la,CTS.po
 function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
-  ctWatch(); var L=cotesList(); if(!L)return '<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 Autour de toi</span></div><p class="small muted" style="margin:10px 0 8px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Retrouve directement les côtes à proximité de ta position GPS.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Trouver les segments autour de moi')+'</button></div>';
+  ctWatch(); var L=cotesList(); if(!L||!L.items||!L.items.length)return "";
   var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><span class="ctch">📍 '+esc(L.nom)+'</span>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Côte suivante">Suivante<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte enregistrée dans ce secteur pour le moment.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Rechercher à nouveau')+'</button></div>';
@@ -557,13 +557,27 @@ function cotesCard(){
 var CTW=null;
 function ctWatch(){
   if(CTW!==null||!navigator.geolocation||!window.isSecureContext)return;
-  CTW=navigator.geolocation.watchPosition(function(p){var o=CTS.pos, moved=!o||ctHav(o.la,o.ln,p.coords.latitude,p.coords.longitude)>0.15; CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)}; if(moved&&document.querySelector(".ct")&&$("sheet").hidden)render(true);},function(){CTW=null;},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
+  CTW=navigator.geolocation.watchPosition(function(p){
+    var o=CTS.pos,moved=!o||ctHav(o.la,o.ln,p.coords.latitude,p.coords.longitude)>0.15;
+    CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)};
+    if(moved){
+      var nearby=cotesList();
+      if((!nearby||!nearby.items||!nearby.items.length)&&!CTS.loading&&!CTS.autoSearchDone){
+        CTS.autoSearchDone=true;ctSave();ctHere();
+      }else if(document.querySelector(".ct")&&$("sheet").hidden)render(true);
+    }
+  },function(){CTW=null;},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
 }
 document.addEventListener("visibilitychange",function(){
   if(document.hidden){if(CTW!==null){try{navigator.geolocation.clearWatch(CTW);}catch(e){} CTW=null;} return;}
-  if(!navigator.geolocation||!window.isSecureContext||!document.querySelector(".ct"))return;
+  if(!navigator.geolocation||!window.isSecureContext)return;
   ctWatch(); // position fraîche dès le retour dans l’appli
-  navigator.geolocation.getCurrentPosition(function(p){var o=CTS.pos; CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)}; if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);},function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
+  navigator.geolocation.getCurrentPosition(function(p){
+    var o=CTS.pos;CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)};
+    var nearby=cotesList();
+    if((!nearby||!nearby.items||!nearby.items.length)&&!CTS.loading){CTS.autoSearchDone=false;ctWatch();}
+    if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);
+  },function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
 });
 function ctPost(m,done){return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0; if(!COTES[m.id])COTES[m.id]={nom:m.nom,items:[],pend:1,lat:m.lat,lng:m.lng}; try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){} done&&done();});}
 function ctHere(){
@@ -579,7 +593,7 @@ function ctHere(){
     CTS.l=id;CTS.off=0;CTS.open=false;CTS.loading=false;ctSave();
     try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
     render(true);toast(COTES[id].items.length?COTES[id].items.length+" côtes trouvées autour de toi.":"Aucune côte répondant aux critères dans un rayon de 5 km.");
-  }).catch(function(e){CTS.loading=false;render(true);toast("Recherche impossible : "+String(e&&e.message||"réessaie").slice(0,90));});
+  }).catch(function(e){CTS.loading=false;CTS.autoSearchDone=false;render(true);toast("Recherche impossible : "+String(e&&e.message||"réessaie").slice(0,90));});
 }
 var CT_TOPIC="cadenzo-lieux-def79f15a0c4a14c40b8";
 function ctSlug(n){return n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"lieu";}
@@ -600,7 +614,7 @@ function vPrep(r,pl){
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
-  h+=cotesCard(); // Les segments proposés restent visibles, même lorsque la séance du jour n’est pas une séance de côtes.
+  h+=cotesCard(); // Afficher uniquement si au moins une côte est disponible.
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
 
