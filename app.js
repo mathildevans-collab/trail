@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=107;
+var APPV=108;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -593,7 +593,7 @@ function vPrep(r,pl){
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
-  if(s&&/c[oô]tes?/i.test([s.type,s.name,s.txt||""].join(" ")))h+=cotesCard();
+  h+=cotesCard(); // Les segments proposés restent visibles, même lorsque la séance du jour n’est pas une séance de côtes.
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
 
