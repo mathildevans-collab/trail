@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=90;
+var APPV=91;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -535,7 +535,7 @@ function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
   ctWatch(); var L=cotesList(); if(!L)return "";
-  var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><span class="ctch">📍 '+esc(L.nom)+'</span>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Autres côtes">↻</button>':'')+'</div>';
+  var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><span class="ctch">📍 '+esc(L.nom)+'</span>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Côte suivante">Suivante<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">Côtes prêtes dans environ 5 min. <span style="opacity:.6">v'+APPV+'</span></p><button class="ctmore" data-act="sync" style="margin:0">Relire maintenant</button></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
@@ -1600,9 +1600,9 @@ function openRace(rid,pr){
   save(); $("rm").hidden=false; document.body.style.overflow="hidden"; applyTheme(); rmRender(); clearInterval(rmTimer); rmTimer=setInterval(rmTick,1000); askWake(); if(D.set.gps!==false&&RR.gpx&&gpsWatch==null)startGps();
   try{history.pushState({rm:1},"");}catch(e){}
 }
-function closeRace(){$("rm").hidden=true; document.body.style.overflow=""; clearInterval(rmTimer); stopGps(); try{wake&&wake.release();}catch(e){} wake=null; RS=null; applyTheme(); render(true);}
+function closeRace(){if(RS&&!RS.done&&RS.t0){if(RS.practice)D.practice=null; else D.race=null; save();} $("rm").hidden=true; document.body.style.overflow=""; clearInterval(rmTimer); stopGps(); try{wake&&wake.release();}catch(e){} wake=null; RS=null; applyTheme(); render(true);}
 function closeRaceNav(){closeRace(); try{if(history.state&&history.state.rm)history.back();}catch(x){}}
-window.addEventListener("popstate",function(){if(!$("rm").hidden)closeRace();});
+window.addEventListener("popstate",function(){if($("rm").hidden)return; if(RS&&!RS.practice&&!RS.done&&RS.t0){try{history.pushState({rm:1},"");}catch(e){} toast("Course en cours : maintiens Quitter pour fermer."); return;} closeRace();});
 function askWake(){try{if(navigator.wakeLock&&!$("rm").hidden)navigator.wakeLock.request("screen").then(function(w){wake=w; var c=$("rmWake"); if(c)c.textContent="Écran allumé";}).catch(function(){});}catch(e){}}
 document.addEventListener("visibilitychange",function(){if(document.hidden)return; if(!$("rm").hidden){askWake(); rmTick();} else autoSync();});
 function nowMs(){return Date.now()+(RS&&RS.shift?RS.shift:0);}
