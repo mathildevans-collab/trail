@@ -78,14 +78,32 @@ function loadApp(user){
   if(window.SAFE&&SAFE.setUser)SAFE.setUser(user.id);
   tabs.hidden=false;
   client.from("cadenzo_profiles").select("display_name,username").eq("user_id",user.id).maybeSingle().then(function(result){
-    var name=result.data&&(result.data.display_name||result.data.username)||"";
-    var parts=name.trim().split(/\s+/).filter(Boolean);
+    var name=result.data&&(result.data.display_name||result.data.username)||user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name)||user.email&&user.email.split("@")[0]||"";
+    var parts=name.trim().split(/[\\s._-]+/).filter(Boolean);
     window.CADENZO_USER_INITIALS=parts.length>1?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():parts.length?parts[0].slice(0,2).toUpperCase():"";
-  }).catch(function(){window.CADENZO_USER_INITIALS="";}).then(function(){
-    var script=document.createElement("script");script.src="app.js?v=99";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+  }).catch(function(){
+    var fallback=user.user_metadata&&(user.user_metadata.full_name||user.user_metadata.name)||user.email&&user.email.split("@")[0]||"";
+    window.CADENZO_USER_INITIALS=fallback.trim().slice(0,2).toUpperCase();
+  }).then(function(){
+    window.CADENZO_FORCE_SYNC=true;
+    var script=document.createElement("script");script.src="app.js?v=100";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
-document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("[data-account-logout]"):null;if(target&&window.CadenzoAuth&&confirm("Se déconnecter de Cadenzo sur cet appareil ?"))window.CadenzoAuth.signOut();});
+document.addEventListener("click",function(event){
+  var target=event.target&&event.target.closest?event.target.closest("[data-account-logout]"):null;
+  if(!target)return;
+  event.preventDefault();event.stopPropagation();
+  if(target.disabled)return;
+  target.disabled=true;target.setAttribute("aria-busy","true");
+  client.auth.signOut({scope:"local"}).then(function(result){
+    if(result&&result.error)throw result.error;
+    window.CADENZO_USER_ID=null;window.CADENZO_USER_INITIALS="";
+    location.replace(location.pathname);
+  }).catch(function(error){
+    target.disabled=false;target.removeAttribute("aria-busy");
+    alert("Déconnexion impossible : "+(error&&error.message||"réessaie"));
+  });
+});
 function start(){
   var params=new URLSearchParams(location.search),tokenHash=params.get("token_hash"),type=params.get("type");
   if(params.has("strava_error")){var err=params.get("strava_error");history.replaceState({},document.title,location.pathname);showError(err||"La connexion Strava a échoué.");return;}
