@@ -529,7 +529,7 @@ function cotesList(){ // côtes du lieu choisi, les plus anciennes (ou jamais fa
   if(CTS.pos){ // autour de toi : toutes les côtes connues, les plus proches d’abord (10 km)
     var seen={}, bd=1e9, bn=""; src=[];
     ids.forEach(function(id){var o=COTES[id]; (o.items||[]).forEach(function(c){if(seen[c.i]||c.la==null)return; var d=ctHav(CTS.pos.la,CTS.pos.ln,c.la,c.ln); if(d<=10){seen[c.i]=1; src.push(c); if(d<bd){bd=d; bn=o.nom;}}});});
-    if(!src.length)return {nom:"Ma position",items:[],far:true}; nom=bn;
+    if(!src.length)return {nom:CTS.city||"Ma position",items:[],far:true}; nom=CTS.city||bn;
   }
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date; if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;});});
   var it=src.map(function(c){var l=last[c.i]||"", age=l?Math.min(60,Math.round((Date.parse(isoToday())-Date.parse(l))/864e5)):60, k=ctDist(c); return {c:c,last:l,p:best[c.i]||0,sc:age/10-(k==null?0:k)};});
@@ -597,7 +597,7 @@ function ctHere(){
   Promise.all([CadenzoAuth.segments({lat:lat,lng:lng,radiusKm:5}),place]).then(function(results){
     var j=results[1],a=j&&j.address||{},nom=(a.village||a.town||a.city||a.municipality||j&&j.name||"Autour de moi").slice(0,30),id=ctSlug(nom);
     COTES[id]={nom:nom,lat:lat,lng:lng,items:results[0].items||[],updated:results[0].searchedAt||new Date().toISOString()};
-    CTS.l=id;CTS.off=0;CTS.open=false;CTS.loading=false;ctSave();
+    CTS.l=id;CTS.city=nom;CTS.off=0;CTS.open=false;CTS.loading=false;ctSave();
     try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
     render(true);toast(COTES[id].items.length?COTES[id].items.length+" côtes trouvées autour de toi.":"Aucune côte répondant aux critères dans un rayon de 5 km.");
   }).catch(function(e){CTS.loading=false;CTS.autoSearchDone=false;render(true);toast("Recherche impossible : "+String(e&&e.message||"réessaie").slice(0,90));});
@@ -620,8 +620,7 @@ function vPrep(r,pl){
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
-  ctWatch(); // Recherche GPS indépendante du type de séance.
-  h+=cotesCard(); // Les segments proposés apparaissent dès qu’une côte est réellement disponible.
+  if(s&&/^Côtes(?:$|\s)/i.test(s.type||"")){ctWatch();h+=cotesCard();} // Afficher les segments uniquement lorsqu’une séance de côtes est prévue aujourd’hui.
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
 
@@ -1515,7 +1514,7 @@ function sync(manual){
       var known={}; (COTES["strava-cache"]&&COTES["strava-cache"].items||[]).forEach(function(x){known[x.i]=1;});
       var merged=(COTES["strava-cache"]&&COTES["strava-cache"].items||[]).slice();
       j.cotes.forEach(function(x){if(x&&x.i&&!known[x.i]){merged.push(x);known[x.i]=1;}});
-      COTES["strava-cache"]={nom:"Côtes Strava enregistrées",items:merged,updated:j.updated||new Date().toISOString()};
+      COTES["strava-cache"]={nom:CTS.city||"Autour de moi",items:merged,updated:j.updated||new Date().toISOString()};
       try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
     }
     var n=applyActs(runs);
