@@ -4,10 +4,12 @@
 var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
-var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=91;
-var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
-var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
+var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
+var APPV=92;
+var STRAVA=true;    // activités du compte Strava connecté via Supabase
+var REPO="mathildevans-collab/trail";
+var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
+function userKey(k){return k+":"+USER_ID;}
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
 var KEYS=["mon","tue","wed","thu","fri","sat","sun"];
 var MON=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
@@ -42,7 +44,7 @@ function load(){
   }
   if(r){SEEN=raw||""; return fromRaw(r);}
   try{var old=JSON.parse(localStorage.getItem(OLDKEY)||"null"); if(old&&typeof old==="object")return migrate(old,blank());}catch(e){}
-  try{var v1=JSON.parse(localStorage.getItem("thp40-state")||"null"); if(v1&&typeof v1==="object"){var kit=null; try{kit=JSON.parse(localStorage.getItem("thp40-kit")||"null");}catch(e){} if(kit&&typeof kit==="object")v1.kit=kit; return migrate(v1,blank());}}catch(e){}
+  try{var v1=JSON.parse(localStorage.getItem(userKey("thp40-state"))||"null"); if(v1&&typeof v1==="object"){var kit=null; try{kit=JSON.parse(localStorage.getItem(userKey("thp40-kit"))||"null");}catch(e){} if(kit&&typeof kit==="object")v1.kit=kit; return migrate(v1,blank());}}catch(e){}
   return blank();
 }
 function migrate(o,n){
@@ -72,8 +74,8 @@ function save(){
 }
 var snapT=null;
 function snapSoon(s){ if(!window.SAFE)return; clearTimeout(snapT); snapT=setTimeout(function(){
-  var last=0; try{last=+localStorage.getItem("cadenzo-snap")||0;}catch(e){}
-  if(Date.now()-last<6*3600*1000)return; try{localStorage.setItem("cadenzo-snap",String(Date.now()));}catch(e){}
+  var last=0; try{last=+localStorage.getItem(userKey("cadenzo-snap"))||0;}catch(e){}
+  if(Date.now()-last<6*3600*1000)return; try{localStorage.setItem(userKey("cadenzo-snap"),String(Date.now()));}catch(e){}
   SAFE.snap("auto",s);},4000);}
 
 // ---------- dates ----------
@@ -512,9 +514,9 @@ function vToday(){
   if(ph==="race")return vRaceDay(r,pl);
   return vAfter(r,pl);
 }
-var COTES={}; try{COTES=JSON.parse(localStorage.getItem("cadenzo-cotes")||"{}")||{};}catch(e){}
-var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStorage.getItem("cadenzo-ct")||"{}"));}catch(e){}
-function ctSave(){try{localStorage.setItem("cadenzo-ct",JSON.stringify(CTS));}catch(e){}}
+var COTES={}; try{COTES=JSON.parse(localStorage.getItem(userKey("cadenzo-cotes"))||"{}")||{};}catch(e){}
+var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStorage.getItem(userKey("cadenzo-ct"))||"{}"));}catch(e){}
+function ctSave(){try{localStorage.setItem(userKey("cadenzo-ct"),JSON.stringify(CTS));}catch(e){}}
 function cotesList(){ // côtes du lieu choisi, les plus anciennes (ou jamais faites) d'abord
   var ids=Object.keys(COTES); if(!ids.length)return null; if(!COTES[CTS.l])CTS.l=ids[0]; var cur=CTS.l;
   var L=COTES[cur], last={}, best={}, src=(L.items||[]), nom=L.nom;
@@ -557,7 +559,7 @@ document.addEventListener("visibilitychange",function(){
   ctWatch(); // position fraîche dès le retour dans l’appli
   navigator.geolocation.getCurrentPosition(function(p){var o=CTS.pos; CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)}; if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);},function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
 });
-function ctPost(m,done){return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0; if(!COTES[m.id])COTES[m.id]={nom:m.nom,items:[],pend:1,lat:m.lat,lng:m.lng}; try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){} done&&done();});}
+function ctPost(m,done){return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0; if(!COTES[m.id])COTES[m.id]={nom:m.nom,items:[],pend:1,lat:m.lat,lng:m.lng}; try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){} done&&done();});}
 function ctHere(){
   if(!CTS.pos){toast("Position introuvable. Autorise la localisation.");return;}
   fetch("https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat="+CTS.pos.la+"&lon="+CTS.pos.ln,{headers:{"Accept-Language":"fr"}}).then(function(r){return r.json();}).then(function(j){
@@ -673,7 +675,7 @@ function weekCard(r,pl,wk,s,noMeter){
 function checkinCard(r,pl,w){
   if(!D.set.checkin)return ""; var ti=planIdx(pl); if(ti<0||w!==nowWeek(pl)||w<2||pl.weeks[w-1].ph==="Affûtage")return "";
   var c=ciOf(r,w), a=adjFor(pl,w), st=D.adj[r.id+":"+w];
-  try{if(a&&a.mode==="micro"&&!st&&!localStorage.getItem("cadenzo-nomicro")){localStorage.setItem("cadenzo-nomicro",r.id+":"+w); D.adj[r.id+":"+w]=st="off"; save();}}catch(e){}
+  try{if(a&&a.mode==="micro"&&!st&&!localStorage.getItem(userKey("cadenzo-nomicro"))){localStorage.setItem(userKey("cadenzo-nomicro"),r.id+":"+w); D.adj[r.id+":"+w]=st="off"; save();}}catch(e){}
   function scale(k,l,lo,hi){var h='<div class="ci-row"><span>'+l+'</span><div class="scale">'; for(var i=1;i<=5;i++)h+='<button data-ci="'+k+'" data-v="'+i+'" aria-pressed="'+(c[k]===i)+'">'+i+'</button>'; return h+'</div><div class="scalelab"><span>'+lo+'</span><span>'+hi+'</span></div></div>';}
   var dow=((ti%7)+7)%7, full=!!(c.f&&c.s), edit=dow===0||!(c.f||c.s), h;
   if(dow!==0&&(c.f||c.s))return "";
@@ -1013,10 +1015,10 @@ function applyState(ns,garmin,mode,reason){
     if(!rec&&!confirm("La copie de sécurité n’a pas pu être faite sur ce téléphone. Continuer quand même ?"))return false;
     D=mode==="merge"?assignState(blank(),SAFE.merge(D,ns).state):assignState(blank(),ns);
     if(!D.races||!D.races.length)D.races=[thpRace()];
-    if(garmin&&(mode==="replace"||!localStorage.getItem("cadenzo-garmin"))){try{localStorage.setItem("cadenzo-garmin",JSON.stringify(garmin));}catch(e){toast("Données Garmin trop volumineuses : non importées.");}}
+    if(garmin&&(mode==="replace"||!localStorage.getItem(userKey("cadenzo-garmin")))){try{localStorage.setItem(userKey("cadenzo-garmin"),JSON.stringify(garmin));}catch(e){toast("Données Garmin trop volumineuses : non importées.");}}
     MC={}; PC={}; applyTheme(); if(!save())return false; goNow(); return true;});
 }
-function lastExportTxt(){var t=0; try{t=+localStorage.getItem("cadenzo-lastexport")||0;}catch(e){} return t?"Dernier export "+ago(t)+".":"Jamais exporté.";}
+function lastExportTxt(){var t=0; try{t=+localStorage.getItem(userKey("cadenzo-lastexport"))||0;}catch(e){} return t?"Dernier export "+ago(t)+".":"Jamais exporté.";}
 function openBackups(){
   openSheet('<h2>Copies automatiques</h2><p class="small muted">Chargement…</p>',{});
   Promise.all([SAFE.list(),SAFE.persisted()]).then(function(r){var a=r[0], pe=r[1]; if(SH==null)return;
@@ -1120,10 +1122,10 @@ function setTab(t){SSUB=null; if(t!=="settings")prevTab=t; if(t==="course")CV="l
 
 
 // ---------- Forme : volume + forme/fraîcheur (depuis toutes les sorties Strava lues) ----------
-var HIST=[]; try{HIST=JSON.parse(localStorage.getItem("thp40hist")||"[]")||[];}catch(e){HIST=[];}
+var HIST=[]; try{HIST=JSON.parse(localStorage.getItem(userKey("thp40hist"))||"[]")||[];}catch(e){HIST=[];}
 var VP="week";
 var HRREST=55, HRMAX=196;
-function histSave(a){HIST=a; try{localStorage.setItem("thp40hist",JSON.stringify(a));}catch(e){}}
+function histSave(a){HIST=a; try{localStorage.setItem(userKey("thp40hist"),JSON.stringify(a));}catch(e){}}
 function dayN(s){return Math.round(dms(s)/864e5);}
 function weekStart(n){return n-((n+3)%7);} // n = jours depuis 1970 ; 1er janv. 1970 = jeudi
 function runLoad(r){ // charge d’entraînement (TRIMP de Banister, version femme) ; sans FC : estimation
@@ -1480,7 +1482,7 @@ function sync(manual){
     return fetch(u+"?t="+Date.now(),{cache:"no-store",signal:c?c.signal:undefined}).then(function(r){if(!r.ok)throw new Error("erreur "+r.status); return r.json();}).then(function(j){clearTimeout(t); if(!j||!Array.isArray(j.runs))throw new Error("fichier illisible"); return j;},function(e){clearTimeout(t); throw e;});}
   // les deux sources en parallèle (GitHub direct et le site) : on garde la plus récente, et une source lente ou en panne ne bloque plus
   function get(){return new Promise(function(res,rej){var got=[],fail=0,timer=null,done=false;
-      function fin(){if(done)return; done=true; clearTimeout(timer); got.sort(function(a,b){return String(b.updated||"").localeCompare(String(a.updated||""));}); var j=got[0]; if(j.cotes&&typeof j.cotes==="object"){var pe={}; Object.keys(COTES).forEach(function(k){if(COTES[k].pend&&!j.cotes[k])pe[k]=COTES[k];}); COTES=Object.assign({},j.cotes,pe); try{localStorage.setItem("cadenzo-cotes",JSON.stringify(COTES));}catch(e){}} res(j);}
+      function fin(){if(done)return; done=true; clearTimeout(timer); got.sort(function(a,b){return String(b.updated||"").localeCompare(String(a.updated||""));}); var j=got[0]; if(j.cotes&&typeof j.cotes==="object"){var pe={}; Object.keys(COTES).forEach(function(k){if(COTES[k].pend&&!j.cotes[k])pe[k]=COTES[k];}); COTES=Object.assign({},j.cotes,pe); try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}} res(j);}
       urls.forEach(function(u){one(u).then(function(j){got.push(j); if(got.length===urls.length)fin(); else if(!timer)timer=setTimeout(fin,1500);},function(e){fail++; if(fail===urls.length)rej(e); else if(got.length+fail===urls.length)fin();});});});}
   ghCheck();
   get().then(function(j){
@@ -1490,30 +1492,17 @@ function sync(manual){
   }).catch(function(e){var m=String(e&&e.message||e); D.sync.err=/failed to fetch|network|load failed/i.test(m)?"pas de réseau":/json|position|unexpected/i.test(m)?"fichier illisible":m.slice(0,40); if(manual)toast("Synchro impossible.");}).then(function(){syncing=false; save(); render(true);});
 }
 // État de la dernière exécution terminée de l’Action « Strava sync ».
-function ghCheck(){
-  fetch("https://api.github.com/repos/"+REPO+"/actions/workflows/strava-sync.yml/runs?per_page=5&status=completed",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0; return r.json();}).then(function(j){
-    var runs=j.workflow_runs||[]; if(!runs.length)return;
-    // GitHub renvoie les exécutions les plus récentes en premier : ne pas ignorer un échec isolé.
-    var last=runs[0], conclusion=last.conclusion;
-    if(conclusion!=="success"&&conclusion!=="failure")return;
-    D.sync.gh=conclusion==="failure"?"ko":"ok";
-    D.sync.ght=Date.parse(last.updated_at||last.created_at)||0;
-    save(); render(true);
-  }).catch(function(){});
-}
+function ghCheck(){} // L’ancienne synchronisation GitHub publique n’est plus utilisée.
 function stravaSub(){
-  var s=D.sync, bits=[];
-  if(s.gh==="ko")return "La lecture de Strava échoue sur GitHub : relance « Strava setup » (voir le README du dépôt).";
-  if(s.err)bits.push("Dernier essai raté ("+esc(s.err)+"), nouvel essai à la prochaine ouverture");
-  else bits.push(s.t?"Dernière synchro "+ago(s.t):"Jamais synchronisé");
-  if(s.gh==="ok"&&s.ght)bits.push("Strava lu par GitHub "+ago(s.ght));
-  return bits.join(" · ");
+  var s=D.sync;
+  if(s.err)return "Dernière synchro ratée ("+esc(s.err)+"), nouvel essai à la prochaine ouverture";
+  return s.t?"Dernière synchro du compte connecté "+ago(s.t):"Compte Strava connecté · pas encore synchronisé";
 }
 // Fraîcheur des données Strava : heure à laquelle GitHub a lu Strava (sinon date du fichier). Au-delà d’1 h, rappel discret.
-function stravaAge(){var s=D.sync, t=s.ght||(s.upd?Date.parse(s.upd):0); return t&&!isNaN(t)?t:0;}
+function stravaAge(){var s=D.sync, t=s.upd?Date.parse(s.upd):s.t; return t&&!isNaN(t)?t:0;}
 function syncNote(){
-  if(!STRAVA)return ""; var s=D.sync, t=stravaAge(), old=!t||Date.now()-t>3600*1000||s.gh==="ko"||!!s.err;
-  var txt=s.gh==="ko"?"Strava ne répond plus côté GitHub : tes dernières sorties peuvent manquer.":s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
+  if(!STRAVA)return ""; var s=D.sync, t=stravaAge(), old=!t||Date.now()-t>3600*1000||!!s.err;
+  var txt=s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
   return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old?' <button class="link-btn" data-act="sync">Actualiser</button>':"")+'</p>';
 }
 var CTRY=0;
@@ -1581,9 +1570,9 @@ $("fileGpxRace").addEventListener("change",function(){readFile(this,function(txt
 });});
 function distM(a,b,c,d){var R=6371000,toR=Math.PI/180,x=(d-b)*toR*Math.cos((a+c)/2*toR),y=(c-a)*toR; return Math.sqrt(x*x+y*y)*R;}
 function exportData(){
-  var g=null; try{g=JSON.parse(localStorage.getItem("cadenzo-garmin")||"null");}catch(e){}
+  var g=null; try{g=JSON.parse(localStorage.getItem(userKey("cadenzo-garmin"))||"null");}catch(e){}
   var txt=JSON.stringify(SAFE.wrap(D,g),null,1), name="cadenzo-sauvegarde-"+iso(realToday())+".json";
-  try{localStorage.setItem("cadenzo-lastexport",String(Date.now()));}catch(e){}
+  try{localStorage.setItem(userKey("cadenzo-lastexport"),String(Date.now()));}catch(e){}
   var f=null; try{f=new File([txt],name,{type:"application/json"});}catch(e){}
   if(f&&navigator.canShare&&navigator.canShare({files:[f]})&&navigator.share){navigator.share({files:[f],title:"Sauvegarde Cadenzo"}).catch(function(err){if(err&&err.name!=="AbortError")dl();}); return;}
   dl(); function dl(){var blob=new Blob([txt],{type:"application/json"}), a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},500); toast("Sauvegarde exportée.");}
@@ -1711,7 +1700,7 @@ function checkUpdate(){
   var ae=document.activeElement; if(ae&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName))return; // pas pendant une saisie
   fetch("index.html?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():"";}).then(function(t){
     var m=/app\.js\?v=(\d+)/.exec(t), nv=m?+m[1]:0; if(!nv||nv<=cur)return;
-    try{if(sessionStorage.getItem("thp40upd")===String(nv))return; sessionStorage.setItem("thp40upd",String(nv));}catch(e){}
+    try{if(sessionStorage.getItem(userKey("thp40upd"))===String(nv))return; sessionStorage.setItem(userKey("thp40upd"),String(nv));}catch(e){}
     updating=true; var go=function(){location.reload();};
     Promise.all([("caches" in window)?caches.keys().then(function(ks){return Promise.all(ks.map(function(k){return caches.delete(k);}));}):0,
       navigator.serviceWorker?navigator.serviceWorker.getRegistration().then(function(g){return g&&g.update();}):0]).then(go,go);
@@ -1719,7 +1708,7 @@ function checkUpdate(){
 }
 
 // ---------- synchro entre appareils (données chiffrées, sans compte ; voir csync.js) ----------
-var GKEY="cadenzo-gsync", GS=null, GBUSY2=false, GT=null, ADOPT=false, GTRY=0;
+var GKEY=userKey("cadenzo-gsync"), GS=null, GBUSY2=false, GT=null, ADOPT=false, GTRY=0;
 try{var g0=JSON.parse(localStorage.getItem(GKEY)||"null"); if(g0&&g0.id&&g0.key&&g0.sb)GS=g0;}catch(e){} // sans .sb : ancienne liaison jsonblob, à refaire
 function gsave(){try{localStorage.setItem(GKEY,JSON.stringify(GS));}catch(e){}}
 function normShared(st){var c=JSON.parse(JSON.stringify(st)), v=SAFE.validate(c); return CSYNC.shared(v.ok?v.state:c);}
