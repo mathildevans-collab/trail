@@ -5,7 +5,7 @@ var $=function(id){return document.getElementById(id);};
 
 // ---------- constantes ----------
 var KEY="thp40v3", OLDKEY="thp40v2";
-var APPV=82;
+var APPV=83;
 var STRAVA=true;    // sorties lues dans activities.json, écrit toutes les ~5 min par l’Action GitHub « Strava sync » (elle se relance elle-même)
 var REPO="mathildevans-collab/trail", DEF_JSON="https://raw.githubusercontent.com/"+REPO+"/main/activities.json";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -664,7 +664,7 @@ function weekCard(r,pl,wk,s,noMeter){
 function checkinCard(r,pl,w){
   if(!D.set.checkin)return ""; var ti=planIdx(pl); if(ti<0||w!==nowWeek(pl)||w<2||pl.weeks[w-1].ph==="Affûtage")return "";
   var c=ciOf(r,w), a=adjFor(pl,w), st=D.adj[r.id+":"+w];
-  if(a&&a.mode==="micro"&&!st){D.adj[r.id+":"+w]=st="off"; save();}
+  try{if(a&&a.mode==="micro"&&!st&&!localStorage.getItem("cadenzo-nomicro")){localStorage.setItem("cadenzo-nomicro",r.id+":"+w); D.adj[r.id+":"+w]=st="off"; save();}}catch(e){}
   function scale(k,l,lo,hi){var h='<div class="ci-row"><span>'+l+'</span><div class="scale">'; for(var i=1;i<=5;i++)h+='<button data-ci="'+k+'" data-v="'+i+'" aria-pressed="'+(c[k]===i)+'">'+i+'</button>'; return h+'</div><div class="scalelab"><span>'+lo+'</span><span>'+hi+'</span></div></div>';}
   var dow=((ti%7)+7)%7, full=!!(c.f&&c.s), edit=dow===0||!(c.f||c.s), h;
   if(edit)h='<div class="card"><h2>Check-in du lundi</h2><p class="small muted" style="margin:0 0 10px">'+(dow===0?"10 secondes. Le coach ajuste la semaine avec tes réponses.":"Oublié lundi ? Tu peux le remplir maintenant.")+'</p>'+scale("f","Fatigue","fraîche","épuisée")+scale("s","Sommeil","mauvais","excellent")+(full?'<p class="small ci-ok" style="margin:8px 0 0"><span class="chip ok">✓ Enregistré</span> Fatigue '+c.f+'/5 · sommeil '+c.s+'/5</p>':(c.f||c.s?'<p class="small muted" style="margin:8px 0 0">Réponds aux deux pour que le coach ajuste.</p>':''));
