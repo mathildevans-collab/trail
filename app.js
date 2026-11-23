@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=111;
+var APPV=112;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -579,7 +579,6 @@ document.addEventListener("visibilitychange",function(){
     if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);
   },function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
 });
-function ctPost(m,done){return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0; if(!COTES[m.id])COTES[m.id]={nom:m.nom,items:[],pend:1,lat:m.lat,lng:m.lng}; try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){} done&&done();});}
 function ctHere(){
   if(!CTS.pos){toast("Position introuvable. Autorise la localisation.");return;}
   if(CTS.loading)return;
@@ -595,7 +594,6 @@ function ctHere(){
     render(true);toast(COTES[id].items.length?COTES[id].items.length+" côtes trouvées autour de toi.":"Aucune côte répondant aux critères dans un rayon de 5 km.");
   }).catch(function(e){CTS.loading=false;CTS.autoSearchDone=false;render(true);toast("Recherche impossible : "+String(e&&e.message||"réessaie").slice(0,90));});
 }
-var CT_TOPIC="cadenzo-lieux-def79f15a0c4a14c40b8";
 function ctSlug(n){return n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"lieu";}
 
 function vPrep(r,pl){
