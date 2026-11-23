@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=113;
+var APPV=114;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -541,9 +541,11 @@ function ctHav(a,b,c,d){var R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r*Math.cos((a
 function ctDist(c){return CTS.pos&&c.la!=null?Math.round(ctHav(CTS.pos.la,CTS.pos.ln,c.la,c.ln)*10)/10:c.k;}
 function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
-function cotesCard(){
-  ctWatch(); var L=cotesList(); if(!L||!L.items||!L.items.length)return "";
-  var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><span class="ctch">📍 '+esc(L.nom)+'</span>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Côte suivante">Suivante<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
+function cotesCard(session){
+  if(!session||!/(côtes?|descentes?|fartlek)/i.test(session.type||""))return "";
+  ctWatch(); var L=cotesList();
+  var h='<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 '+esc(L&&L.nom||"Autour de moi")+'</span>'+(L&&L.items&&L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Segment suivant">Suivant<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
+  if(!L||!L.items||!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte affichée pour le moment. Lance la recherche autour de ta position.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Trouver les côtes autour de moi')+'</button></div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
   if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte enregistrée dans ce secteur pour le moment.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Rechercher à nouveau')+'</button></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
@@ -579,8 +581,14 @@ document.addEventListener("visibilitychange",function(){
     if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);
   },function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
 });
+function ctLocate(){
+  if(!navigator.geolocation||!window.isSecureContext){toast("La géolocalisation n’est pas disponible sur cet appareil.");return;}
+  if(CTS.pos&&Date.now()-(CTS.pos.t||0)<5*60*1000){ctHere();return;}
+  toast("Localisation en cours…");
+  navigator.geolocation.getCurrentPosition(function(p){CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)};ctSave();ctHere();},function(err){toast(err&&err.code===1?"Autorise la localisation pour trouver les côtes.":"Position GPS indisponible. Réessaie.");},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
+}
 function ctHere(){
-  if(!CTS.pos){toast("Position introuvable. Autorise la localisation.");return;}
+  if(!CTS.pos){ctLocate();return;}
   if(CTS.loading)return;
   if(!window.CadenzoAuth||!CadenzoAuth.segments){toast("Connexion indisponible. Reconnecte-toi.");return;}
   var lat=CTS.pos.la,lng=CTS.pos.ln;
@@ -612,7 +620,7 @@ function vPrep(r,pl){
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
-  h+=cotesCard(); // Afficher uniquement si au moins une côte est disponible.
+  h+=cotesCard(s); // Afficher les segments uniquement les jours de séance avec côtes.
   if(cur===tw)h+=weekEndCard(r,pl,ti);
   h+=bilanCard(r,pl,wk,sel,selD);
 
@@ -1392,7 +1400,7 @@ $("view").addEventListener("click",function(e){
   if(ds.ctt){CTS.open=!CTS.open; ctSave(); render(true); return;}
   if(ds.ctn){CTS.off+=3; ctSave(); render(true); return;}
 
-  if(ds.ctg){ctHere(); return;}
+  if(ds.ctg){ctLocate(); return;}
   if(ds.trpg){TRPG+=+ds.trpg; render(true); return;}
   if(ds.tro!==undefined){openTro(ds.tro); return;}
   if(ds.seg){segSheet(ds.seg); return;}
