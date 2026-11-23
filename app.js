@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=110;
+var APPV=111;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -542,10 +542,10 @@ function ctDist(c){return CTS.pos&&c.la!=null?Math.round(ctHav(CTS.pos.la,CTS.po
 function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
-  ctWatch(); var L=cotesList(); if(!L)return '<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 Autour de toi</span></div><p class="small muted" style="margin:10px 0 8px">Retrouve des côtes à proximité et choisis ton prochain segment.</p><button class="ctmore" data-ctg="1" style="margin:0">Trouver les segments autour de moi</button></div>';
+  ctWatch(); var L=cotesList(); if(!L)return '<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 Autour de toi</span></div><p class="small muted" style="margin:10px 0 8px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Retrouve directement les côtes à proximité de ta position GPS.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Trouver les segments autour de moi')+'</button></div>';
   var h='<div class="card ct"><div class="cthd"><b>Séance proposée</b><span class="ctch">📍 '+esc(L.nom)+'</span>'+(L.items.length>3?'<button class="ctib" data-ctn="1" aria-label="Côte suivante">Suivante<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
-  if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">Côtes prêtes dans environ 5 min. <span style="opacity:.6">v'+APPV+'</span></p><button class="ctmore" data-act="sync" style="margin:0">Relire maintenant</button></div>';
+  if(!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte enregistrée dans ce secteur pour le moment.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Rechercher à nouveau')+'</button></div>';
   var n=L.items.length, v=[]; for(var k=0;k<Math.min(3,n);k++)v.push(L.items[(CTS.off+k)%n]);
   var x=v[0], c=x.c;
   h+='<div class="cthero"><span class="cts">CONSEILLÉE · '+ctLvl(c).toUpperCase()+(x.p?' · '+(x.p===1?"1ER":x.p+"E")+' TEMPS':'')+'</span><a class="ctlk" href="https://www.strava.com/segments/'+c.i+'" target="_blank" rel="noopener"><b>'+esc(c.n)+' ↗</b></a><div class="ctst"><div><i>'+String(c.g).replace(".",",")+' %</i><span>pente</span></div><div><i>'+c.d+' m</i><span>longueur</span></div><div><i>+'+c.e+' m</i><span>D+</span></div></div><p>'+ctWhere(c)+' · '+ctAgo(x.last)+'</p></div>';
@@ -568,10 +568,18 @@ document.addEventListener("visibilitychange",function(){
 function ctPost(m,done){return fetch("https://ntfy.sh/",{method:"POST",body:JSON.stringify({topic:CT_TOPIC,message:JSON.stringify(m)})}).then(function(r){if(!r.ok)throw 0; if(!COTES[m.id])COTES[m.id]={nom:m.nom,items:[],pend:1,lat:m.lat,lng:m.lng}; try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){} done&&done();});}
 function ctHere(){
   if(!CTS.pos){toast("Position introuvable. Autorise la localisation.");return;}
-  fetch("https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat="+CTS.pos.la+"&lon="+CTS.pos.ln,{headers:{"Accept-Language":"fr"}}).then(function(r){return r.json();}).then(function(j){
-    var a=j.address||{}, nom=(a.village||a.town||a.city||a.municipality||j.name||"Ma position").slice(0,30), id=ctSlug(nom);
-    return ctPost({id:id,nom:nom,lat:CTS.pos.la,lng:CTS.pos.ln},function(){render(true); toast(nom+" ajoutée · côtes prêtes dans environ 5 min.");});
-  }).catch(function(){toast("Impossible pour l’instant. Réessaie.");});
+  if(CTS.loading)return;
+  if(!window.CadenzoAuth||!CadenzoAuth.segments){toast("Connexion indisponible. Reconnecte-toi.");return;}
+  var lat=CTS.pos.la,lng=CTS.pos.ln;
+  CTS.loading=true;render(true);
+  var place=fetch("https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat="+lat+"&lon="+lng,{headers:{"Accept-Language":"fr"}}).then(function(r){if(!r.ok)throw 0;return r.json();}).catch(function(){return null;});
+  Promise.all([CadenzoAuth.segments({lat:lat,lng:lng,radiusKm:5}),place]).then(function(results){
+    var j=results[1],a=j&&j.address||{},nom=(a.village||a.town||a.city||a.municipality||j&&j.name||"Autour de moi").slice(0,30),id=ctSlug(nom);
+    COTES[id]={nom:nom,lat:lat,lng:lng,items:results[0].items||[],updated:results[0].searchedAt||new Date().toISOString()};
+    CTS.l=id;CTS.off=0;CTS.open=false;CTS.loading=false;ctSave();
+    try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
+    render(true);toast(COTES[id].items.length?COTES[id].items.length+" côtes trouvées autour de toi.":"Aucune côte répondant aux critères dans un rayon de 5 km.");
+  }).catch(function(e){CTS.loading=false;render(true);toast("Recherche impossible : "+String(e&&e.message||"réessaie").slice(0,90));});
 }
 var CT_TOPIC="cadenzo-lieux-def79f15a0c4a14c40b8";
 function ctSlug(n){return n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,30)||"lieu";}
