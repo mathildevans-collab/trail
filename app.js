@@ -27,7 +27,7 @@ function tagOf(t){return QT[t]?"q":LT[t]?"l":"e";}
 
 // ---------- état ----------
 function thpRace(){return {id:"thp40",name:"THP40",full:"Trail de Haute Provence",place:"Forcalquier",date:"2027-05-08",time:"08:00",km:38.8,dp:1279,goal:295,prio:"A",builtin:true,start:"2026-11-09"};}
-function blank(){return {v:3,races:[thpRace()],active:"thp40",focus:"thp40",done:{},undone:{},actual:{},ci:{},adj:{},edits:{},tseen:"",kit:{},todo:{},
+function blank(){return {v:3,races:[],active:null,focus:null,done:{},undone:{},actual:{},ci:{},adj:{},edits:{},tseen:"",kit:{},todo:{},
   set:{theme:"auto",gel:35,water:15,vib:true,checkin:true,fake:""},race:null,practice:null,results:{},sync:{t:0,upd:"",err:"",gh:""}};}
 var OBJ={set:1,sync:1};
 function assignState(n,o){for(var k in n){if(o[k]==null)continue; if(OBJ[k]&&typeof o[k]==="object")Object.assign(n[k],o[k]); else n[k]=o[k];} return n;}
@@ -48,7 +48,7 @@ function load(){
   return blank();
 }
 function migrate(o,n){
-  var t=n.races[0], s=o.set||{};
+  var t=thpRace(), s=o.set||{}; n.races=[t]; n.active=t.id; n.focus=t.id;
   if(s.goal)t.goal=s.goal; if(isoOk(s.raceDate))t.date=s.raceDate; if(s.raceTime)t.time=s.raceTime;
   ["theme","gel","water","vib","checkin"].forEach(function(k){if(s[k]!=null)n.set[k]=s[k];});
   Object.keys(o.done||{}).forEach(function(k){n.done["thp40:"+k]=1;});
@@ -999,7 +999,8 @@ function editRace(id){
   var r=id?raceById(id):null, isNew=!r;
   r=r||{name:"",date:"",time:"08:00",km:"",dp:"",goal:0,prio:"A",cps:[],start:nextMonday()};
   var b=!!r.builtin;
-  var h='<h2>'+(isNew?"Ajouter une course":"Modifier "+esc(r.name))+'</h2>';
+  var h='<h2>'+(isNew?"Créer ton plan":"Modifier "+esc(r.name))+'</h2>';
+  if(isNew&&!D.races.length)h+='<p class="small muted" style="margin:-4px 0 14px">Renseigne ta course objectif. Ton plan sera construit selon sa date, sa distance, son dénivelé et tes propres sorties Strava.</p>';
   if(isNew&&typeof PRESETS!=="undefined")h+='<span class="eyebrow" style="margin-bottom:6px">Courses prêtes</span>'+PRESETS.map(function(p){var has=D.races.some(function(x){return x.preset===p.key;}); return '<button class="link" data-sact="preset:'+p.key+'"'+(has?' disabled style="opacity:.5"':'')+'><span class="ico">'+I.flag+'</span><span class="tx"><b>'+esc(p.name)+'</b><small>'+kmS(p.km)+' km · +'+nb(p.dp)+' m · '+esc(p.place)+(has?' · déjà ajoutée':(p.prio==="B"?' · course B':'')+(p.prof?' · trace et conseils inclus':' · sans trace'))+'</small></span><span class="chev">›</span></button>';}).join("")+'<span class="eyebrow" style="margin:14px 0 6px">Ou une autre course</span>';
   if(!b)h+='<div class="radio2" data-group="prio"><button data-pick="A" aria-pressed="'+(r.prio==="A")+'"><b>Course A · objectif</b><span>L’appli te prépare un plan jusqu’au jour J</span></button><button data-pick="B" aria-pressed="'+(r.prio==="B")+'"><b>Course B · préparation</b><span>Glissée dans le plan de ta course A</span></button></div>';
   h+='<button class="btn sm" data-sact="gpx" style="margin-bottom:10px;width:100%">'+I.up+' <span id="gpxlab">'+(r.prof||r.gpx?"Remplacer la trace GPX":"Importer la trace GPX")+'</span></button>';
@@ -1017,7 +1018,7 @@ function applyState(ns,garmin,mode,reason){
   return SAFE.snap(reason,cur).then(function(rec){
     if(!rec&&!confirm("La copie de sécurité n’a pas pu être faite sur ce téléphone. Continuer quand même ?"))return false;
     D=mode==="merge"?assignState(blank(),SAFE.merge(D,ns).state):assignState(blank(),ns);
-    if(!D.races||!D.races.length)D.races=[thpRace()];
+    
     if(garmin&&(mode==="replace"||!localStorage.getItem(userKey("cadenzo-garmin")))){try{localStorage.setItem(userKey("cadenzo-garmin"),JSON.stringify(garmin));}catch(e){toast("Données Garmin trop volumineuses : non importées.");}}
     MC={}; PC={}; applyTheme(); if(!save())return false; goNow(); return true;});
 }
@@ -1692,6 +1693,7 @@ function onPos(p){
 // reclasse tout de suite les sorties déjà lues avec la logique de cette version (sorties hors plan comprises)
 try{if(HIST.length){applyActs(HIST.map(function(q){return {date:q.date,km:q.km,dp:q.dp,t:q.t,src:"strava"};}));}}catch(e){}
 save(); goNow(); render();
+if(!D.races.length)setTimeout(function(){if(!D.races.length&&!SH)editRace(null);},500);
 if(D.race&&D.race.t0&&!D.race.done&&raceById(D.race.rid)&&daysTo(raceById(D.race.rid))===0)openRace(D.race.rid,false);
 setTimeout(autoSync,400);
 setInterval(function(){if(!document.hidden)autoSync();},5*60*1000); // appli ouverte : relit Strava toute seule
