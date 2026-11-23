@@ -173,6 +173,32 @@ async function getAccessToken(userId: string) {
   }
   return await decrypt(account.access_token_enc);
 }
+async function findSegments(req: Request) {
+  const auth = req.headers.get("Authorization") || "";
+  const jwt = auth.replace(/^Bearer\s+/i, "");
+  if (!jwt) return json({ error: "Session requise." }, 401);
+  const body = await req.json().catch(() => ({}));
+  const lat = Number(body.lat), lng = Number(body.lng);
+  const radiusKm = Math.max(1, Math.min(8, Number(body.radiusKm) || 5));
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return json({ error: "Position GPS invalide." }, 400);
+  const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "", { auth: { persistSession: false } });
+  const { data: { user }, error } = await anon.auth.getUser(jwt);
+  if (error || !user) return json({ error: "Session invalide." }, 401);
+  const access = await getAccessToken(user.id);
+  const dLat = radiusKm / 111;
+  const dLng = radiusKm / (111 * Math.cos(lat * Math.PI / 180));
+  const bounds = [lat - dLat, lng - dLng, lat + dLat, lng + dLng].map(v => v.toFixed(5)).join(",");
+  const found = await strava("/segments/explore?" + new URLSearchParams({ bounds, activity_type: "running" }).toString(), access);
+  const items = (found.segments || []).map((s: any) => ({
+    i: Number(s.id), n: String(s.name || "Segment"), d: Math.round(Number(s.distance || 0)),
+    g: Math.round(Number(s.avg_grade || 0) * 10) / 10, e: Math.round(Number(s.elev_difference || 0)),
+    v: String(s.city || ""), la: Number(s.start_latlng?.[0] || 0), ln: Number(s.start_latlng?.[1] || 0), s: "e"
+  })).filter((s: any) => s.i && s.la && s.ln && s.d >= 100 && s.d <= 800 && s.g >= 4 && s.e >= 8)
+    .sort((a: any, b: any) => b.e - a.e || b.g - a.g).slice(0, 10);
+  return json({ items, count: items.length, radiusKm, searchedAt: new Date().toISOString() });
+}
+
+
 async function sync(req: Request) {
   const auth = req.headers.get("Authorization") || "";
   const jwt = auth.replace(/^Bearer\s+/i, "");
@@ -381,6 +407,7 @@ Deno.serve(async (req: Request) => {
       return await callback(req, url);
     }
     if (action === "sync") return await sync(req);
+    if (action === "segments") return await findSegments(req);
     return json({ error: "Action inconnue." }, 404);
   } catch (e) {
     console.error("cadenzo-strava:", e instanceof Error ? e.message : "erreur");
