@@ -2,8 +2,11 @@
 // Tout reste sur le téléphone : le .zip est lu dans le navigateur, seul un résumé par jour est gardé (localStorage « cadenzo-garmin »).
 (function(){
 "use strict";
-var KEY="cadenzo-garmin";
-var G=null; try{G=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){G=null;}
+var KEY="cadenzo-garmin:anonymous";
+var G=null;
+function load(){try{G=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){G=null;}}
+load();
+function setOwner(id){KEY="cadenzo-garmin:"+String(id||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");load();return !!G;}
 function store(g){G=g; try{localStorage.setItem(KEY,JSON.stringify(g)); return true;}catch(e){return false;}}
 
 // ---------- petits outils ----------
@@ -325,5 +328,5 @@ function html(ctx){
   return h;
 }
 function clear(){G=null; try{localStorage.removeItem(KEY);}catch(e){}}
-window.GARMIN={importFiles:importFiles,html:html,clear:clear,has:function(){return !!G;},data:function(){return G;},dbg:function(){return {G:G,analyse:analyse,insights:insights};}};
+window.GARMIN={importFiles:importFiles,html:html,clear:clear,has:function(){return !!G;},data:function(){return G;},setOwner:setOwner,dbg:function(){return {G:G,analyse:analyse,insights:insights};}};
 })();
