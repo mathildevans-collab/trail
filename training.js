@@ -12,6 +12,7 @@
     if(!Array.isArray(f)||f.length<5||!f.every(function(x){return Number(x)>0;}))return null;
     f=f.map(Number);for(var i=1;i<f.length;i++)if(f[i]<=f[i-1])return null;
     var max=Number(z.max)||0,out={};
+    if(max&&max<=f[4])return null;
     for(i=1;i<=5;i++)out[i]=[f[i-1],i<5?f[i]-1:max||null];
     return out;
   }
@@ -86,8 +87,8 @@
     return {zones:zones,zoneSource:source,paceSource:best?best.source+(best.date?" · "+best.date:""):targetPace?"objectif de course":"indisponible",paces:paces,performances:perf.length,easySamples:easySamples.length};
   }
   function zoneLabel(n,m){
-    var z=m&&m.zones&&m.zones[n];
-    return "Z"+n+(z&&z[0]?" · "+hrRange(z):" · aisance respiratoire");
+    var z=m&&m.zones&&m.zones[n],fallback={1:"très facile, respiration relâchée",2:"aisance conversationnelle",3:"soutenu, phrases courtes",4:"difficile mais contrôlé",5:"très intense, effort bref"};
+    return "Z"+n+(z&&z[0]?" · "+hrRange(z):" · "+(fallback[n]||"effort ressenti"));
   }
   function zoneForSession(s){
     if(s.zone)return Number(s.zone);
