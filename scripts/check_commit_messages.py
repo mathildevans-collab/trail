@@ -11,11 +11,11 @@ ACTION = re.compile(
     r"Conserve|Préserve|Corrige|Décrit|Détecte|Documente|Déplace|Évite|"
     r"Explique|Affiche|Gère|Limite|Masque|Met à jour|Nettoie|"
     r"Permet|Protège|Répare|Remplace|Renomme|Réorganise|Rétablit|"
-    r"Rend|Sécurise|Simplifie|Supprime|Trie|Vérifie|"
+    r"Rend|Sécurise|Simplifie|Supprime|Trie|Vérifie|Teste|"
     r"Empêche|Prépare|Réduit|Ajoute|Retire|Autorise|Fixer|Branche|Renforce|Applique|Couvre|Exécute|"
     r"Add|Improve|Automate|Block|Centralize|Load|Clarify|Keep|Correct|Compare|Execute|Isolate|"
     r"Describe|Detect|Document|Move|Avoid|Explain|Show|Manage|Limit|"
-    r"Hide|Update|Clean|Allow|Protect|Repair|Replace|Rename|Refactor|"
+    r"Hide|Show|Update|Clean|Allow|Protect|Repair|Replace|Rename|Refactor|"
     r"Restore|Make|Secure|Simplify|Remove|Sort|Verify|Prevent|Prepare|"
     r"Reduce|Integrate|Use|Isolate|Precache)\b",
     re.IGNORECASE,
