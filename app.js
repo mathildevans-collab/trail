@@ -280,7 +280,7 @@ function genWeek(w,n,taper,r,m){
 var PC={};
 function planOf(r){
   if(!r)return null;
-  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy]):"default";
+  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.club_sessions,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy]):"default";
   var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r)+"|"+prefKey;
   if(PC[r.id]&&PC[r.id].key===key)return PC[r.id].p;
   var m=model(r), rws=mondayOf(dms(r.date)), start=r.builtin?dms(r.start):mondayOf(dms(isoOk(r.start)?r.start:nextMonday()));
@@ -304,7 +304,7 @@ function planOf(r){
     wk.s.sort(function(a,b){return a.dow-b.dow;});
     wk.km=0; wk.dp=0; wk.s.forEach(function(s){if(!s.race){wk.km+=s.km||0; wk.dp+=s.dp||0;}}); wk.km=Math.round(wk.km); wk.dp=Math.round(wk.dp);
   });
-  if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&!TRAIN_PREF.legacy&&!r.builtin){ // profils existants (legacy) : plan inchangé
+  if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&!TRAIN_PREF.legacy){ // préférences appliquées à tous les plans, y compris les plans intégrés
     var pref=TRAIN_PREF, days=(pref.training_days||[1,2,3,5,6]).map(Number), clubDays=pref.has_club?(pref.club_days||[]).map(Number):[], target=Math.max(2,Math.min(7,+pref.sessions_per_week||4));
     weeks.forEach(function(wk){
       var byDow={}; wk.s.forEach(function(s){byDow[s.dow]=s;});
@@ -321,7 +321,11 @@ function planOf(r){
       chosen.forEach(function(d){
         var s=byDow[d];
         if(clubDays.indexOf(d)>=0){
-          planned.push(sess({k:KEYS[d],dow:d,tag:"q",type:"Club · piste",km:s&&s.km||8,dp:s&&s.dp||0,club:true,steps:s&&s.steps||[],txt:"Séance du club. Elle remplace la séance prévue ce jour-là : ne la double pas avec une autre séance."}));
+          var cs=(pref.club_sessions||[]).filter(function(x){return +x.day===d;})[0]||{type:"Fractionné / piste",estimated_km:8};
+          var ckm=Math.max(0,Math.min(100,Number(cs.estimated_km)||0));
+          var ctype=String(cs.type||"Autre");
+          var ctag=/fractionné|piste|côtes/i.test(ctype)?"q":/sortie longue|trail/i.test(ctype)?"l":"e";
+          planned.push(sess({k:KEYS[d],dow:d,tag:ctag,type:ctype,km:ckm,dp:0,club:true,steps:[],txt:"Séance collective obligatoire : "+ctype+". Estimation modifiable après la séance. Elle remplace la séance initialement prévue ce jour-là et compte dans ton volume hebdomadaire."}));
         }else if(s)planned.push(s);
         else planned.push(sess({k:KEYS[d],dow:d,tag:"e",type:"Footing",km:6,dp:0,steps:[[ "6 km","Footing facile en zone 2" ]],txt:"Footing facile en zone 2, ajouté selon tes disponibilités."}));
       });
@@ -1091,6 +1095,7 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
     var clubDays=clubSessions.map(function(s){return s.day;});
     var count=+$("prefCount").value, err=$("prefError");
     if(training.length<count){err.textContent="Sélectionne au moins autant de jours que de séances souhaitées.";return;}
+    if(count<clubSessions.length){err.textContent="Le nombre de séances souhaitées doit inclure tous tes entraînements collectifs obligatoires ("+clubSessions.length+").";return;}
     if(clubDays.some(function(d){return training.indexOf(d)<0;})){err.textContent="Ajoute les jours de tes entraînements collectifs à tes disponibilités.";return;}
     if(clubSessions.some(function(s){return !isFinite(s.estimated_km)||s.estimated_km<0||s.estimated_km>100;})){err.textContent="Vérifie les distances estimées de tes entraînements.";return;}
     var rest=[0,1,2,3,4,5,6].filter(function(d){return training.indexOf(d)<0;});
