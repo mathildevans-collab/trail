@@ -1108,7 +1108,6 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   #view:has(.auth-page) .auth-logo{width:62px;height:62px}
 }
 
-<<<<<<< HEAD
 
 /* Pages de réglages — présentation dédiée au bureau, sans modifier le rendu mobile */
 .settings-page{grid-column:1/-1;min-width:0;width:100%;max-width:1120px;margin:0 auto}
@@ -1170,7 +1169,6 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .settings-trophies-content>.sgroup .sitem{min-height:72px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
   .settings-trophies-content>.foot{margin-top:18px}
 }
-=======
 /* Indisponibilité d'une semaine + échange de jours */
 .avail{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:0 0 14px}
 .av{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--muted);font:600 12px var(--display)}
@@ -1185,4 +1183,44 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .swap-b span{font-weight:500;opacity:.8;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .swap-b:hover{background:color-mix(in srgb,currentColor 10%,transparent)}
 #sheet .muted,#sheet .small,#sheet .xs,.sheet .muted{white-space:normal;overflow:visible;text-overflow:clip}
->>>>>>> ba36dd7 (Ajoute les séances route spécifiques, les zones de FC personnalisées et l'indisponibilité d'une semaine)
+
+/* Cloche de notifications */
+.bell{position:relative}
+.bell.on{color:var(--acc)}
+.bell .bn{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--acc);color:#fff;font:700 10.5px/17px var(--display);text-align:center;font-style:normal;box-shadow:0 0 0 2px var(--bg)}
+.ntf{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.ntf-i{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;background:var(--card);text-align:left;color:var(--ink);font-family:var(--display)}
+.ntf-i b{font-size:14.5px}.ntf-i span{font-size:13px;color:var(--muted);white-space:normal}
+.ntf-i:hover{background:var(--bg)}
+/* Bande de la semaine : contenu des jours seulement sur ordinateur */
+.day .dty,.day .dkm{display:none}
+@media(min-width:900px){
+  .strip .day{min-height:104px;align-items:flex-start;text-align:left;padding:10px 12px;gap:2px;position:relative}
+  .strip .day>span{font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+  .strip .day>b{font-size:20px}
+  .strip .day>i{position:absolute;top:12px;right:12px}
+  .strip .day .dty{display:block;margin-top:6px;font:700 12.5px/1.25 var(--display);font-style:normal;color:var(--ink);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .strip .day .dkm{display:block;font:500 12px var(--display);font-style:normal;color:var(--muted)}
+  .strip .day:not(.has) .dty{color:var(--muted);font-weight:500}
+  .strip .day.mv{cursor:grab}
+  .strip .day.drag{opacity:.45}
+  .strip .day.over{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--card));box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 30%,transparent)}
+}
+
+/* Trophées ordinateur : pagination pleine largeur, étapes en grille, podium resserré */
+@media(min-width:900px){
+  .settings-trophies-content>.sgroup .tro-pg{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+  .settings-trophies-content .tro-st{flex-wrap:wrap;overflow:visible;scroll-snap-type:none;padding:14px 20px 20px}
+  .settings-trophies-content .tro-st .stp{flex:0 0 200px}
+  .settings-trophies-content .tro-dots{display:none}
+  .settings-trophies-content .tro-card.nopad>.eyebrow{padding:20px 20px 0!important}
+  .settings-trophies-content .podium{max-width:560px;margin-left:auto;margin-right:auto}
+}
+
+/* Réglages ordinateur : titre sous le retour, carte seule plus large, listes déroulantes lisibles */
+@media(min-width:900px){
+  .settings-page-head{grid-template-columns:1fr;gap:14px}
+  .settings-page-head .back{margin-top:0}
+  .settings-page-content:has(>.sgroup:only-child){grid-template-columns:minmax(0,760px)}
+  .settings-page-content .sitem select{width:auto;min-width:150px;max-width:none;text-overflow:clip;padding-right:30px}
+}

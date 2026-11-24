@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=167;
+var APPV=169;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -591,6 +591,10 @@ function planOf(r){
     wk.s=fixed.concat(keep).sort(function(a,b){return a.dow-b.dow;});
     wk.avail=A; wk.note=(wk.note?wk.note+" ":"")+"Semaine adaptée à tes jours disponibles."+(lost>0?" "+lost+" séance"+(lost>1?"s":"")+" facile"+(lost>1?"s":"")+" retirée"+(lost>1?"s":"")+" faute de jour.":"");
     wk.km=0;wk.dp=0;wk.s.forEach(function(x){wk.km+=x.km||0;wk.dp+=x.dp||0;}); wk.km=Math.round(wk.km*10)/10; wk.dp=Math.round(wk.dp);});
+  // déplacements de séances d’un jour à l’autre (glisser-déposer / échange) : appliqués en dernier, comme « n-avail »
+  Object.keys(E).forEach(function(k){var mm=/^(\d+)-mv$/.exec(k); if(!mm||!E[k])return; var wk=weeks[+mm[1]-1]; if(!wk)return;
+    wk.s.forEach(function(x){var d=E[k][x.k]; if(d!=null&&d>=0&&d<=6&&!x.race&&!x.club&&!x.bid)x.dow=+d;});
+    wk.s.sort(function(a,b){return a.dow-b.dow;}); wk.moved=true;});
   var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date)};
   PC[r.id]={key:key,p:p}; return p;
 }
@@ -708,6 +712,7 @@ function rbCard(r,wk){
 // ---------- icônes ----------
 function sv(p,w){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';}
 var I={
+ bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
  logout:sv('<path d="M10 17l5-5-5-5M15 12H3M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>'),
  gear:sv('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
  check:sv('<path d="M5 12l5 5 9-10"/>',3), play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>',
@@ -723,7 +728,28 @@ var I={
 };
 
 // ---------- petits blocs ----------
-function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions"><span class="account-status" role="status" aria-label="Connecté à Strava">'+(window.CADENZO_PROFILE_PICTURE?'<img class="account-photo" src="'+esc(window.CADENZO_PROFILE_PICTURE)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">' : "")+'<i class="account-online" aria-hidden="true"></i></span>'+ '<button class="ibtn account-logout" type="button" data-account-logout title="Se déconnecter" aria-label="Se déconnecter">'+I.logout+'</button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
+// ---------- notifications : ce qui demande ton attention ----------
+function notifs(){
+  var L=[], r=activeRace(); if(!r)return L;
+  try{var pl=planOf(r); if(pl){var ti=planIdx(pl), w=nowWeek(pl);
+    if(ti>=0){
+      if(D.set.checkin&&w>=2&&pl.weeks[w-1].ph!=="Affûtage"){var c=ciOf(r,w), dw=((ti%7)+7)%7; if(!(c.f&&c.s))L.push({t:dw===0?"Check-in du lundi":"Check-in oublié",d:"10 secondes pour que le coach ajuste ta semaine.",go:"today"});}
+      var a=adjFor(pl,w), st=D.adj[r.id+":"+w];
+      if(a&&!st&&(a.mode==="light"||a.mode==="micro"||a.mode==="z2"))L.push({t:"Ajustement conseillé",d:{light:"Semaine allégée proposée.",micro:"Micro-récupération proposée.",z2:"Zone 2 stricte cette semaine."}[a.mode],go:"today"});
+      if(ti>=1){var yi=ti-1, yw=Math.floor(yi/7)+1, yd=((yi%7)+7)%7, ws=pl.weeks[yw-1], ys=ws&&sessAt(ws,yd);
+        if(ys&&!ys.race&&!ys.club&&ys.km>0&&!D.done[sk(r,yw,ys.k)]&&!D.actual[sk(r,yw,ys.k)])L.push({t:"Séance d’hier non faite",d:ys.type+" · tu peux la déplacer ou la marquer faite.",go:"goto:"+yw+"-"+yd});}
+    }}}catch(e){}
+  var sy=D.sync||{}; if(sy.err)L.push({t:"Synchronisation Strava",d:String(sy.err).slice(0,90),go:"today"});
+  return L;
+}
+function bellBtn(){var n=notifs().length; return '<button class="ibtn bell'+(n?" on":"")+'" data-act="notifs" aria-label="Notifications'+(n?' ('+n+')':'')+'">'+I.bell+(n?'<i class="bn">'+n+'</i>':'')+'</button>';}
+function openNotifs(){
+  var L=notifs(), h='<h2>Notifications</h2>';
+  if(!L.length)h+='<p class="small muted">Rien à signaler. Ton plan est à jour.</p>';
+  else h+='<div class="ntf">'+L.map(function(x){return '<button class="ntf-i" data-ngo="'+esc(x.go)+'"><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></button>';}).join("")+'</div>';
+  openSheet(h,{kind:"ntf"});
+}
+function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions">'+bellBtn()+'<button class="ibtn account-logout" type="button" data-account-logout title="Se déconnecter" aria-label="Se déconnecter">'+I.logout+'</button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
 function todoBtn(key,label,store){var st=store||D.todo, on=!!st[key]; return '<button class="todo" data-todo="'+esc(key)+'"'+(store?' data-store="kit"':'')+' aria-pressed="'+on+'"><span class="box">'+(on?I.check:"")+'</span><span class="t">'+label+'</span></button>';}
 function woFor(s,wk){ // séance guidée proposée sur toute séance de renfo ou de mobilité
   if(!window.WORKOUT)return "";
@@ -818,7 +844,7 @@ function cotesList(){ // seuls les segments recherchés depuis la position GPS a
   var cur=CTS.l;
   // Ne jamais remplacer une recherche locale par un cache partagé ou une ancienne ville.
   if(!cur||cur==="strava-cache"||!COTES[cur]||!CTS.city)return null;
-  var L=COTES[cur], last={}, best={}, src=L.items||[], loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
+  var L=COTES[cur], last={}, best={}, src=(L.items||[]).filter(function(x){return +x.g>=4&&+x.e>=8;}), loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
     if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date;
     if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;
@@ -935,7 +961,7 @@ function vPrep(r,pl){
   if(browsing&&cur!==nw)h+='<div class="banner mini"><span>'+(cur<nw?'Semaine passée':'Semaine à venir')+'</span><button data-act="now">Aujourd’hui</button></div>';
   h+='<div class="strip" role="group" aria-label="Jours de la semaine">';
   for(var i=0;i<7;i++){var s0=sessAt(wk,i), dn=s0&&D.done[sk(r,cur,s0.k)], tdy=cur===tw&&i===td;
-    h+='<button class="day'+(s0?" has":"")+(dn?" done":"")+(tdy?" today":"")+'" data-day="'+i+'" aria-pressed="'+(sel===i)+'" aria-label="'+DOWL[i]+(s0?", "+esc(s0.type):", repos")+(dn?", faite":"")+'"><span>'+DL[i]+'</span><b>'+new Date(pl.start+((cur-1)*7+i)*DAY).getUTCDate()+'</b><i></i></button>';}
+    h+='<button class="day'+(s0?" has":"")+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?" mv":"")+(dn?" done":"")+(tdy?" today":"")+'" data-day="'+i+'"'+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?' draggable="true" data-dk="'+s0.k+'"':'')+' aria-pressed="'+(sel===i)+'" aria-label="'+DOWL[i]+(s0?", "+esc(s0.type):", repos")+(dn?", faite":"")+'"><span>'+DL[i]+'</span><b>'+new Date(pl.start+((cur-1)*7+i)*DAY).getUTCDate()+'</b><i></i>'+(s0?'<em class="dty">'+esc(s0.type)+'</em><em class="dkm">'+(s0.km?kmS(s0.km)+' km':'')+'</em>':'<em class="dty">Repos</em><em class="dkm"></em>')+'</button>';}
   h+='</div>';
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
@@ -977,14 +1003,22 @@ function swapChips(pl,wk,s,dn){
   return L.length?'<div class="swap"><p>Pas dispo ce jour-là ? Échange avec :</p><div>'+L.join("")+'</div></div>':"";
 }
 function swapDays(w,k,tgt){
-  var r=activeRace(), pl=planOf(r), wk=pl&&pl.weeks[w-1], s=sessByKey(wk,k); if(!s)return;
+  var r=activeRace(), pl=planOf(r), wk=pl&&pl.weeks[w-1], s=sessByKey(wk,k); if(!s||s.race||s.club||s.bid||isClubSession(s))return;
+  var o0=/^d\d$/.test(tgt)?null:sessByKey(wk,tgt); if(o0&&(o0.race||o0.club||o0.bid||isClubSession(o0)||D.done[sk(r,w,o0.k)]))return;
+  var td0=o0?o0.dow:+tgt.slice(1); if(sessDate(pl,w,{dow:td0})<todayUTC()){toast("Ce jour est déjà passé.");return;}
   var E=D.edits[r.id]||(D.edits[r.id]={}), U=snapU();
-  function setDow(x,dow){var ek=w+"-"+x.k, o=Object.assign({},E[ek]||{}); if(x.added&&!E[ek])return; PC={}; var base=sessByKey(planOf(r).weeks[w-1],x.k); o.dow=dow; E[ek]=o; PC={};}
+  var mvk=w+"-mv", MV=Object.assign({},E[mvk]||{});
+  function setDow(x,dow){MV[x.k]=dow;}
   var other=/^d\d$/.test(tgt)?null:sessByKey(wk,tgt), dow=/^d\d$/.test(tgt)?+tgt.slice(1):other&&other.dow, from=s.dow;
   if(dow==null)return;
-  if(other)setDow(other,from); setDow(s,dow);
+  if(other)setDow(other,from); setDow(s,dow); E[mvk]=MV;
   save(); PC={}; toast(other?"Jours échangés : "+DOWC[from]+" ⇄ "+DOWC[dow]+".":"Séance déplacée au "+DOWC[dow].toLowerCase()+".",U); render(true);
 }
+var DRAG=null;
+document.addEventListener("dragstart",function(e){var b=e.target.closest&&e.target.closest(".strip .day[data-dk]"); if(!b)return; DRAG={k:b.dataset.dk,d:+b.dataset.day}; e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",b.dataset.dk);}catch(_){} b.classList.add("drag");});
+document.addEventListener("dragover",function(e){var b=DRAG&&e.target.closest&&e.target.closest(".strip .day"); if(!b)return; if(+b.dataset.day===DRAG.d||(b.classList.contains("has")&&!b.classList.contains("mv")))return; e.preventDefault(); document.querySelectorAll(".strip .day.over").forEach(function(x){if(x!==b)x.classList.remove("over");}); b.classList.add("over");});
+document.addEventListener("drop",function(e){var b=DRAG&&e.target.closest&&e.target.closest(".strip .day"); if(!b)return; e.preventDefault(); var d=DRAG; DRAG=null; var tk=b.dataset.dk; swapDays(cur,d.k,tk||("d"+b.dataset.day));});
+document.addEventListener("dragend",function(){DRAG=null; document.querySelectorAll(".strip .day.drag,.strip .day.over").forEach(function(x){x.classList.remove("drag","over");});});
 function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h2 style="font-size:26px;margin:6px 0 8px">Repos</h2>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+(function(){var mc=MOBROT[(wk.n+dow)%MOBROT.length], M=MOBS[mc]; return '<details><summary>'+I.leaf+' '+esc(M.name)+' · '+woMin("mob",mc)+' min</summary><div class="in"><p class="muted small">'+esc(M.goal)+'</p>'+woBtns(null,0,mc)+exHTML(M.ex)+'</div></details>';})()+'</div>';}
 function bilanCard(r,pl,wk,sel,selD){
   var t=todayUTC(); if(!wk||selD>t)return "";
@@ -1368,6 +1402,7 @@ document.addEventListener("keydown",function(e){ if(e.key!=="Tab"||$("sheet").hi
   if(!inside){e.preventDefault(); (e.shiftKey?last:first).focus(); return;}
   if(e.shiftKey&&ae===first){e.preventDefault(); last.focus();} else if(!e.shiftKey&&ae===last){e.preventDefault(); first.focus();}});
 $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close]")){closeSheet();return;} var b=e.target.closest("button"); if(!b)return;
+  if(b.dataset.ngo){var g=b.dataset.ngo; closeSheet(); if(g.indexOf("goto:")===0){var q=g.slice(5).split("-"); cur=+q[0]; sel=+q[1]; browsing=true; tab="today"; prevTab="today"; render();} else {browsing=false; setTab("today");} return;}
 
   if(b.dataset.sact==="saveprefs"){
     var hasClub=$("prefClub").checked;
@@ -1869,6 +1904,7 @@ function act(a,b){
   else if(a==="now"){goNow(); render();}
   else if(a==="watch")watchSheet(+ds.w,ds.k);
   else if(a==="weekplan"){openWk=+ds.w; try{openPh=planOf(activeRace()).weeks[+ds.w-1].ph;}catch(e){} setTab("plan"); var el=document.querySelector('[data-wk="'+ds.w+'"]'); if(el)el.scrollIntoView({block:"start"});}
+  else if(a==="notifs")openNotifs();
   else if(a==="availwk")availSheet(+ds.w);
   else if(a==="addses")editSession(+ds.w,null,ds.d!=null?+ds.d:null);
   else if(a==="manual")manualSheet(+ds.w,ds.k);
