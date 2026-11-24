@@ -1055,3 +1055,33 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .tabs button svg{width:21px;height:21px}
   .tabs button[aria-current="page"]::before{top:10px;bottom:10px}
 }
+
+/* Pied de menu (profil, synchro, déconnexion) : ordinateur uniquement */
+.side-foot{display:none}
+@media(min-width:900px){
+  .tabs{display:flex;flex-direction:column}
+  .side-foot{display:flex;align-items:center;gap:10px;margin:auto -10px 0;padding:12px 14px 4px;border-top:1px solid var(--line)}
+  .side-foot img,.sf-ph{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;font:800 14px var(--display)}
+  .sf-tx{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.25}
+  .sf-tx b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sf-tx small{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sf-tx i{width:7px;height:7px;border-radius:50%;flex:none;background:#36a66a}.sf-tx i.ko{background:var(--bad)}
+  .side-foot .account-logout{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);display:grid;place-items:center;flex:none}
+  .side-foot .account-logout:hover{color:var(--bad);border-color:var(--bad)}
+  .side-foot .account-logout svg{width:16px;height:16px}
+  #view>.top .account-status,#view>.top .account-logout{display:none}
+
+  /* Aujourd'hui : séance à gauche, contexte à droite, sans défilement inutile */
+  #view:has(>.strip){grid-auto-flow:row dense}
+  #view:has(>.strip)>.hero{grid-column:1/8;grid-row:span 5}
+  #view:has(>.strip)>.ct,#view:has(>.strip)>.week-card,#view:has(>.strip)>.checkin-card,#view:has(>.strip)>.week-end-card,#view:has(>.strip)>.bilan-card,#view:has(>.strip)>.wm{grid-column:8/13;align-self:start}
+  #view:has(>.strip)>.syncline,#view:has(>.strip)>.syncnote{grid-column:8/13}
+
+  /* Forme : un chiffre clé, graphique plus bas */
+  #view:has(.wm)>.wm .fm-tiles>div:first-child b{font-size:30px;color:var(--brand)}
+  #view:has(.wm)>.wm .fm-tiles b{font-size:20px}
+  #view:has(.wm)>.wm .fm-bars .wm-plot{height:64px}
+  #view:has(.wm)>.wm{padding-bottom:12px}
+}
+@media(min-width:900px){#view:has(>.strip)>.hero{align-self:start}}
+@media(min-width:900px){#view:has(.wm)>.wm .fm-bars,#view:has(.wm)>.wm .wm-bars{min-height:0;height:auto}#view:has(.wm)>.wm .fm-bars .wm-plot{height:72px}}
