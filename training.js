@@ -191,11 +191,14 @@
     var w=Number(options.week)||1,profile=options.profile||{},race=options.race||{},trailTarget=Number(race.elevation||0)/(Number(race.distance)||1)>=12;
     var out=trailTarget?trailWeek(Object.assign({},options,{backToBack:!!options.backToBack})):roadWeek(options);
     var sat=out.s.filter(function(s){return s.dow===5;})[0];
-    if(sat){
+    if(sat&&sat.tag!=="l"){
       sat.type="Endurance vallonnée";
       sat.txt=trailTarget?"Séance terrain : sentier vallonné, cadence courte en montée et descente contrôlée. Reste en Z2.":"Sortie sur chemins et route : travaille l'adaptation du pied sans ajouter d'intensité.";
       sat.steps=[[sat.km+" km","Terrain mixte en Z2, effort constant malgré les changements de surface"]];
       sat.zone=2;
+    }else if(sat&&sat.tag==="l"){
+      sat.type="Sortie longue mixte";
+      sat.txt="Premier jour du bloc mixte : allure facile, terrain varié, ravitaillement testé et descente contrôlée.";
     }
     if(w%2===0){
       var q=out.s.filter(function(s){return s.tag==="q";})[0];
