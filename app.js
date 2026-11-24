@@ -257,6 +257,7 @@ function genWeek(w,n,taper,r,m){
   var discipline=TRAIN_PREF&&TRAIN_PREF.athlete_profile&&TRAIN_PREF.athlete_profile.discipline||"mixte";
   if(discipline==="route"&&window.CadenzoTraining)return CadenzoTraining.roadWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m)});
   if(discipline==="mixte"&&window.CadenzoTraining)return CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m),race:{distance:m.L,elevation:m.dp}});
+  if(discipline==="trail"&&window.CadenzoTraining)return CadenzoTraining.trailWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,race:{distance:m.L,elevation:m.dp},backToBack:canBackToBack()});
   if(w===n)return {ph:"Affûtage",rec:false,s:raceWeek(r,m),note:"Semaine de course. Vérifie l’heure de départ et prépare ton matériel."};
   var M=n-1-taper, ph=phaseName(w,n,taper), g=m.dp/m.L, flat=g<12, L=m.L;
   var peakSat=Math.max(8,Math.min(30,Math.round(L*0.62))), peakSun=Math.max(10,Math.min(22,Math.round(L*0.5)));
@@ -445,6 +446,7 @@ function planOf(r){
     if(w===n)b={ph:"Affûtage",rec:false,s:raceWeek(r,m),note:"Semaine de course. Vérifie l’heure de départ et prépare ton matériel."};
     else if(discipline==="route"&&window.CadenzoTraining)b=CadenzoTraining.roadWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:tMetrics});
     else if(discipline==="mixte"&&window.CadenzoTraining)b=CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:tMetrics,race:{distance:m.L,elevation:m.dp}});
+    else if(discipline==="trail"&&window.CadenzoTraining&&!r.builtin)b=CadenzoTraining.trailWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,race:{distance:m.L,elevation:m.dp},backToBack:canBackToBack()});
     else b=r.builtin?thpWeek(w,r,m):genWeek(w,n,taper,r,m);
     weeks.push({n:w,ph:b.ph,rec:b.rec,s:b.s,note:b.note||"",start:start+(w-1)*WEEK});
   }
