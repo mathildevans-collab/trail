@@ -175,7 +175,7 @@ async function getAccessToken(userId: string) {
 }
 async function findSegments(req: Request) {
   const auth = req.headers.get("Authorization") || "";
-  const jwt = auth.replace(/^Bearer\\s+/i, "");
+  const jwt = auth.replace(/^Bearer\s+/i, "");
   if (!jwt) return json({ error: "Session requise." }, 401);
 
   const body = await req.json().catch(() => ({}));
