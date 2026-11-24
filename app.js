@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=138;
+var APPV=139;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1027,7 +1027,7 @@ function clubEstimate(type){
 function openTrainingPrefs(first){
   var p=TRAIN_PREF||{has_club:false,club_days:[],club_sessions:[],sessions_per_week:4,training_days:[0,1,2,3,5,6],rest_days:[4],onboarding_completed:false};
   var sessions=p.club_sessions||((p.club_days||[]).map(function(day){return {day:+day,type:"Fractionné / piste",estimated_km:8};}));
-  var h='<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Indique tes entraînements collectifs pour qu’ils soient pris en compte dans ton organisation.</p>'+
+  var h='<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Tes entraînements collectifs sont obligatoires : ils seront intégrés au planning et remplaceront la séance prévue le même jour.</p>'+
   '<label class="pref-check"><input id="prefClub" type="checkbox" '+(p.has_club?'checked':'')+'> Je participe à des entraînements collectifs</label>'+
   '<div id="prefClubConfig" '+(p.has_club?'':'hidden')+'><p class="eyebrow">Tes jours d’entraînement collectif</p><div class="pref-club-list">'+prefClubSessionRowsHtml(sessions)+'</div></div>'+
   '<label class="field">Nombre de séances souhaitées<select id="prefCount">'+[2,3,4,5,6,7].map(function(n){return '<option value="'+n+'" '+(n===+p.sessions_per_week?'selected':'')+'>'+n+' séances par semaine</option>';}).join('')+'</select></label>'+
