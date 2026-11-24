@@ -18,7 +18,7 @@ def local_path(reference):
     if parsed.scheme or parsed.netloc:
         return None
     path = parsed.path
-    if not path or path.startswith("/"):
+    if not path or path in {".", "./"} or path.startswith("/"):
         return None
     return path
 
