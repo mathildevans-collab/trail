@@ -45,6 +45,9 @@ jobs:
       - name: Tester les règles de génération sportive
         run: node tests/plan-rules.test.cjs
 
+      - name: Tester le moteur de plans personnalisés
+        run: node tests/training-engine.test.cjs
+
       - name: Tester les garde-fous de sécurité Cadenzo
         run: node tests/cadenzo-sync-security.test.cjs
 
