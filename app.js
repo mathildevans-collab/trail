@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=139;
+var APPV=140;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -280,7 +280,7 @@ function genWeek(w,n,taper,r,m){
 var PC={};
 function planOf(r){
   if(!r)return null;
-  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.club_sessions,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy]):"default";
+  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.club_sessions,TRAIN_PREF.athlete_profile,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy]):"default";
   var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r)+"|"+prefKey;
   if(PC[r.id]&&PC[r.id].key===key)return PC[r.id].p;
   var m=model(r), rws=mondayOf(dms(r.date)), start=r.builtin?dms(r.start):mondayOf(dms(isoOk(r.start)?r.start:nextMonday()));
@@ -1031,7 +1031,7 @@ function openTrainingPrefs(first){
   var h='<h2>'+(first?'Ton profil de coureur':'Mes disponibilités et mon profil')+'</h2><p class="small muted">Quelques repères pour construire un plan adapté à ton expérience et à ta charge actuelle.</p>'+
   '<p class="eyebrow">Ta pratique</p><label class="field">Discipline<select id="athDiscipline">'+[['route','Course sur route'],['trail','Trail'],['mixte','Route et trail']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.discipline||'mixte')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
   '<label class="field">Ton expérience<select id="athExperience">'+[['debutant','Débutant(e)'],['reprise','Reprise après une pause'],['regulier','Pratique régulière'],['confirme','Coureur(se) expérimenté(e)']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.experience||'regulier')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
-  '<div class="pref-grid"><label class="field">Volume actuel (km/semaine)<input id="athKm" type="number" min="0" max="200" step="1" value="'+(athlete.weekly_km==null?'':Number(athlete.weekly_km))+'" placeholder="Ex. 25"></label><label class="field">Sorties par semaine<input id="athRuns" type="number" min="0" max="14" step="1" value="'+(athlete.runs_per_week==null?'':Number(athlete.runs_per_week))+'" placeholder="Ex. 3"></label></div>'+
+  '<label class="field">Volume actuel (km/semaine)<input id="athKm" type="number" min="0" max="200" step="1" required value="'+(athlete.weekly_km==null?'':Number(athlete.weekly_km))+'" placeholder="Ex. 25"></label><label class="field">Sorties par semaine<input id="athRuns" type="number" min="0" max="14" step="1" value="'+(athlete.runs_per_week==null?'':Number(athlete.runs_per_week))+'" placeholder="Ex. 3"></label></div>'+
   '<p class="small muted">Indique la moyenne des 4 dernières semaines. Si tu débutes ou reprends, indique ton volume actuel, même s’il est faible.</p>'+
   '<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Tes entraînements collectifs sont obligatoires : ils seront intégrés au planning et remplaceront la séance prévue le même jour.</p>'+
   '<label class="pref-check"><input id="prefClub" type="checkbox" '+(p.has_club?'checked':'')+'> Je participe à des entraînements collectifs</label>'+
@@ -1106,6 +1106,7 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
     if(clubSessions.some(function(s){return !isFinite(s.estimated_km)||s.estimated_km<0||s.estimated_km>100;})){err.textContent="Vérifie les distances estimées de tes entraînements.";return;}
     var rest=[0,1,2,3,4,5,6].filter(function(d){return training.indexOf(d)<0;});
     var rawKm=$("athKm").value,rawRuns=$("athRuns").value,weeklyKm=rawKm===""?null:Number(rawKm),runs=rawRuns===""?null:Number(rawRuns);
+    if(weeklyKm===null||runs===null){err.textContent="Renseigne ton volume moyen et ton nombre de sorties pour calibrer le plan.";return;}
     if((weeklyKm!==null&&(!isFinite(weeklyKm)||weeklyKm<0||weeklyKm>200))||(runs!==null&&(!isFinite(runs)||runs<0||runs>14))){err.textContent="Vérifie ton volume hebdomadaire et ton nombre de sorties.";return;}
     var athleteProfile={discipline:$("athDiscipline").value,experience:$("athExperience").value,weekly_km:weeklyKm,runs_per_week:runs};
     var next={has_club:hasClub,club_name:null,club_days:clubDays,club_sessions:clubSessions,athlete_profile:athleteProfile,sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
