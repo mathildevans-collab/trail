@@ -45,6 +45,9 @@ jobs:
       - name: Vérifier les versions PWA
         run: python scripts/check_versions.py
 
+      - name: Vérifier les fichiers chargés par la PWA
+        run: python scripts/check_asset_references.py
+
       - name: Vérifier les scripts Python
         run: python -m compileall -q scripts
 
