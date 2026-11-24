@@ -14,8 +14,7 @@
   --sun:#e2a72e; --down:#2c6e9b; --acc:#ff4b1f; --acc-ink:#c2330a; --acc-btn:#d63a0c; --acc-btn-ink:#ffffff; --acc-soft:#fde4da;
   --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
   --body:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --mono:var(--display);
   --veil:rgba(255,255,255,.14);
   color-scheme:light;
 }
@@ -1085,3 +1084,12 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 }
 @media(min-width:900px){#view:has(>.strip)>.hero{align-self:start}}
 @media(min-width:900px){#view:has(.wm)>.wm .fm-bars,#view:has(.wm)>.wm .wm-bars{min-height:0;height:auto}#view:has(.wm)>.wm .fm-bars .wm-plot{height:72px}}
+
+/* Déconnexion : bouton discret pleine largeur dans le menu */
+@media(min-width:900px){
+  .side-foot{flex-direction:column;align-items:stretch;gap:10px;padding:12px 14px 6px}
+  .sf-user{display:flex;align-items:center;gap:10px;min-width:0}
+  .tabs .side-foot .sf-out{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--muted);font:600 13px var(--display);transition:background .15s,color .15s,border-color .15s}
+  .tabs .side-foot .sf-out svg{width:16px;height:16px}
+  .tabs .side-foot .sf-out:hover{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
+}
