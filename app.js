@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=135;
+var APPV=136;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -654,7 +654,7 @@ function ctHere(){
   CTS.loading=true;render(true);
   var place=fetch("https://nominatim.openstreetmap.org/reverse?format=json&zoom=12&lat="+lat+"&lon="+lng,{headers:{"Accept-Language":"fr"}}).then(function(r){if(!r.ok)throw 0;return r.json();}).catch(function(){return null;});
   Promise.all([CadenzoAuth.segments({lat:lat,lng:lng,radiusKm:5}),place]).then(function(results){
-    var j=results[1],a=j&&j.address||{},nom=(a.city||a.town||a.municipality||a.village||a.city_district||a.suburb||j&&j.name||"Commune non identifiée").slice(0,40),id=ctSlug(nom);
+    var j=results[1],a=j&&j.address||{},nom=(a.city||a.town||a.municipality||a.village||a.city_district||a.suburb||"Autour de toi").slice(0,40),id=ctSlug(nom);
     COTES[id]={nom:nom,lat:lat,lng:lng,items:results[0].items||[],updated:results[0].searchedAt||new Date().toISOString()};
     CTS.l=id;CTS.city=nom;CTS.off=0;CTS.open=false;CTS.loading=false;ctSave();
     try{localStorage.setItem(userKey("cadenzo-cotes"),JSON.stringify(COTES));}catch(e){}
@@ -1615,7 +1615,7 @@ function sync(manual){
     if(manual)toast(runs.length+" sorties du compte connecté · "+n+" séances du plan");
   }).catch(function(e){
     var m=String(e&&e.message||e);
-    if(e&&e.code==="STRAVA_RATE_LIMIT"){D.sync.retryAt=Date.now()+Math.max(60,+e.retryAfter||900)*1000;D.sync.err="limite Strava temporaire";}
+    if(e&&e.code==="STRAVA_RATE_LIMIT"){D.sync.retryAt=Date.now()+Math.max(60,+e.retryAfter||900)*1000;D.sync.err="limite Strava temporaire";D.sync.rateLimited=true;}
     else D.sync.err=/401|session/i.test(m)?"session expirée":/failed to fetch|network|load failed/i.test(m)?"pas de réseau":m.slice(0,55);
     if(manual)toast(e&&e.code==="STRAVA_RATE_LIMIT"?"Limite Strava atteinte. Reprise automatique après le délai indiqué.":"Synchro Strava impossible : "+D.sync.err);
   }).then(function(){syncing=false;save();render(true);});
@@ -1630,10 +1630,13 @@ function stravaSub(){
 // Fraîcheur des données Strava : heure à laquelle GitHub a lu Strava (sinon date du fichier). Au-delà d’1 h, rappel discret.
 function stravaAge(){var s=D.sync, t=s.upd?Date.parse(s.upd):s.t; return t&&!isNaN(t)?t:0;}
 function syncNote(){
-  if(!STRAVA)return ""; var s=D.sync, t=stravaAge(), old=!t||Date.now()-t>3600*1000||!!s.err;
-  var limited=s.err==="limite Strava temporaire"&&s.retryAt>Date.now();
-  var txt=limited?"Strava limite temporairement les synchronisations. Tes activités déjà enregistrées restent disponibles. Nouvelle tentative "+ago(s.retryAt)+".":s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
-  return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old&&!limited?' <button class="link-btn" data-act="sync">Réessayer</button>':"")+'</p>';
+  if(!STRAVA)return ""; var s=D.sync, t=stravaAge();
+  // Une limite API Strava est une pause temporaire, pas une panne de l'application.
+  // On conserve la reprise automatique sans afficher de bandeau rouge persistant.
+  if(s.err==="limite Strava temporaire"||s.rateLimited)return "";
+  var old=!t||Date.now()-t>3600*1000||!!s.err;
+  var txt=s.err?"Dernière synchro ratée ("+esc(s.err)+"). Tes dernières sorties peuvent manquer.":!t?"Strava : pas encore de synchronisation.":old?"Dernières données Strava : "+ago(t)+". Une sortie récente peut manquer.":"Strava synchronisé "+ago(t)+".";
+  return '<p class="syncnote'+(old?(s.gh==="ko"||s.err?" bad":" old"):"")+'" role="status">'+txt+(old?' <button class="link-btn" data-act="sync">Réessayer</button>':"")+'</p>';
 }
 var CTRY=0;
 function autoSync(){var need=Object.keys(COTES).every(function(k){return !(COTES[k].items||[]).length;})&&Date.now()-CTRY>60000; if(need)CTRY=Date.now();
