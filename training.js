@@ -177,8 +177,8 @@
       Object.assign({dow:1},q),
       {dow:2,tag:"e",type:"Endurance + renfo",km:easy,dp:Math.round(easy*grade*.25),zone:2,renfo:"A1",steps:[[easy+" km","Endurance fondamentale en Z2 sur terrain facile"],["12 min","Renforcement général et gainage"]],txt:"Construire l'endurance et la stabilité sans ajouter d'intensité."},
       {dow:3,tag:"e",type:"Footing de récupération",km:short,dp:Math.round(short*grade*.15),zone:1,steps:[[short+" km","Très facile en Z1, terrain roulant ou souple"]],txt:"Récupération active. Ralentis ou marche si les jambes restent lourdes."},
-      {dow:5,tag:"e",type:"Technique trail",km:Math.max(5,Math.round(easy*.9)),dp:Math.round(easy*.9*grade*.55),zone:2,steps:[["15 min","Échauffement en Z2"],["6 × 45 s","Montée technique à effort contrôlé, descente en marchant ou très lentement"],["Fin de séance","Endurance facile en Z2"]],txt:"Travail de pied, cadence en montée et contrôle en descente. Aucun sprint."},
-      {dow:6,tag:allowB2B?"l":"e",type:allowB2B?"Jour 2 du bloc":"Sortie longue trail",km:allowB2B?Math.max(10,Math.round(longKm*.65)):longKm,dp:allowB2B?Math.round(longDp*.65):longDp,zone:2,steps:[[String(allowB2B?Math.max(10,Math.round(longKm*.65)):longKm)+" km","Endurance fondamentale en Z2, marche active dans les fortes pentes"]],txt:allowB2B?"Deuxième jour du bloc : effort facile, priorité au temps passé sur les jambes.":"Sortie longue sur sentier : régularité, gestion des montées et descentes contrôlées."}
+      {dow:5,tag:allowB2B?"l":"e",type:allowB2B?"Sortie longue trail":"Technique trail",km:allowB2B?longKm:Math.max(5,Math.round(easy*.9)),dp:allowB2B?longDp:Math.round(easy*.9*grade*.55),zone:2,steps:allowB2B?[[longKm+" km","Endurance fondamentale Z2, marche active dans les pentes fortes"]]:[["15 min","Échauffement en Z2"],["6 × 45 s","Montée technique à effort contrôlé, descente en marchant ou très lentement"],["Fin de séance","Endurance facile en Z2"]],txt:allowB2B?"Premier jour du bloc : allure facile, ravitaillement testé et descente contrôlée.":"Travail de pied, cadence en montée et contrôle en descente. Aucun sprint."},
+      {dow:6,tag:"l",type:allowB2B?"Jour 2 du bloc":"Sortie longue trail",km:allowB2B?Math.max(8,Math.round(longKm*.65)):longKm,dp:allowB2B?Math.round(longDp*.65):longDp,zone:2,steps:[[String(allowB2B?Math.max(8,Math.round(longKm*.65)):longKm)+" km","Endurance fondamentale en Z2, marche active dans les fortes pentes"]],txt:allowB2B?"Deuxième jour du bloc : volume réduit, effort facile, priorité au temps passé sur les jambes.":"Sortie longue sur sentier : régularité, gestion des montées et descentes contrôlées."}
     ];
     if(allowB2B){
       sessions[4].type="Jour 2 du bloc";
@@ -188,7 +188,8 @@
     return {ph:phase,rec:rec,s:sessions,note:rec?"Semaine allégée : volume et dénivelé réduits pour assimiler la charge.":allowB2B?"Bloc trail réservé aux profils confirmés avec charge et disponibilités suffisantes.":"Plan trail : une séance de montée, une séance technique, des footings différenciés et une seule sortie longue."};
   }
   function mixedWeek(options){
-    var out=roadWeek(options),w=Number(options.week)||1,profile=options.profile||{},race=options.race||{},trailTarget=Number(race.elevation||0)/(Number(race.distance)||1)>=12;
+    var w=Number(options.week)||1,profile=options.profile||{},race=options.race||{},trailTarget=Number(race.elevation||0)/(Number(race.distance)||1)>=12;
+    var out=trailTarget?trailWeek(Object.assign({},options,{backToBack:!!options.backToBack})):roadWeek(options);
     var sat=out.s.filter(function(s){return s.dow===5;})[0];
     if(sat){
       sat.type="Endurance vallonnée";
