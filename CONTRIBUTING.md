@@ -1,34 +1,49 @@
 # Contribuer à Cadenzo
 
-## Règles avant chaque commit
+## Avant de modifier le projet
 
-- Un sujet fonctionnel par branche.
-- Aucun secret ni donnée personnelle dans le dépôt.
-- Vérifier les fichiers impactés et leurs références.
-- Pour une modification frontend : incrémenter la version avec `python3 scripts/bump.py`.
-- Lancer les contrôles locaux :
-  ```bash
-  python3 scripts/check_versions.py
-  for file in *.js; do node --check "$file" || exit 1; done
-  python3 -m compileall -q scripts
-  ```
-- Relire le diff avant de pousser.
+- Une branche par sujet : `amelioration/...`, `correction/...`, `documentation/...`.
+- Un changement doit rester limité et facile à relire.
+- Vérifier les fichiers qui chargent ou référencent le code modifié.
+- Ne jamais ajouter de jeton, mot de passe, clé privée ou donnée personnelle.
 
-## Messages de commit
+## Titres des commits : du français simple et concret
 
-Utiliser exclusivement le format :
+Le titre doit permettre de comprendre le changement sans ouvrir le code.
 
-```text
-type(portee): description claire
+Exemples attendus :
+
+- `Corrige la recherche des segments proches`
+- `Affiche les records dans l'ordre du meilleur temps`
+- `Explique la configuration de Strava dans le guide`
+- `Évite de perdre la session après une mise en veille`
+
+Évite les titres vagues ou artificiels : `update`, `fix bug`, `modifications diverses`, `améliorations`, `mise à jour du code`.
+
+Les anciens titres préfixés (`fix(...):`, `feat(...):`) restent acceptés pendant la transition, mais les nouveaux commits doivent privilégier une phrase naturelle en français.
+
+## Vérifications avant d'ouvrir une Pull Request
+
+Pour une modification frontend :
+
+```bash
+python3 scripts/bump.py
+python3 scripts/check_versions.py
+python3 scripts/check_asset_references.py
+for file in *.js; do node --check "$file" || exit 1; done
+python3 -m compileall -q scripts
 ```
 
-Types : feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.
+Relire ensuite le diff et vérifier que les tests annoncés ont réellement été exécutés.
 
-La description doit expliquer le changement réel, pas seulement dire qu'un fichier a été modifié.
+## Pull Requests
 
-## Pull Request
+La description doit répondre simplement à ces questions :
 
-- Décrire le problème, la solution et les risques.
-- Indiquer les tests réellement exécutés.
-- Ajouter une capture pour une modification d'interface lorsque c'est utile.
-- Ne pas fusionner tant que les vérifications obligatoires ne sont pas vertes.
+1. Quel problème est corrigé ?
+2. Qu'est-ce qui change concrètement ?
+3. Quels fichiers importants ont été modifiés ?
+4. Quels contrôles ont été exécutés ?
+5. Quel risque reste à surveiller ?
+
+Une Pull Request ne doit être fusionnée que lorsque tous les contrôles obligatoires sont verts.
