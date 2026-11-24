@@ -1,54 +1,72 @@
 #!/usr/bin/env python3
-"""Vérifie que les titres des commits expliquent clairement le changement."""
+"""Refuse les titres de commits vagues et impose une phrase claire en français."""
 import os
 import re
 import subprocess
 import sys
 
-# Les anciens titres préfixés restent acceptés pendant la transition.
-CONVENTIONAL = re.compile(
-    r"^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)"
-    r"(\([a-z0-9][a-z0-9._/-]*\))?!?: .{8,}$"
+# Un titre doit commencer par une action compréhensible, pas par un préfixe technique.
+ACTION = re.compile(
+    r"^(Ajoute|Améliore|Automatise|Bloque|Centralise|Charge|Clarifie|"
+    r"Conserve|Corrige|Décrit|Détecte|Documente|Déplace|Évite|"
+    r"Explique|Affiche|Gère|Limite|Masque|Met à jour|Nettoie|"
+    r"Permet|Protège|Répare|Remplace|Renomme|Réorganise|Rétablit|"
+    r"Rend|Sécurise|Simplifie|Supprime|Trie|Vérifie|"
+    r"Empêche|Prépare|Réduit|Ajoute|Retire)\b",
+    re.IGNORECASE,
 )
 VAGUE = {
     "update", "updated", "fix", "fix bug", "bug fix", "correction",
     "modification", "modifications", "changes", "update files",
     "mise a jour", "mise à jour", "divers", "test", "tests",
+    "amélioration", "améliorations", "mise à jour du code",
+    "modification du code", "correction de bugs",
 }
 
-base = os.environ.get("BASE_SHA", "")
-head = os.environ.get("HEAD_SHA", "HEAD")
-if not base:
-    base = f"{head}~1"
 
-try:
-    messages = subprocess.check_output(
-        ["git", "log", "--format=%s", f"{base}..{head}"],
-        text=True,
-        stderr=subprocess.STDOUT,
-    ).splitlines()
-except subprocess.CalledProcessError as exc:
-    print("Impossible de lire les titres des commits :")
-    print(exc.output)
-    sys.exit(2)
+def est_un_titre_clair(message):
+    titre = message.strip()
+    normalise = titre.lower().rstrip(".!")
+    if len(titre) < 22 or len(titre) > 90 or normalise in VAGUE:
+        return False
+    if not ACTION.match(titre):
+        return False
+    # Refuse les titres qui annoncent seulement une action sans préciser l'objet.
+    reste = ACTION.sub("", titre, count=1).strip(" :—-")
+    return len(reste.split()) >= 2
 
-invalid = []
-for message in messages:
-    title = message.strip()
-    normalized = title.lower().rstrip(".!")
-    if len(title) > 100 or len(title) < 16 or normalized in VAGUE:
-        invalid.append(message)
-    elif not CONVENTIONAL.match(title) and not re.search(r"[a-zà-ÿ]{3,}", title, re.I):
-        invalid.append(message)
 
-if invalid:
-    print("Ces titres ne disent pas assez clairement ce qui a changé :")
-    for title in invalid:
-        print(f"  - {title}")
-    print("\nÉcris un titre court et concret, par exemple :")
-    print("  Corrige la recherche des segments proches")
-    print("  Explique le chargement des séances dans le planning")
-    print("Évite les titres vagues comme « update » ou « correction ».")
-    sys.exit(1)
+def main():
+    base = os.environ.get("BASE_SHA", "")
+    head = os.environ.get("HEAD_SHA", "HEAD")
+    if not base:
+        base = f"{head}~1"
 
-print(f"{len(messages)} titre(s) de commit vérifié(s).")
+    try:
+        messages = subprocess.check_output(
+            ["git", "log", "--format=%s", f"{base}..{head}"],
+            text=True,
+            stderr=subprocess.STDOUT,
+        ).splitlines()
+    except subprocess.CalledProcessError as exc:
+        print("Impossible de lire les titres des commits :")
+        print(exc.output)
+        return 2
+
+    invalides = [message for message in messages if not est_un_titre_clair(message)]
+    if invalides:
+        print("Ces titres doivent être reformulés en français clair :")
+        for titre in invalides:
+            print(f"  - {titre}")
+        print("\nExemples attendus :")
+        print("  Corrige la recherche des segments proches")
+        print("  Explique le chargement des séances dans le planning")
+        print("  Évite de perdre la session après une mise en veille")
+        return 1
+
+    print(f"{len(messages)} titre(s) de commit vérifié(s).")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
