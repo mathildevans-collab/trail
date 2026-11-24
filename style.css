@@ -955,3 +955,10 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .phh .chev::before{width:14px;height:14px;transform:rotate(90deg)}
 .phh[aria-expanded="true"] .chev::before{transform:rotate(-90deg)}
 .phh[aria-expanded="true"] .chev{color:var(--brand);background:var(--brand-soft)}
+
+/* Desktop : cartes repliables à hauteur naturelle, en-têtes de phases alignés */
+@media(min-width:900px){
+  #view>details.card.fold{align-self:start}
+  .phh .phk,.phh .phk small,.phh .phk b{white-space:nowrap}
+  .phh{min-height:68px}
+}

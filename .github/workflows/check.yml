@@ -1,0 +1,19 @@
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Syntaxe JS
+        run: for f in app.js auth.js sw.js csync.js safe.js garmin.js sw-reg.js; do node --check "$f"; done
+      - name: Cohérence des versions
+        run: python3 scripts/check_versions.py
+      - name: Pas de secret dans le dépôt
+        run: |
+          if grep -RInE "(sk_live_|client_secret\s*[:=]\s*['\"][A-Za-z0-9]{20,})" --include=*.js --include=*.html --include=*.ts --exclude=supabase.min.js . ; then echo "Secret suspect"; exit 1; fi
