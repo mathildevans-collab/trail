@@ -1,6 +1,7 @@
 // Séances vers la montre : fichiers d'entraînement .FIT (à copier dans GARMIN/NewFiles) et .zip de la semaine.
 (function(){
 var HRZ={1:[110,135],2:[135,150],3:[153,167],4:[169,180],5:[180,196]};
+function setZones(z){if(!z)return false;var next={};for(var i=1;i<=5;i++){var v=z[i]||z[String(i)];if(!Array.isArray(v)||!(+v[0]>0))return false;next[i]=[+v[0],+v[1]||null];}HRZ=next;return true;}
 
 // Cible cardio lue dans un texte : "135-150 bpm", "zone 4", "Z3 haute", "Z3-Z4"...
 function hrIn(t){
@@ -88,5 +89,5 @@ function zip(files){
 function slug(s){return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,28);}
 function download(blob,name){var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},4000);}
 
-window.FIT={wktOf:wktOf,encode:encode,zip:zip,slug:slug,download:download,hrIn:hrIn};
+window.FIT={wktOf:wktOf,encode:encode,zip:zip,slug:slug,download:download,hrIn:hrIn,setZones:setZones};
 })();
