@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=153;
+var APPV=154;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -244,7 +244,7 @@ function thpWeek(w,r,m){
   var ph=w<=8?"Base":w<=16?"Construction":w<=23?"Spécifique":"Affûtage", rec=!!REC[w];
   var d=R[w-1], sk_=d[3], sd=d[4], uk=Math.max(15,d[5]), ud=Math.max(500,d[6]);
   if(ph!=="Base"){if(sk_>=18)sd=Math.min(sd,Math.round(sk_*36)); if(uk>=18)ud=Math.min(ud,Math.round(uk*36));}
-  var t=TS[w-1], b2b=w===14||w===18||w===21, code=w>=24?"D":(w<=8?"A":w<=16?"B":"C")+(w%2===1?"1":"2");
+  var t=TS[w-1], b2b=canBackToBack()&&(w===14||w===18||w===21), code=w>=24?"D":(w<=8?"A":w<=16?"B":"C")+(w%2===1?"1":"2");
   var S=[sess(Object.assign({dow:1},tuesdayOf(t[0],t[1],ph))),wedOf(d[1],code,w),thuOf(rec),
     sess({dow:5,tag:"l",type:"Sortie longue",km:sk_,dp:sd,steps:longSteps(sk_),txt:sk_+" km de trail, +"+sd+" m. "+SAT_T[w-1]}),
     sess({dow:6,tag:"l",type:b2b?"Jour 2 du bloc":"Sortie longue",km:uk,dp:ud,steps:longSteps(uk),txt:"Sortie longue trail. Prévu aujourd’hui : "+uk+" km, +"+ud+" m. "+SUN_T[w-1]})];
@@ -269,7 +269,7 @@ function genWeek(w,n,taper,r,m){
     var p=(f-0.6)/0.4, nn={cotes:Math.round(4+4*p),tempo:Math.round((15+25*p)/5)*5,courtes:Math.round(6+4*p),paires:Math.round(3+2*p),desc:Math.round(4+2*p),fartlek:Math.round(4+2*p)}[T];
     tu=tuesdayOf(T,Math.max(2,nn),ph);}
   var sk_=Math.max(6,Math.round(peakSat*f)), uk=ph==="Affûtage"?Math.max(10,Math.round(peakSun*f)):Math.max(15,Math.round(peakSun*f));
-  var b2b=ph==="Spécifique"&&!rec&&w%4===2&&w<n-taper;
+  var b2b=canBackToBack()&&ph==="Spécifique"&&!rec&&w%4===2&&w<n-taper;
   var sd=Math.round(sk_*g*0.85/10)*10, ud=ph==="Affûtage"?Math.round(uk*g*0.6/10)*10:Math.max(500,Math.round(uk*g*0.75/10)*10);
   var wed=rec?7:Math.round(6+3*f), code=renfoOf(ph,w);
   var S=[sess(Object.assign({dow:1},tu)),wedOf(wed,code,w),thuOf(rec||ph==="Affûtage"),
@@ -279,6 +279,13 @@ function genWeek(w,n,taper,r,m){
 }
 var PC={};
 function isClubSession(s){return !!(s&&(s.club||/^Club(?:\s|·)/i.test(String(s.type||""))));}
+function canBackToBack(){
+  var p=TRAIN_PREF&&TRAIN_PREF.athlete_profile||{},days=(TRAIN_PREF&&TRAIN_PREF.training_days||[]).map(Number);
+  return !!(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&
+    (p.discipline==="trail"||p.discipline==="mixte")&&p.experience==="confirme"&&
+    Number(p.weekly_km)>=35&&Number(p.runs_per_week)>=5&&
+    Number(TRAIN_PREF.sessions_per_week)>=5&&days.indexOf(5)>=0&&days.indexOf(6)>=0);
+}
 function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var p=pref&&pref.athlete_profile||{}, base=Number(p.weekly_km), exp=p.experience||"regulier";
   if(!isFinite(base)||base<0)return {sessions:sessions,cap:null,adjusted:false,warning:""};
