@@ -1097,3 +1097,13 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 }
 .num-t{font-size:1em!important;letter-spacing:0!important;font-weight:inherit}
 .wnav button{display:grid;place-items:center;padding:0}.wnav button svg{width:20px;height:20px}.wnav button[data-wnav="1"] svg{transform:rotate(180deg)}
+
+/* Connexion : plein écran, sans menu (le menu est masqué par l'attribut hidden) */
+.tabs[hidden]{display:none!important}
+@media(min-width:900px){
+  #view:has(.auth-page){display:block;margin:0;width:100%;max-width:none;padding:0;min-height:100svh}
+  #view:has(.auth-page) .auth-page{min-height:100svh}
+  #view:has(.auth-page) .auth-wrap{width:min(100%,400px)}
+  #view:has(.auth-page) .auth-brand-name{font-size:46px}
+  #view:has(.auth-page) .auth-logo{width:62px;height:62px}
+}

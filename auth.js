@@ -18,20 +18,20 @@ function screen(message,buttonText,action){
       .auth-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 12px}
       .auth-logo{width:54px;height:54px;border-radius:17px;object-fit:cover;box-shadow:0 8px 28px rgba(0,0,0,.3)}
       .auth-brand-name{font:800 39px/1 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-1.8px;color:#f3f5f0}
-      .auth-tagline{margin:0 0 42px;color:#9aa89d;font:500 14px "Hanken Grotesk",sans-serif;letter-spacing:.2px}
+      .auth-tagline{margin:0 0 42px;color:#9aa89d;font:500 14px "Bricolage Grotesque",sans-serif;letter-spacing:.2px}
       .auth-login{padding:0}
-      #auth-message{min-height:0;margin:0 0 14px;color:#c2ccc4;font:500 13px/1.5 "Hanken Grotesk",sans-serif}
+      #auth-message{min-height:0;margin:0 0 14px;color:#c2ccc4;font:500 13px/1.5 "Bricolage Grotesque",sans-serif}
       #auth-message:empty{display:none}
-      .auth-connect{width:100%;min-height:56px;border:0!important;border-radius:15px!important;background:#fc4c02!important;color:#fff!important;font:800 15px "Hanken Grotesk",sans-serif!important;box-shadow:0 9px 28px rgba(252,76,2,.18);display:flex;align-items:center;justify-content:center;gap:11px;transition:transform .18s,filter .18s}
+      .auth-connect{width:100%;min-height:56px;border:0!important;border-radius:15px!important;background:#fc4c02!important;color:#fff!important;font:800 15px "Bricolage Grotesque",sans-serif!important;box-shadow:0 9px 28px rgba(252,76,2,.18);display:flex;align-items:center;justify-content:center;gap:11px;transition:transform .18s,filter .18s}
       .auth-connect:active{transform:scale(.985);filter:brightness(.94)}
       .auth-strava-mark{font:900 20px Arial,sans-serif;letter-spacing:-1.4px}
-      .auth-foot{margin:18px 0 0;color:#718078;font:500 11px "Hanken Grotesk",sans-serif;letter-spacing:.2px}
+      .auth-foot{margin:18px 0 0;color:#718078;font:500 11px "Bricolage Grotesque",sans-serif;letter-spacing:.2px}
       @media(max-width:380px){.auth-logo{width:49px;height:49px}.auth-brand-name{font-size:35px}.auth-tagline{margin-bottom:34px}}
       @media(prefers-reduced-motion:reduce){.auth-connect{transition:none}}
     `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=162" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=163" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
   var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
@@ -125,7 +125,7 @@ function loadApp(user){
     window.CADENZO_TRAINING_PREFS_LOADED=false;
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=162";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=163";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 
