@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=127;
+var APPV=128;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -280,7 +280,7 @@ function genWeek(w,n,taper,r,m){
 var PC={};
 function planOf(r){
   if(!r)return null;
-  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed]):"default";
+  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy]):"default";
   var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r)+"|"+prefKey;
   if(PC[r.id]&&PC[r.id].key===key)return PC[r.id].p;
   var m=model(r), rws=mondayOf(dms(r.date)), start=r.builtin?dms(r.start):mondayOf(dms(isoOk(r.start)?r.start:nextMonday()));
@@ -304,7 +304,7 @@ function planOf(r){
     wk.s.sort(function(a,b){return a.dow-b.dow;});
     wk.km=0; wk.dp=0; wk.s.forEach(function(s){if(!s.race){wk.km+=s.km||0; wk.dp+=s.dp||0;}}); wk.km=Math.round(wk.km); wk.dp=Math.round(wk.dp);
   });
-  if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed){
+  if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&!TRAIN_PREF.legacy&&!r.builtin){ // profils existants (legacy) : plan inchangé
     var pref=TRAIN_PREF, days=(pref.training_days||[1,2,3,5,6]).map(Number), clubDays=pref.has_club?(pref.club_days||[]).map(Number):[], target=Math.max(2,Math.min(7,+pref.sessions_per_week||4));
     weeks.forEach(function(wk){
       var byDow={}; wk.s.forEach(function(s){byDow[s.dow]=s;});
@@ -1314,7 +1314,7 @@ function semBody(P2,isA){
   var pk=rows.reduce(function(m,q){return q.p>m.p?q:m;},rows[0]), ratio=sp>0?sa/sp:null, vd;
   if(today<rows[0].s)vd=["off","Le plan n’a pas démarré","Début le "+fmtD(rows[0].s*864e5)+"."];
   else if(ratio==null)vd=["off","Première semaine en cours","Verdict dès la fin de la semaine."];
-  else var tx=Math.round(ratio*100)+" % du prévu ("+np+" sem. terminée"+(np>1?"s":"")+")"; vd=ratio>=1.08?["ok","Au-dessus du plan",tx]:ratio>=.85?["ok","Dans le plan",tx]:["warn","En retard sur le plan",tx+". Reprends le plan là où il en est."];
+  else{var tx=Math.round(ratio*100)+" % du prévu ("+np+" sem. terminée"+(np>1?"s":"")+")"; vd=ratio>=1.08?["ok","Au-dessus du plan",tx]:ratio>=.85?["ok","Dans le plan",tx]:["warn","En retard sur le plan",tx+". Reprends le plan là où il en est."];}
   var Y=function(v){return pt+(H-pt-pb)*(1-v/(mx*1.08));}, base=H-pb;
   var g='<svg viewBox="0 0 '+W+' '+H+'" class="fm-svg" role="img" aria-label="Charge de chaque semaine du plan : ce que tu as fait contre ce qui est prévu, jusqu’à la course.">';
   rows.forEach(function(q,i){var x=l0+i*bw+1.2, w=bw-2.4;

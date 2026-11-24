@@ -105,7 +105,7 @@ function loadApp(user){
       return client.from("cadenzo_training_preferences").select("*").eq("user_id",user.id).maybeSingle().then(function(r){if(r.error)throw r.error;return r.data;});
     },
     saveTrainingPreferences:function(p){
-      var row={user_id:user.id,has_club:!!p.has_club,club_name:p.has_club?p.club_name:null,club_days:p.has_club?p.club_days:[],sessions_per_week:p.sessions_per_week,training_days:p.training_days,rest_days:p.rest_days,onboarding_completed:true,updated_at:new Date().toISOString()};
+      var row={user_id:user.id,has_club:!!p.has_club,club_name:p.has_club?p.club_name:null,club_days:p.has_club?p.club_days:[],sessions_per_week:p.sessions_per_week,training_days:p.training_days,rest_days:p.rest_days,onboarding_completed:true,legacy:false,updated_at:new Date().toISOString()};
       return client.from("cadenzo_training_preferences").upsert(row,{onConflict:"user_id"}).select("*").single().then(function(r){if(r.error)throw r.error;return r.data;});
     },
     signOut:function(){return client.auth.signOut().then(function(){location.reload();});}

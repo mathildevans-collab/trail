@@ -23,3 +23,13 @@ drop policy if exists cadenzo_training_preferences_insert_own on public.cadenzo_
 create policy cadenzo_training_preferences_insert_own on public.cadenzo_training_preferences for insert to authenticated with check (user_id = (select auth.uid()));
 drop policy if exists cadenzo_training_preferences_update_own on public.cadenzo_training_preferences;
 create policy cadenzo_training_preferences_update_own on public.cadenzo_training_preferences for update to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+-- 2026-11-24 : droits d'accès (la RLS ci-dessus reste le garde-fou)
+grant select, insert, update on public.cadenzo_training_preferences to authenticated;
+revoke truncate, references, trigger on public.cadenzo_training_preferences from anon, authenticated;
+
+-- 2026-11-24 : profils existants = « legacy » (ni onboarding ni plan modifié)
+alter table public.cadenzo_training_preferences add column if not exists legacy boolean not null default false;
+insert into public.cadenzo_training_preferences (user_id, onboarding_completed, legacy)
+select p.user_id, true, true from public.cadenzo_profiles p
+on conflict (user_id) do nothing;
