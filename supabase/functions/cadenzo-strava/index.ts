@@ -175,70 +175,63 @@ async function getAccessToken(userId: string) {
 }
 async function findSegments(req: Request) {
   const auth = req.headers.get("Authorization") || "";
-  const jwt = auth.replace(/^Bearer\s+/i, "");
+  const jwt = auth.replace(/^Bearer\\s+/i, "");
   if (!jwt) return json({ error: "Session requise." }, 401);
+
   const body = await req.json().catch(() => ({}));
   const lat = Number(body.lat), lng = Number(body.lng);
   const radiusKm = Math.max(1, Math.min(8, Number(body.radiusKm) || 5));
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return json({ error: "Position GPS invalide." }, 400);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return json({ error: "Position GPS invalide." }, 400);
+  }
+
   const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "", { auth: { persistSession: false } });
   const { data: { user }, error } = await anon.auth.getUser(jwt);
   if (error || !user) return json({ error: "Session invalide." }, 401);
-  const access = await getAccessToken(user.id);
-  // Strava ne renvoie que les 10 segments les plus populaires par rectangle.
-  // Une grille 4x4 affine la recherche et limite les segments proches masqués par la popularité.
-  const latSpan = radiusKm / 111;
-  const lngSpan = radiusKm / (111 * Math.cos(lat * Math.PI / 180));
-  const gridSize = 4;
-  const cells: Array<[number, number, number, number]> = [];
-  for (let y = 0; y < gridSize; y++) for (let x = 0; x < gridSize; x++) {
-    const south = lat - latSpan + (2 * latSpan * y / gridSize);
-    const north = lat - latSpan + (2 * latSpan * (y + 1) / gridSize);
-    const west = lng - lngSpan + (2 * lngSpan * x / gridSize);
-    const east = lng - lngSpan + (2 * lngSpan * (x + 1) / gridSize);
-    cells.push([south, west, north, east]);
-  }
-  const responses = await Promise.all(cells.map(async ([south, west, north, east]) => {
-    const bounds = [south, west, north, east].map(v => v.toFixed(5)).join(",");
-    const result = await strava("/segments/explore?" + new URLSearchParams({ bounds, activity_type: "running" }).toString(), access);
-    return result.segments || [];
-  }));
-  const unique = new Map<number, any>();
-  for (const segment of responses.flat()) {
-    const id = Number(segment.id);
-    if (!id || unique.has(id)) continue;
-    const d = Number(segment.distance || 0);
-    const sLat = Number(segment.start_latlng?.[0]), sLng = Number(segment.start_latlng?.[1]);
-    if (!Number.isFinite(sLat) || !Number.isFinite(sLng)) continue;
-    const dy = (sLat - lat) * 111;
-    const dx = (sLng - lng) * 111 * Math.cos(lat * Math.PI / 180);
-    const distanceKm = Math.sqrt(dx * dx + dy * dy);
-    // Tous les segments de course à pied sont conservés : pas de filtre sur l'historique,
-    // la pente, le D+ ou une longueur maximale.
-    if (distanceKm > radiusKm || d < 100) continue;
-    unique.set(id, { ...segment, _distanceKm: distanceKm });
-  }
-  const source = Array.from(unique.values()).sort((a: any, b: any) =>
-    Number(a._distanceKm || 0) - Number(b._distanceKm || 0));
-  const items = source.map((s: any) => ({
-    i: Number(s.id), n: String(s.name || "Segment"), d: Math.round(Number(s.distance || 0)),
-    g: Math.round(Number(s.avg_grade || 0) * 10) / 10, e: Math.round(Number(s.elev_difference || 0)),
-    v: String(s.city || ""), la: Number(s.start_latlng?.[0] || 0), ln: Number(s.start_latlng?.[1] || 0),
-    k: Math.round(Number(s._distanceKm || 0) * 10) / 10, s: "e"
-  }));
-  if (source.length) {
-    const rows = source.map((s: any) => ({
-      user_id: user.id, strava_segment_id: Number(s.id), name: String(s.name || "Segment"),
-      distance: Number(s.distance || 0), average_grade: Number(s.avg_grade || 0),
-      maximum_grade: Number(s.maximum_grade || s.avg_grade || 0), elevation_high: Number(s.elev_difference || 0),
-      elevation_low: 0, climb_category: Number(s.climb_category || 0), city: s.city || null, raw: s
-    }));
-    const { error: saveErr } = await admin.from("cadenzo_segments").upsert(rows, { onConflict: "user_id,strava_segment_id" });
-    if (saveErr) throw saveErr;
-  }
-  return json({ items, count: items.length, radiusKm, cells: cells.length, searchedAt: new Date().toISOString() });
-}
 
+  // Recherche exclusivement dans le catalogue Cadenzo : aucun appel à l'API Strava.
+  // Les segments sont mutualisés entre les comptes, car leurs métadonnées décrivent
+  // des segments publics et non les activités privées des contributeurs.
+  const { data: rows, error: rowsErr } = await admin.from("cadenzo_segments")
+    .select("strava_segment_id,name,distance,average_grade,elevation_high,elevation_low,city,raw")
+    .limit(5000);
+  if (rowsErr) throw rowsErr;
+
+  const distanceKm = (aLat: number, aLng: number, bLat: number, bLng: number) => {
+    const dy = (aLat - bLat) * 111;
+    const dx = (aLng - bLng) * 111 * Math.cos(lat * Math.PI / 180);
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const unique = new Map<number, any>();
+  for (const s of rows || []) {
+    const id = Number(s.strava_segment_id);
+    if (!id) continue;
+    const start = s.raw?.start_latlng || [];
+    const sLat = Number(start[0]), sLng = Number(start[1]);
+    if (!Number.isFinite(sLat) || !Number.isFinite(sLng) || Math.abs(sLat) > 90 || Math.abs(sLng) > 180) continue;
+    const km = distanceKm(sLat, sLng, lat, lng);
+    if (km > radiusKm) continue;
+
+    const candidate = {
+      i: id, n: String(s.name || "Segment"), d: Math.round(Number(s.distance || 0)),
+      g: Math.round(Number(s.average_grade || 0) * 10) / 10,
+      e: Math.round(Math.max(0, Number(s.elevation_high || 0) - Number(s.elevation_low || 0))),
+      v: String(s.city || ""), la: sLat, ln: sLng, s: "e", _distanceKm: km
+    };
+    const previous = unique.get(id);
+    if (!previous || candidate._distanceKm < previous._distanceKm) unique.set(id, candidate);
+  }
+
+  const items = Array.from(unique.values())
+    .sort((a: any, b: any) => a._distanceKm - b._distanceKm)
+    .map(({ _distanceKm, ...item }: any) => item);
+
+  return json({
+    items, count: items.length, radiusKm, source: "cadenzo_saved_segments",
+    searchedAt: new Date().toISOString()
+  });
+}
 
 async function getClimbSegments(userId: string) {
   const { data, error } = await admin.from("cadenzo_segments")
