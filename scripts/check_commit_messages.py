@@ -17,7 +17,7 @@ ACTION = re.compile(
     r"Describe|Detect|Document|Move|Avoid|Explain|Show|Manage|Limit|"
     r"Hide|Update|Clean|Allow|Protect|Repair|Replace|Rename|Refactor|"
     r"Restore|Make|Secure|Simplify|Remove|Sort|Verify|Prevent|Prepare|"
-    r"Reduce|Integrate|Use|Isolate|Precache)\\b",
+    r"Reduce|Integrate|Use|Isolate|Precache)\b",
     re.IGNORECASE,
 )
 VAGUE = {
