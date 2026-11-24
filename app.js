@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=150;
+var APPV=151;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -228,7 +228,7 @@ function tuesdayOf(T,n,ph){
 }
 function sess(o){o.k=o.k||KEYS[o.dow]; return o;}
 function wedOf(km,code,w){return sess({dow:2,tag:"e",type:"Endurance + renfo",km:km,dp:0,pace:"6:00 à 6:25/km",pacel:"Allure facile",renfo:code,steps:[[km+" km","Zone 2, 135-150 bpm"],[woMin("renfo",code)+" min",RENFO[code].name+" à la maison"]],txt:km+" km en zone 2 (135 à 150 bpm) "+WEDV[(w-1)%4]+", puis "+woMin("renfo",code)+" min de renforcement à la maison ("+RENFO[code].name+")."});}
-function thuOf(light){return sess({dow:3,tag:"q",type:"Club · piste",km:light?7:9,dp:0,txt:"Séance du club, rien de prévu par le plan : fais ce que propose ton coach du club"+(light?", en version allégée (échauffement et moitié du volume)":"")+"."});}
+function thuOf(light){return sess({dow:3,tag:"e",type:"Endurance facile",km:light?5:7,dp:0,steps:[[String(light?5:7)+" km","Zone 1-2, respiration facile. Pas de séance intense."]],txt:light?"Footing très facile de récupération, en aisance respiratoire.":"Footing facile en zone 2. Les séances de club sont ajoutées uniquement aux jours renseignés dans tes préférences."});}
 function longSteps(km){return km>=14?[[km+" km","Zone 2, marche active dans les côtes"]]:[[km+" km","Zone 2, allure conversation"]];}
 function raceWeek(r,m){
   var rd=dowOf(dms(r.date)), S=[];
@@ -278,7 +278,7 @@ function genWeek(w,n,taper,r,m){
   return {ph:ph,rec:rec,s:S,note:note};
 }
 var PC={};
-function isClubSession(s){return !!(s&&(s.club||/^Club(?:\\s|·)/i.test(String(s.type||""))));}
+function isClubSession(s){return !!(s&&(s.club||/^Club(?:\s|·)/i.test(String(s.type||""))));}
 function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var p=pref&&pref.athlete_profile||{}, base=Number(p.weekly_km), exp=p.experience||"regulier";
   if(!isFinite(base)||base<0)return {sessions:sessions,cap:null,adjusted:false,warning:""};
