@@ -1,14 +1,30 @@
 #!/usr/bin/env python3
-"""Nouvelle version : python3 scripts/bump.py
-Un seul numéro partout : ?v=N dans index.html, sw.js et auth.js, nom du cache, APPV dans app.js."""
+"""Incrémente la version à partir du maximum trouvé pour éviter toute régression."""
 import re
-v = int(re.search(r"var APPV=(\d+);", open("app.js").read()).group(1))
-n = v + 1
-for f in ("index.html", "sw.js", "auth.js"):
-    s = open(f).read()
-    s = re.sub(r"\?v=\d+", "?v=%d" % n, s)
-    s = re.sub(r"thp40-v\d+", "thp40-v%d" % n, s)
-    open(f, "w").write(s)
-s = open("app.js").read()
-open("app.js", "w").write(re.sub(r"var APPV=\d+;", "var APPV=%d;" % n, s))
-print("v%d -> v%d" % (v, n))
+from pathlib import Path
+
+app = Path("app.js")
+sources = [app, Path("index.html"), Path("sw.js"), Path("auth.js")]
+texts = {p: p.read_text(encoding="utf-8") for p in sources}
+versions = []
+for p, content in texts.items():
+    if p == app:
+        m = re.search(r"var APPV=(\d+);", content)
+        if m:
+            versions.append(int(m.group(1)))
+    versions += [int(v) for v in re.findall(r"\?v=(\d+)", content)]
+    versions += [int(v) for v in re.findall(r"thp40-v(\d+)", content)]
+n = max(versions, default=0) + 1
+
+for p in (Path("index.html"), Path("sw.js"), Path("auth.js")):
+    content = texts[p]
+    content = re.sub(r"\?v=\d+", f"?v={n}", content)
+    content = re.sub(r"thp40-v\d+", f"thp40-v{n}", content)
+    p.write_text(content, encoding="utf-8")
+
+content = texts[app]
+content, count = re.subn(r"var APPV=\d+;", f"var APPV={n};", content, count=1)
+if count != 1:
+    raise SystemExit("APPV introuvable ou ambigu dans app.js")
+app.write_text(content, encoding="utf-8")
+print(f"Version synchronisée : v{n}")
