@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=147;
+var APPV=148;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -327,7 +327,7 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
 function coachingRules(sessions,pref,weekNo,weekRec,phase){
   var p=pref&&pref.athlete_profile||{}, exp=p.experience||"regulier", discipline=p.discipline||"mixte";
   var limit=(exp==="debutant"||exp==="reprise")?1:2;
-  if(weekRec||phase==="Affûtage")limit=1;
+  if(weekRec)limit=0; else if(phase==="Affûtage")limit=1;
   var quality=sessions.filter(function(x){return !x.race&&x.tag==="q";});
   var clubQuality=quality.filter(function(x){return !!x.club;});
   var optionalQuality=quality.filter(function(x){return !x.club;}).sort(function(a,b){
