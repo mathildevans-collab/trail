@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=170;
+var APPV=171;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1155,6 +1155,12 @@ function resultsHTML(r,m,today){
   return h;
 }
 
+function tcls(s){var t=(s.type||"")+" "+(s.name||""); if(s.race||/^Course/i.test(s.type||""))return "r"; if(/long/i.test(t))return "l"; if(/fraction|fartlek|seuil|tempo|côte|cote|vma|interv|rapide|allure|30\/30/i.test(t))return "q"; return "e";}
+function wdays(r,wk,mode){var w=wk.n,L=DL,o="";
+  for(var i=0;i<7;i++){var dw=i, ss=wk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&D.done[sk(r,w,s.k)], c=s?tcls(s):"o";
+    if(mode==="dot")o+='<i class="dd '+c+(on?" on":"")+'" title="'+DOW[dw]+(s?" · "+esc(s.type):" · repos")+'"></i>';
+    else o+='<span class="dc '+c+(on?" on":"")+'"><em>'+L[i]+'</em>'+(s?'<b>'+esc(String(s.type).replace(/ route$/i,"").split(" ")[0])+'</b><small>'+(s.km?kmS(s.km)+" km":"")+'</small>':'<b>Repos</b>')+'</span>';}
+  return o;}
 // --- Plan ---
 function vPlan(){
   var r=activeRace(); if(!r)return header("Ton plan","Le plan")+'<div class="card empty"><p class="muted">Ajoute une course A pour avoir un plan.</p><button class="btn primary" data-act="addrace">+ Ajouter une course</button></div>';
@@ -1168,6 +1174,8 @@ function vPlan(){
   h+='<div class="card"><div class="sb"><b style="font-family:var(--display);font-size:18px">'+esc(r.name)+'</b><span class="chip">'+fmtD(pl.end)+'</span></div><div class="phases">'+PH.map(function(p){return '<div style="flex:'+p[1]+';background:'+cols[p[0]]+'"></div>';}).join("")+'</div><div class="phlab">'+PH.map(function(p){return '<span'+(p[0]===curPh&&inPlan?' class="on"':'')+'>'+p[0]+'</span>';}).join("")+'</div>'+
     '<div class="sb small num" style="margin-top:12px"><span>'+t.d+' / '+t.t+' séances faites</span><span class="muted">'+(t.t?Math.round(t.d/t.t*100):0)+' %</span></div><div class="bar" style="margin-top:6px"><i style="width:'+(t.t?t.d/t.t*100:0)+'%"></i></div>'+
     (ne?'<p class="small" style="margin:10px 0 0">'+ne+' séance'+(ne>1?'s':'')+' modifiée'+(ne>1?'s':'')+' par toi. <button class="rm-ghost" style="color:var(--brand);min-height:0;padding:0" data-act="resetedits">Tout rétablir</button></p>':'')+'</div>';
+  if(inPlan){var cwk=P(pl,cw);
+    h+='<div class="card cwk"><div class="sb"><span class="eyebrow">Cette semaine · S'+cw+' · '+cwk.ph+'</span><b class="num">'+cwk.km+' km</b></div><div class="cwd">'+[0,1,2,3,4,5,6].map(function(dw){var ss=cwk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&D.done[sk(r,cw,s.k)]; return '<button class="cd '+(s?tcls(s):"o")+(on?" on":"")+'" data-goto="'+cw+'-'+dw+'"><em>'+DOWC[dw]+'</em><b>'+(s?esc(String(s.type).replace(/ route$/i,"").split(" ")[0]):"Repos")+'</b><small>'+(s&&s.km?kmS(s.km)+" km":"")+'</small></button>';}).join("")+'</div></div>';}
   var mx=1; pl.weeks.forEach(function(wk){mx=Math.max(mx,wk.km);});
   var ow=openWk===null?planCurW:openWk;
   h+='<div class="card phs">';
@@ -1177,7 +1185,7 @@ function vPlan(){
     h+='<div class="ph'+(open?" open":"")+'"><button class="phh" data-ph="'+esc(name)+'" aria-expanded="'+open+'"><span class="phd" style="background:'+cols[name]+'"></span><span class="pht"><b>'+name+(name===curPh&&inPlan?' <span class="chip">en cours</span>':'')+'</b><small class="num">'+(w1===w2?'Semaine '+w1:'Semaines '+w1+' à '+w2)+'</small></span><span class="phk num">'+nb(Math.round(km))+' km<small>'+dn+'/'+tt+' faites</small></span><span class="chev" aria-hidden="true">'+""+'</span></button>';
     if(open)ws.forEach(function(w0){var wk=P(pl,w0.n), w=wk.n, isCur=w===cw&&inPlan, rw=w===pl.n;
       var ed=wk.s.some(function(s){return s.edited;});
-      h+='<button class="wk'+(isCur?" cur":"")+(wk.rec?" rec":"")+'" data-wk="'+w+'" aria-expanded="'+(ow===w)+'"><span class="n">'+w+'</span><span><span class="d">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · <b style="color:var(--warn)">'+esc(wk.adjLabel)+'</b>':'')+(ed?'<span class="ed">modifiée</span>':'')+(isCur?' · <b style="color:var(--brand)">en cours</b>':'')+'</span><div class="b" style="width:'+(rw?20:Math.max(4,wk.km/mx*100))+'%">'+(function(){if(rw)return ""; var q=weekTot(r,wk,6); return q.ak>0&&wk.km>0?'<i style="width:'+Math.min(100,q.ak/wk.km*100)+'%"></i>':"";})()+'</div></span><span class="k num">'+(rw?'Course':wk.km+' km')+'<small>'+weekDone(r,wk)+'/'+nSess(wk)+' faites</small></span></button>';
+      h+='<button class="wk'+(isCur?" cur":"")+(wk.rec?" rec":"")+'" data-wk="'+w+'" aria-expanded="'+(ow===w)+'"><span class="n">'+w+'</span><span><span class="d">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · <b style="color:var(--warn)">'+esc(wk.adjLabel)+'</b>':'')+(ed?'<span class="ed">modifiée</span>':'')+(isCur?' · <b style="color:var(--brand)">en cours</b>':'')+'</span><span class="wdots">'+wdays(r,wk,"dot")+'</span><span class="wgrid">'+wdays(r,wk,"cell")+'</span><div class="b" style="width:'+(rw?20:Math.max(4,wk.km/mx*100))+'%">'+(function(){if(rw)return ""; var q=weekTot(r,wk,6); return q.ak>0&&wk.km>0?'<i style="width:'+Math.min(100,q.ak/wk.km*100)+'%"></i>':"";})()+'</div></span><span class="k num">'+(rw?'Course':wk.km+' km')+'<small>'+weekDone(r,wk)+'/'+nSess(wk)+' faites</small></span></button>';
       if(ow===w)h+='<div class="wkx">'+wk.s.map(function(s){var on=!!D.done[sk(r,w,s.k)]; return '<div class="sesrow"><button class="ses" data-goto="'+w+'-'+s.dow+'"><span class="ck'+(on?" on":"")+'">'+(on?I.check:"")+'</span><span class="dw">'+DOW[s.dow]+'</span><span class="ty">'+esc(s.type==="Course B"?"Course B · "+s.name:s.type)+(s.edited?'<span class="ed">'+(s.added?"ajoutée":"modifiée")+'</span>':'')+'</span><span class="num muted">'+(s.km?kmS(s.km)+' km':'')+(s.dp?' · +'+nb(s.dp):'')+'</span></button>'+(s.race?'':'<button class="pen" data-edit="'+w+'-'+s.k+'" aria-label="Modifier '+esc(s.type)+'">'+I.pen+'</button>')+'</div>';}).join("")+[0,1,2,3,4,5,6].map(function(dw){var e=D.extra&&D.extra[iso(wk.start+dw*DAY)]; return e?'<div class="sesrow"><button class="ses" data-goto="'+w+'-'+dw+'"><span class="ck on">'+I.check+'</span><span class="dw">'+DOW[dw]+'</span><span class="ty">Sortie hors plan</span><span class="num muted">'+kmS(e.km)+' km'+(e.dp?' · +'+nb(e.dp):'')+'</span></button></div>':"";}).join("")+
         '<button class="addses" data-act="addses" data-w="'+w+'">+ Ajouter une séance</button><button class="addses" data-act="availwk" data-w="'+w+'">'+(wk.avail?'Mes jours de cette semaine ✓':'Indispo cette semaine ?')+'</button>'+(wk.note?'<p class="small muted" style="margin:8px 0 0">'+esc(wk.note)+'</p>':'')+'</div>';
     });

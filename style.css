@@ -1227,3 +1227,60 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .avail{gap:5px}
 .av{box-sizing:border-box;height:64px;min-height:0;padding:0;justify-content:center;width:100%;min-width:0}
 .av b{font:700 12px var(--display);line-height:1}.av span{font:700 17px var(--display);line-height:1}
+
+/* Plan : carte « cette semaine », points par jour (mobile), grille 7 jours (ordinateur) */
+.cwk{display:none}
+.cwk .sb{margin-bottom:10px}.cwk .sb b{font:700 15px var(--display)}
+.cwd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.cd,.dc{--c:var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;padding:8px 2px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);text-align:center}
+.cd{min-height:68px;font:inherit}
+.cd em,.dc em{font:700 11px var(--mono);font-style:normal;color:var(--muted)}
+.cd b,.dc b{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 11px var(--display)}
+.cd small,.dc small{font:600 10px var(--mono);color:var(--muted);white-space:nowrap}
+.cd.q,.dc.q{background:color-mix(in srgb,var(--acc) 13%,var(--card));border-color:color-mix(in srgb,var(--acc) 40%,var(--line))}
+.cd.l,.dc.l{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}.cd.l em,.cd.l small,.dc.l em,.dc.l small{color:inherit;opacity:.85}
+.cd.e,.dc.e{background:var(--brand-soft)}
+.cd.r,.dc.r{background:color-mix(in srgb,var(--sun) 35%,var(--card));border-color:var(--sun)}
+.cd.o,.dc.o{background:transparent;border-style:dashed}.cd.o b,.dc.o b{color:var(--muted);font-weight:500}
+.cd.on,.dc.on{box-shadow:inset 0 0 0 2px var(--ok)}
+.wdots{display:none}
+.dd{width:12px;height:12px;border-radius:50%;background:var(--line);display:block}
+.dd.q{background:var(--acc)}.dd.l{background:var(--brand)}.dd.e{background:#a9cdb8}.dd.r{background:var(--sun)}
+.dd.on{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ok)}
+.wgrid{display:none}
+.wk .b{margin-top:6px}
+@media(min-width:900px){
+  #view:has(.phs)>.phs{grid-template-columns:minmax(0,1fr)!important}
+  #view:has(.phs)>.cwk .cd{min-height:84px}#view:has(.phs)>.cwk .cd b{font-size:13px}
+  .wdots{display:none}
+  .wk{grid-template-columns:34px 190px minmax(0,1fr) 96px}
+  .wk>span:nth-child(2){display:contents}
+  .wk .d{grid-column:2;grid-row:1;align-self:center}
+  .wk .wgrid{display:grid;grid-column:3;grid-row:1;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+  .wk .b{grid-column:2;grid-row:1;align-self:end;margin-top:0;height:5px;width:auto}
+  .wk{padding:12px 0}.wk .dc{padding:7px 2px}
+  .wk .d{white-space:normal}
+}
+@media(min-width:900px){.wk .n{grid-column:1;grid-row:1}.wk .k{grid-column:4;grid-row:1}}
+
+/* Plan ordinateur : sans défilement — phases en onglets, semaines en lignes, détail en 2 colonnes */
+@media(min-width:900px){
+  .cwk{display:block;padding:12px 16px 12px;margin-bottom:10px}
+  #view:has(.phs)>.card:first-of-type{padding:12px 16px;margin-bottom:10px}
+  #view:has(.phs)>.card:first-of-type .phlab{margin-top:2px}
+  #view:has(.phs)>.card:first-of-type .bar{display:none}
+  #view:has(.phs)>.card:first-of-type .sb.small{margin-top:6px!important}
+  #view:has(.phs)>.cwk .cd{min-height:64px}
+  #view:has(.phs)>.phs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px 10px;padding:12px 16px 8px}
+  #view:has(.phs)>.phs>.ph,#view:has(.phs)>.phs>.ph.open{display:contents}
+  .phs .phh{grid-row:1;min-height:56px;padding:8px 12px;border:1px solid var(--line);border-radius:13px;background:var(--card)}
+  .phs .ph.open .phh{border-color:var(--brand);background:var(--brand-soft)}
+  .phs .wk,.phs .wkx{grid-column:1/-1}
+  .phs .wk{grid-template-columns:34px 170px minmax(0,1fr) 90px;padding:6px 4px}
+  .phs .wk .dc{padding:5px 2px}.phs .wk .dc small{display:none}
+  .phs .wk .b{display:none}
+  .phs .wkx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:20px;padding:6px 14px;margin:0 0 6px}
+  .phs .wkx>.addses{margin-top:4px;min-height:38px}
+  .phs .wkx>p{grid-column:1/-1;margin:4px 0 0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .phs .wkx .ses{min-height:38px;padding:3px 0}
+}
