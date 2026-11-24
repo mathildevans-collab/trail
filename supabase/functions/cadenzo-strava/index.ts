@@ -185,8 +185,9 @@ async function findSegments(req: Request) {
     return json({ error: "Position GPS invalide." }, 400);
   }
 
-  const anon = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") || "", { auth: { persistSession: false } });
-  const { data: { user }, error } = await anon.auth.getUser(jwt);
+  // Vérifie le JWT utilisateur via Auth avec le client serveur déjà configuré.
+  // Évite de dépendre d'une variable SUPABASE_ANON_KEY non garantie dans l'environnement Edge.
+  const { data: { user }, error } = await admin.auth.getUser(jwt);
   if (error || !user) return json({ error: "Session invalide." }, 401);
 
   // Recherche exclusivement dans le catalogue Cadenzo : aucun appel à l'API Strava.
