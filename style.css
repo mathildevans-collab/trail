@@ -1107,3 +1107,65 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   #view:has(.auth-page) .auth-brand-name{font-size:46px}
   #view:has(.auth-page) .auth-logo{width:62px;height:62px}
 }
+
+
+/* Pages de réglages — présentation dédiée au bureau, sans modifier le rendu mobile */
+.settings-page{grid-column:1/-1;min-width:0;width:100%;max-width:1120px;margin:0 auto}
+.settings-page-head{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:24px}
+.settings-page-head .back{justify-self:start;margin:0}
+.settings-page-head>div{max-width:760px}
+.settings-page-head .eyebrow{display:block;margin-bottom:7px;color:var(--brand);font:700 11px var(--mono);letter-spacing:.1em}
+.settings-page-head h1{margin:0;font:800 clamp(28px,3vw,38px)/1.08 var(--display);letter-spacing:-.04em;color:var(--ink)}
+.settings-page-head p{margin:8px 0 0;max-width:620px;color:var(--muted);font-size:15px;line-height:1.55}
+.settings-page-content{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.settings-page-content .sgroup{min-width:0;margin:0;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+.settings-page-content .sgroup>.eyebrow{display:block;margin-bottom:12px;color:var(--muted);font:700 11px var(--mono);letter-spacing:.08em}
+.settings-page-content .slist{display:grid;gap:6px}
+.settings-page-content .sitem{min-width:0;border-radius:11px}
+.settings-page-content .sitem .tx{min-width:0}
+.settings-page-content .sitem .tx b{font:700 15px var(--display)}
+.settings-page-content .sitem .tx small{white-space:normal;overflow:visible;line-height:1.45}
+.settings-page>.foot{margin-top:20px;text-align:left;white-space:normal}
+@media(min-width:900px){
+  #view:has(.settings-page){display:block;padding-top:28px}
+  .settings-page{max-width:1180px;margin:0 auto}
+  .settings-page-head{grid-template-columns:180px minmax(0,1fr);align-items:start;gap:28px;margin-bottom:30px}
+  .settings-page-head .back{margin-top:5px}
+  .settings-page-content{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .settings-page-content .sgroup{padding:22px;border-radius:18px}
+  .settings-page-content .sitem{min-height:68px;padding:12px 10px}
+  .settings-page-content .sitem .ico{width:38px;height:38px}
+  .settings-page-content .sitem .tx b{font-size:16px}
+}
+@media(min-width:1400px){
+  .settings-page{max-width:1280px}
+  .settings-page-content{gap:20px}
+}
+
+@media(min-width:900px){
+  .sheet{align-items:center;padding:28px}
+  .sheet-in{width:min(860px,calc(100vw - 320px));max-width:860px;max-height:min(88vh,900px);border-radius:20px;padding:26px 30px 30px;box-shadow:0 24px 80px rgba(0,0,0,.28)}
+  .sheet-in>.grab{display:none}
+  .sheet-in h2,.sheet-in h3{font-size:25px;margin:0 0 12px}
+  .sheet-in .field{margin:12px 0}
+  .sheet-in .pref-days{gap:10px}
+  .sheet-in .pref-day{min-height:46px}
+  .sheet-in .pref-club-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sheet-in .pref-club-day{padding:14px}
+  .sheet-in .btn.primary{max-width:320px}
+  .sheet-x{top:18px;right:18px}
+  .training-summary{cursor:pointer;text-align:left;color:var(--ink);font:inherit}
+  .training-summary:hover,.sd-t[ data-ssub]:hover,.sd-t[data-act]:hover{border-color:var(--brand);background:var(--brand-soft)}
+}
+
+@media(min-width:900px){
+  .settings-trophies-content{display:block}
+  .settings-trophies-content>.back{margin:0 0 20px}
+  .settings-trophies-content>.tro-hero,.settings-trophies-content>.tro-card,.settings-trophies-content>.sgroup{margin:0 0 16px}
+  .settings-trophies-content>.tro-card{padding:20px}
+  .settings-trophies-content>.sgroup{padding:0;border:0;background:transparent}
+  .settings-trophies-content>.sgroup>.eyebrow{display:block;margin:4px 0 10px}
+  .settings-trophies-content>.sgroup .slist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .settings-trophies-content>.sgroup .sitem{min-height:72px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+  .settings-trophies-content>.foot{margin-top:18px}
+}
