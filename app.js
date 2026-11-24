@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=128;
+var APPV=130;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -583,7 +583,6 @@ function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
   var L=cotesList();
-  if(!L||!Array.isArray(L.items)||!L.items.length)return "";
   var h='<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 '+esc(L&&L.nom||CTS.city||"Localisation indisponible")+'</span>'+(L&&L.items&&L.items.length>1?'<button class="ctib" data-ctn="1" aria-label="Segment suivant">Suivant<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(!L||!L.items||!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte affichée pour le moment. Lance la recherche autour de ta position.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Trouver les côtes autour de moi')+'</button></div>';
   if(L.far)return h+'<p class="small muted" style="margin:10px 0 6px">Aucune côte préparée autour de toi.</p><button class="ctmore" data-ctg="1" style="margin:0">Chercher des côtes ici</button></div>';
@@ -840,7 +839,7 @@ function vPlan(){
   PH.forEach(function(p0){
     var name=p0[0], ws=pl.weeks.filter(function(x){return x.ph===name;}), w1=ws[0].n, w2=ws[ws.length-1].n, km=0, dn=0, tt=0, open=phOpen===name;
     ws.forEach(function(x){var wk=P(pl,x.n); km+=wk.km; dn+=weekDone(r,wk); tt+=nSess(wk);});
-    h+='<div class="ph'+(open?" open":"")+'"><button class="phh" data-ph="'+esc(name)+'" aria-expanded="'+open+'"><span class="phd" style="background:'+cols[name]+'"></span><span class="pht"><b>'+name+(name===curPh&&inPlan?' <span class="chip">en cours</span>':'')+'</b><small class="num">'+(w1===w2?'Semaine '+w1:'Semaines '+w1+' à '+w2)+'</small></span><span class="phk num">'+nb(Math.round(km))+' km<small>'+dn+'/'+tt+' faites</small></span><span class="chev" aria-hidden="true">'+(open?"⌃":"⌄")+'</span></button>';
+    h+='<div class="ph'+(open?" open":"")+'"><button class="phh" data-ph="'+esc(name)+'" aria-expanded="'+open+'"><span class="phd" style="background:'+cols[name]+'"></span><span class="pht"><b>'+name+(name===curPh&&inPlan?' <span class="chip">en cours</span>':'')+'</b><small class="num">'+(w1===w2?'Semaine '+w1:'Semaines '+w1+' à '+w2)+'</small></span><span class="phk num">'+nb(Math.round(km))+' km<small>'+dn+'/'+tt+' faites</small></span><span class="chev" aria-hidden="true">'+""+'</span></button>';
     if(open)ws.forEach(function(w0){var wk=P(pl,w0.n), w=wk.n, isCur=w===cw&&inPlan, rw=w===pl.n;
       var ed=wk.s.some(function(s){return s.edited;});
       h+='<button class="wk'+(isCur?" cur":"")+(wk.rec?" rec":"")+'" data-wk="'+w+'" aria-expanded="'+(ow===w)+'"><span class="n">'+w+'</span><span><span class="d">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · <b style="color:var(--warn)">'+esc(wk.adjLabel)+'</b>':'')+(ed?'<span class="ed">modifiée</span>':'')+(isCur?' · <b style="color:var(--brand)">en cours</b>':'')+'</span><div class="b" style="width:'+(rw?20:Math.max(4,wk.km/mx*100))+'%">'+(function(){if(rw)return ""; var q=weekTot(r,wk,6); return q.ak>0&&wk.km>0?'<i style="width:'+Math.min(100,q.ak/wk.km*100)+'%"></i>':"";})()+'</div></span><span class="k num">'+(rw?'Course':wk.km+' km')+'<small>'+weekDone(r,wk)+'/'+nSess(wk)+' faites</small></span></button>';
