@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refuse les titres de commits vagues et impose une action claire."""
+"""Refuse les titres de commits vagues et impose une phrase claire en français."""
 import os
 import re
 import subprocess
@@ -8,16 +8,11 @@ import sys
 # Un titre doit commencer par une action compréhensible, pas par un préfixe technique.
 ACTION = re.compile(
     r"^(Ajoute|Améliore|Automatise|Bloque|Centralise|Charge|Clarifie|"
-    r"Conserve|Préserve|Corrige|Décrit|Détecte|Documente|Déplace|Évite|"
+    r"Conserve|Corrige|Décrit|Détecte|Documente|Déplace|Évite|"
     r"Explique|Affiche|Gère|Limite|Masque|Met à jour|Nettoie|"
     r"Permet|Protège|Répare|Remplace|Renomme|Réorganise|Rétablit|"
-    r"Rend|Sécurise|Simplifie|Supprime|Trie|Vérifie|Teste|"
-    r"Empêche|Prépare|Réduit|Ajoute|Retire|Autorise|Fixer|Branche|Renforce|Applique|Couvre|Exécute|"
-    r"Add|Improve|Automate|Block|Centralize|Load|Clarify|Keep|Correct|Compare|Execute|Isolate|"
-    r"Describe|Detect|Document|Move|Avoid|Explain|Show|Manage|Limit|"
-    r"Hide|Show|Update|Clean|Allow|Protect|Repair|Replace|Rename|Refactor|"
-    r"Restore|Make|Secure|Simplify|Remove|Sort|Verify|Prevent|Prepare|"
-    r"Reduce|Integrate|Use|Isolate|Precache)\b",
+    r"Rend|Sécurise|Simplifie|Supprime|Trie|Vérifie|"
+    r"Empêche|Prépare|Réduit|Ajoute|Retire)\b",
     re.IGNORECASE,
 )
 VAGUE = {
@@ -60,10 +55,10 @@ def main():
 
     invalides = [message for message in messages if not est_un_titre_clair(message)]
     if invalides:
-        print("Ces titres doivent commencer par une action claire et préciser leur objet :")
+        print("Ces titres doivent être reformulés en français clair :")
         for titre in invalides:
             print(f"  - {titre}")
-        print("\nExemples attendus (français ou anglais) :")
+        print("\nExemples attendus :")
         print("  Corrige la recherche des segments proches")
         print("  Explique le chargement des séances dans le planning")
         print("  Évite de perdre la session après une mise en veille")

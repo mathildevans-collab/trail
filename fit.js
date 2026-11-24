@@ -1,14 +1,13 @@
 // Séances vers la montre : fichiers d'entraînement .FIT (à copier dans GARMIN/NewFiles) et .zip de la semaine.
 (function(){
-var HRZ=null;
-function setZones(z){if(!z)return false;var next={};for(var i=1;i<=5;i++){var v=z[i]||z[String(i)];if(!Array.isArray(v)||!(+v[0]>0))return false;next[i]=[+v[0],+v[1]||null];}HRZ=next;return true;}
+var HRZ={1:[110,135],2:[135,150],3:[153,167],4:[169,180],5:[180,196]};
 
 // Cible cardio lue dans un texte : "135-150 bpm", "zone 4", "Z3 haute", "Z3-Z4"...
 function hrIn(t){
   t=String(t||""); var m=t.match(/(\d{3})\s*-\s*(\d{3})\s*bpm/); if(m)return [+m[1],+m[2]];
   if(/zone 1-2 à|Z1 →|→/.test(t))return null;
-  m=t.match(/Z(\d)\s*-\s*Z(\d)/i); if(m)return HRZ&&HRZ[m[1]]&&HRZ[m[2]]?[HRZ[m[1]][0],HRZ[m[2]][1]]:null;
-  m=t.match(/\bZ(?:one )?\s?(\d)(?:\s*-\s*(\d))?/i); if(m){var a=HRZ&&HRZ[m[1]], b=HRZ&&HRZ[m[2]||m[1]]; return a&&b?[a[0],b[1]]:null;}
+  m=t.match(/Z(\d)\s*-\s*Z(\d)/i); if(m)return [HRZ[m[1]][0],HRZ[m[2]][1]];
+  m=t.match(/\bZ(?:one )?\s?(\d)(?:\s*-\s*(\d))?/i); if(m){var a=HRZ[m[1]], b=HRZ[m[2]||m[1]]; return a&&b?[a[0],b[1]]:null;}
   return null;
 }
 function step(name,dur,hr,int,notes){return {name:name,dur:dur,hr:hr,int:int||"active",notes:notes||""};}
@@ -20,18 +19,18 @@ function wktOf(s){
   var zs=FIT.zoneOf?FIT.zoneOf(s.type):"", out=[], st=s.steps||[];
   st.forEach(function(x){
     var a=String(x[0]), b=String(x[1]), m;
-    if((m=a.match(/^(\d+) min$/))&&/chauffement/i.test(b))out.push(step("Échauffement",{t:+m[1]*60},HRZ&&HRZ[2],"warmup",b));
+    if((m=a.match(/^(\d+) min$/))&&/chauffement/i.test(b))out.push(step("Échauffement",{t:+m[1]*60},HRZ[2],"warmup",b));
     else if((m=a.match(/^(\d+) min$/))&&/calme/i.test(b))out.push(step("Retour au calme",{t:+m[1]*60},null,"cooldown",b));
     else if(m=a.match(/^(\d+) × (\d+) (m|s|min)$/)){
       var n=+m[1], rec, r2=b.match(/(\d+) min (?:en zone (\d)|de récup)/);
-      if(r2)rec=step("Récup",{t:+r2[1]*60},r2[2]&&HRZ?HRZ[r2[2]]:null,"recovery");
+      if(r2)rec=step("Récup",{t:+r2[1]*60},r2[2]?HRZ[r2[2]]:null,"recovery");
       else if(/descente en trot/i.test(b))rec=step("Descente trot",{open:1},null,"recovery","Appuie sur Tour en bas");
       else if(/remontée en marchant/i.test(b))rec=step("Remontée",{open:1},null,"recovery","Appuie sur Tour en haut");
       else if(/descente en marchant/i.test(b))rec=step("Descente",{open:1},null,"recovery","Appuie sur Tour en bas");
       else rec=step("Récup",{t:m[3]==="s"?60:120},null,"recovery");
       out.push({rep:n,steps:[step(/descente/i.test(s.type)?"Descente":/côte/i.test(s.type+b)?"Montée":"Effort",durOf(+m[2],m[3]),/allure course/i.test(b)?null:hrIn(b)||hrIn(zs),"active",b),rec]});
     }
-    else if(m=a.match(/^(\d+) paires$/))out.push({rep:+m[1],steps:[step("2 montées",{d:1000},hrIn(b),"active",b),step("Récup",{t:180},null,"recovery","Marche active si FC > 175")]});
+    else if(m=a.match(/^(\d+) paires$/))out.push({rep:+m[1],steps:[step("2 montées",{d:1000},hrIn(b)||[153,180],"active",b),step("Récup",{t:180},null,"recovery","Marche active si FC > 175")]});
     else if(m=a.match(/^(\d+) min$/))out.push(step(/footing/i.test(b)&&!out.length&&st.length>1?"Échauffement":/footing/i.test(b)?"Footing":/tempo/i.test(b)?"Tempo":/progressif|zone 1-2 à/i.test(b+s.type)?"Progressif":"Course",{t:+m[1]*60},hrIn(b),/footing/i.test(b)&&!out.length&&st.length>1?"warmup":"active",b));
     else if(m=a.match(/^([\d.,]+) km$/))out.push(step("Course",{d:Math.round(parseFloat(m[1].replace(",","."))*1000)},hrIn(b)||hrIn(zs),"active",b));
   });
@@ -89,5 +88,5 @@ function zip(files){
 function slug(s){return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,28);}
 function download(blob,name){var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href); a.remove();},4000);}
 
-window.FIT={wktOf:wktOf,encode:encode,zip:zip,slug:slug,download:download,hrIn:hrIn,setZones:setZones};
+window.FIT={wktOf:wktOf,encode:encode,zip:zip,slug:slug,download:download,hrIn:hrIn};
 })();
