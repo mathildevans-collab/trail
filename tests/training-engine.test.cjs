@@ -1,6 +1,12 @@
 "use strict";
 const assert=require("node:assert/strict");
 const T=require("../training.js");
+const fs=require("node:fs");
+const appSource=fs.readFileSync("app.js","utf8");
+assert.match(appSource,/discipline==="route"&&window\.CadenzoTraining\)b=CadenzoTraining\.roadWeek/);
+assert.match(appSource,/discipline==="mixte"&&window\.CadenzoTraining\)b=CadenzoTraining\.mixedWeek/);
+assert.match(appSource,/discipline==="trail"&&window\.CadenzoTraining&&!r\.builtin\)b=CadenzoTraining\.trailWeek/);
+assert.match(appSource,/else b=r\.builtin\?thpWeek\(w,r,m\):genWeek/);
 const now=Date.now();
 const profile={discipline:"route",experience:"regulier",weekly_km:35,runs_per_week:4,max_hr:190,resting_hr:55};
 const history=[
