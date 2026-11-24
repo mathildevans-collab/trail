@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=152;
+var APPV=153;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -232,12 +232,11 @@ function thuOf(light){return sess({dow:3,tag:"e",type:"Endurance facile",km:ligh
 function longSteps(km){return km>=14?[[km+" km","Zone 2, marche active dans les côtes"]]:[[km+" km","Zone 2, allure conversation"]];}
 function raceWeek(r,m){
   var rd=dowOf(dms(r.date)), S=[];
-  if(rd>1)S.push(sess({dow:1,tag:"q",type:"Rappel",km:6,dp:0,steps:[["6 km","Zone 2"],["4 × 20 s","À allure course"]],txt:"6 km en Z2, puis 4 × 20 s à allure course."}));
-  if(rd>2)S.push(sess({dow:2,tag:"e",type:"Footing",km:4,dp:0,txt:"4 km très faciles. Prépare ton sac, ta tenue et ton ravitaillement."}));
-  if(rd>3)S.push(sess({dow:3,tag:"e",type:"Endurance facile",km:4,dp:0,txt:"Footing facile, sans intensité. Les séances de club sont ajoutées uniquement aux jours déclarés."}));
-  if(rd-1>=0&&!S.some(function(s){return s.dow===rd-1;}))S.push(sess({dow:rd-1,tag:"e",type:"Activation",km:3,dp:0,txt:"15 min très faciles et 3 lignes droites. Prépare tout ce soir, couche-toi tôt."}));
+  if(rd>=2)S.push(sess({dow:0,tag:"e",type:"Footing d'activation",km:4,dp:0,steps:[["4 km","Endurance très facile, respiration confortable."]],txt:"Dernier footing facile de la semaine, sans intensité ni recherche d'allure."}));
+  if(rd>=4)S.push(sess({dow:2,tag:"e",type:"Footing léger",km:3,dp:0,steps:[["3 km","Endurance très facile. Arrête-toi avec de bonnes sensations."]],txt:"Petit footing de fraîcheur, sans fatigue résiduelle."}));
+  if(rd>=1&&!S.some(function(x){return x.dow===rd-1;}))S.push(sess({dow:rd-1,tag:"e",type:"Activation",km:2,dp:0,steps:[["2 km maximum","Très facile, quelques accélérations souples uniquement si tu en as l'habitude."]],txt:"Activation courte la veille : reste frais, ne cherche aucun entraînement."}));
   S.push(sess({k:"race",dow:rd,tag:"l",type:"Jour J",km:m.L,dp:m.dp,race:true,txt:r.name+" : "+kmS(m.L)+" km, +"+nb(m.dp)+" m, objectif "+hm(m.goal)+". Départ à "+r.time+"."}));
-  if(rd<6)S.push(sess({dow:rd+1,tag:"e",type:"Récupération",km:0,dp:0,txt:"Marche de 30 min et étirements doux."}));
+  if(rd<6)S.push(sess({dow:rd+1,tag:"e",type:"Récupération",km:0,dp:0,txt:"Marche douce de 20 à 30 min selon les sensations. Pas de course obligatoire."}));
   return S;
 }
 function thpWeek(w,r,m){
@@ -296,7 +295,8 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var optional=sessions.filter(function(s){return !s.race&&!isClubSession(s)&&s.type!=="Course B";});
   var advancedTrail=(p.discipline==="trail"||p.discipline==="mixte")&&exp==="confirme"&&base>=35&&target>=5;
   var plannedB2B=sessions.some(function(s){return s.tag==="l"&&s.type==="Jour 2 du bloc";});
-  var maxLong=advancedTrail&&plannedB2B?2:1;
+  var eventWeek=sessions.some(function(s){return s.type==="Course B"||s.race;});
+  var maxLong=eventWeek?0:(advancedTrail&&plannedB2B?2:1);
   var mandatoryLong=mandatory.filter(function(s){return s.tag==="l";}).length;
   var optionalLong=optional.filter(function(s){return s.tag==="l";}).sort(function(a,b){return (+b.km||0)-(+a.km||0);});
   var keepOptionalLong=Math.max(0,maxLong-mandatoryLong);
@@ -304,7 +304,7 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
   optional=optional.map(function(s){
     if(s.tag!=="l"||keepLongIds.indexOf(s.k)>=0)return s;
     var c=Object.assign({},s), oldKm=+c.km||0;
-    c.tag="e";c.type="Endurance de récupération";c.km=Math.max(3,Math.min(8,Math.round(oldKm*0.4)));
+    c.tag="e";c.type="Endurance de récupération";c.km=oldKm>0?Math.max(1,Math.min(8,Math.round(oldKm*0.4))):0;
     c.dp=Math.round((+c.dp||0)*0.25);c.pace=null;
     c.steps=[[String(c.km)+" km","Endurance très facile, sans intensité. Cette sortie remplace la deuxième sortie longue."]];
     c.txt="Endurance de récupération : "+c.km+" km faciles. La deuxième sortie longue est réservée aux profils trail expérimentés avec une charge adaptée.";
@@ -350,8 +350,9 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
 }
 function coachingRules(sessions,pref,weekNo,weekRec,phase){
   var p=pref&&pref.athlete_profile||{}, exp=p.experience||"regulier", discipline=p.discipline||"mixte";
+  var eventWeek=sessions.some(function(x){return x.race||x.type==="Course B";});
   var limit=(exp==="debutant"||exp==="reprise")?1:2;
-  if(weekRec)limit=0; else if(phase==="Affûtage")limit=1;
+  if(weekRec||phase==="Affûtage"||eventWeek)limit=0;
   var quality=sessions.filter(function(x){return !x.race&&x.tag==="q";});
   var clubQuality=quality.filter(isClubSession);
   var optionalQuality=quality.filter(function(x){return !isClubSession(x);}).sort(function(a,b){
@@ -359,12 +360,12 @@ function coachingRules(sessions,pref,weekNo,weekRec,phase){
     return priority(b)-priority(a)||a.dow-b.dow;
   });
   var keep=Math.max(0,limit-clubQuality.length), changed=false, warnings=[];
-  if(weekRec||phase==="Affûtage"){
-    var clubFactor=weekRec?0.75:0.6;
+  if(weekRec||phase==="Affûtage"||eventWeek){
+    var clubFactor=eventWeek?0.4:(weekRec?0.65:0.6);
     sessions=sessions.map(function(x){
       if(!isClubSession(x)||x.race)return x;
       var c=Object.assign({},x);c.club=true;c.tag="e";c.type="Club allégé · "+String(x.type||"séance collective");
-      c.km=Math.max(2,Math.round((+x.km||0)*clubFactor));c.dp=Math.round((+x.dp||0)*clubFactor);
+      c.km=Math.min(eventWeek?3:6,Math.max(0,Math.round((+x.km||0)*clubFactor)));c.dp=Math.max(0,Math.round((+x.dp||0)*clubFactor));
       c.steps=[[String(c.km)+" km","Présence au club, mais séance allégée en endurance facile. Évite le travail intense."]];
       c.txt="Présence au club maintenue. Demande une version allégée à ton coach : endurance facile, sans fractionné ni effort prolongé.";
       return c;
@@ -372,11 +373,11 @@ function coachingRules(sessions,pref,weekNo,weekRec,phase){
   }
   var selected=[], blocked=[];
   optionalQuality.forEach(function(x){
-    var spaced=clubQuality.concat(selected).every(function(y){return Math.abs((+x.dow||0)-(+y.dow||0))>=2;});
+    var spaced=clubQuality.concat(selected).every(function(y){var diff=Math.abs((+x.dow||0)-(+y.dow||0));return Math.min(diff,7-diff)>=2;});
     if(selected.length<keep&&spaced)selected.push(x);else blocked.push(x);
   });
   var downgrade=blocked.map(function(x){return x.k;});
-  var mandatoryClose=clubQuality.some(function(x,i){return clubQuality.slice(i+1).some(function(y){return Math.abs((+x.dow||0)-(+y.dow||0))<2;});});
+  var mandatoryClose=clubQuality.some(function(x,i){return clubQuality.slice(i+1).some(function(y){var diff=Math.abs((+x.dow||0)-(+y.dow||0));return Math.min(diff,7-diff)<2;});});
   if(mandatoryClose)warnings.push("Tes séances collectives intenses sont trop rapprochées pour garantir 48 h de récupération. Garde les autres sorties faciles et échange avec ton coach si possible.");
   if(downgrade.length){
     sessions=sessions.map(function(x){
@@ -453,10 +454,11 @@ function planOf(r){
           var ctag=/fractionné|piste|côtes/i.test(ctype)?"q":/sortie longue/i.test(ctype)?"l":"e";
           planned.push(sess({k:KEYS[d],dow:d,tag:ctag,type:ctype,km:ckm,dp:0,club:true,steps:[],txt:"Séance collective obligatoire : "+ctype+". Estimation modifiable après la séance. Elle remplace la séance initialement prévue ce jour-là et compte dans ton volume hebdomadaire."}));
         }else if(s)planned.push(s);
+        else if(wk.hasB||wk.s.some(function(x){return x.race;})){}
         else planned.push(sess({k:KEYS[d],dow:d,tag:"e",type:"Footing",km:6,dp:0,steps:[[ "6 km","Footing facile en zone 2" ]],txt:"Footing facile en zone 2, ajouté selon tes disponibilités."}));
       });
       if(clubRaceConflict)wk.note=(wk.note?wk.note+" ":"")+"Une course tombe un jour de club : la course est prioritaire et la séance collective n'est pas programmée ce jour-là.";
-      if(clubDays.length>target)wk.note=(wk.note?wk.note+" ":"")+"Le nombre de séances de club obligatoires dépasse ton objectif hebdomadaire : toutes sont conservées, les séances individuelles sont retirées.";
+      if(mandatory.length>target)wk.note=(wk.note?wk.note+" ":"")+"Les séances obligatoires (club et course) dépassent ton objectif hebdomadaire : elles sont conservées, les séances individuelles sont limitées.";
       if(days.length<target)wk.note=(wk.note?wk.note+" ":"")+"Tu as sélectionné moins de jours disponibles que ton objectif de séances : le plan respecte tes jours déclarés.";
       var coached=coachingRules(planned,pref,wk.n,wk.rec,wk.ph);
       var load=athleteLoadRules(coached.sessions,pref,wk.n,wk.rec);
