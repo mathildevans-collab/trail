@@ -553,15 +553,11 @@ var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStora
 // Une position GPS est propre à l’instant et à l’appareil : ne jamais restaurer une ancienne position depuis le cache.
 delete CTS.pos; CTS.city=""; CTS.l=""; CTS.loading=false; CTS.autoSearchDone=false;
 function ctSave(){try{localStorage.setItem(userKey("cadenzo-ct"),JSON.stringify(CTS));}catch(e){}}
-function cotesList(){ // liste de référence partagée ; GPS utilisé uniquement pour afficher la proximité
-  var ids=Object.keys(COTES); if(!ids.length)return null;
-  var shared=COTES["strava-cache"], cur=CTS.l;
-  if(!COTES[cur]||cur==="strava-cache")cur=CTS.city?ctSlug(CTS.city):(shared?"strava-cache":"");
-  if(!COTES[cur]&&shared)cur="strava-cache";
-  // Ne jamais afficher les segments d'une autre ville comme solution de repli.
-  if(!COTES[cur])return null;
-  CTS.l=cur;
-  var L=COTES[cur]||shared, last={}, best={}, src=L.items||[], loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
+function cotesList(){ // seuls les segments recherchés depuis la position GPS actuelle sont affichés
+  var cur=CTS.l;
+  // Ne jamais remplacer une recherche locale par un cache partagé ou une ancienne ville.
+  if(!cur||cur==="strava-cache"||!COTES[cur]||!CTS.city)return null;
+  var L=COTES[cur], last={}, best={}, src=L.items||[], loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
     if(!last[e.i]||r.date>last[e.i])last[e.i]=r.date;
     if(e.p>0&&e.p<=3&&(!best[e.i]||e.p<best[e.i]))best[e.i]=e.p;
@@ -569,9 +565,12 @@ function cotesList(){ // liste de référence partagée ; GPS utilisé uniquemen
   var it=src.filter(function(c){return c&&c.i;}).map(function(c){
     return {c:c,last:last[c.i]||"",p:best[c.i]||0};
   });
-  // Priorité aux segments jamais réalisés, puis à ceux réalisés le plus anciennement.
-  // Les caractéristiques du segment départagent les égalités de façon identique sur chaque appareil.
+  // Distance GPS réelle en premier ; les segments jamais réalisés restent dans la liste
+  // et sont prioritaires uniquement à distance équivalente.
   it.sort(function(a,b){
+    var da=ctDist(a.c), db=ctDist(b.c), va=Number.isFinite(da), vb=Number.isFinite(db);
+    if(va&&vb&&da!==db)return da-db;
+    if(va!==vb)return va?-1:1;
     var ad=a.last?Date.parse(a.last):0, bd=b.last?Date.parse(b.last):0;
     return ad-bd || (+b.c.e||0)-(+a.c.e||0) || (+b.c.g||0)-(+a.c.g||0) ||
       (+a.c.d||0)-(+b.c.d||0) || String(a.c.n||"").localeCompare(String(b.c.n||"")) ||
@@ -581,7 +580,12 @@ function cotesList(){ // liste de référence partagée ; GPS utilisé uniquemen
 }
 function ctAgo(d){if(!d)return "Jamais faite"; var n=Math.round((Date.parse(isoToday())-Date.parse(d))/864e5); return n<14?"Il y a "+n+" j":"Il y a "+Math.round(n/7)+" sem.";}
 function ctHav(a,b,c,d){var R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r*Math.cos((a+c)/2*r); return Math.sqrt(x*x+y*y)*R;}
-function ctDist(c){return CTS.pos&&c.la!=null?Math.round(ctHav(CTS.pos.la,CTS.pos.ln,c.la,c.ln)*10)/10:c.k;}
+function ctDist(c){return CTS.pos&&Number.isFinite(+c.la)&&Number.isFinite(+c.ln)?Math.round(ctHav(CTS.pos.la,CTS.pos.ln,+c.la,+c.ln)*10)/10:(Number.isFinite(+c.k)?+c.k:null);}
+function ctNeedsSearch(pos){
+  var saved=CTS.l&&COTES[CTS.l];
+  if(!CTS.city||!saved||CTS.l==="strava-cache"||!Number.isFinite(+saved.lat)||!Number.isFinite(+saved.lng))return true;
+  return ctHav(+saved.lat,+saved.lng,pos.la,pos.ln)>0.75;
+}
 function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
 function cotesCard(){
@@ -604,17 +608,16 @@ function ctWatch(){
   if(CTW!==null||!navigator.geolocation||!window.isSecureContext)return;
   CTW=navigator.geolocation.watchPosition(function(p){
     var accuracy=Math.round(p.coords.accuracy||0);
-    if(!accuracy||accuracy>1000)return;
+    if(!accuracy||accuracy>500)return;
     var o=CTS.pos,moved=!o||ctHav(o.la,o.ln,p.coords.latitude,p.coords.longitude)>0.15;
     CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};
     ctSave();
     if(moved){
-      var nearby=cotesList();
-      if((!nearby||!nearby.items||!nearby.items.length)&&!CTS.loading&&!CTS.autoSearchDone){
+      if(ctNeedsSearch(CTS.pos)&&!CTS.loading){
         CTS.autoSearchDone=true;ctSave();ctHere();
       }else if(document.querySelector(".ct")&&$("sheet").hidden)render(true);
     }
-  },function(){CTW=null;},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
+  },function(){CTW=null;},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
 document.addEventListener("visibilitychange",function(){
   if(document.hidden){if(CTW!==null){try{navigator.geolocation.clearWatch(CTW);}catch(e){} CTW=null;} return;}
@@ -622,10 +625,9 @@ document.addEventListener("visibilitychange",function(){
   ctWatch(); // position fraîche dès le retour dans l’appli
   navigator.geolocation.getCurrentPosition(function(p){
     var accuracy=Math.round(p.coords.accuracy||0);
-    if(!accuracy||accuracy>1000)return;
+    if(!accuracy||accuracy>500)return;
     var o=CTS.pos;CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};ctSave();
-    var nearby=cotesList();
-    if((!nearby||!nearby.items||!nearby.items.length)&&!CTS.loading){CTS.autoSearchDone=false;ctWatch();}
+    if(ctNeedsSearch(CTS.pos)&&!CTS.loading){CTS.autoSearchDone=true;ctHere();return;}
     if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);
   },function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
 });
@@ -636,7 +638,7 @@ function ctLocate(){
   toast("Recherche de ta position GPS…");
   navigator.geolocation.getCurrentPosition(function(p){
     var accuracy=Math.round(p.coords.accuracy||0);
-    if(!accuracy||accuracy>1000){toast("Position trop imprécise (±"+(accuracy||"inconnue")+" m). Active la localisation précise de ton appareil puis réessaie.");return;}
+    if(!accuracy||accuracy>500){toast("Position trop imprécise (±"+(accuracy||"inconnue")+" m). Active la localisation précise de ton appareil puis réessaie.");return;}
     CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};
     ctSave();ctHere();
   },function(err){
