@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=141;
+var APPV=142;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -280,11 +280,25 @@ function genWeek(w,n,taper,r,m){
 var PC={};
 function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var p=pref&&pref.athlete_profile||{}, base=Number(p.weekly_km), exp=p.experience||"regulier";
-  if(!isFinite(base)||base<=0)return {sessions:sessions,cap:null,adjusted:false,warning:""};
+  if(!isFinite(base)||base<0)return {sessions:sessions,cap:null,adjusted:false,warning:""};
+  base=Math.max(5,base);
   var rate={debutant:0.035,reprise:0.04,regulier:0.055,confirme:0.07}[exp]||0.05;
   var steps=Math.min(8,Math.floor(Math.max(0,weekNo-1)/2));
   var cap=base*Math.min(1.55,1.05+rate*steps);
   if(weekRec)cap*=0.88;
+  var target=Math.max(1,Math.min(7,Number(pref.sessions_per_week)||4));
+  var currentRuns=Math.max(0,Math.min(14,Number(p.runs_per_week)||0));
+  var clubCount=sessions.filter(function(s){return !!s.club;}).length;
+  var maxRuns=Math.min(target,Math.max(clubCount,Math.max(1,currentRuns+Math.floor(Math.max(0,weekNo-1)/2))));
+  var mandatory=sessions.filter(function(s){return s.race||s.club||s.type==="Course B";});
+  var optional=sessions.filter(function(s){return !s.race&&!s.club&&s.type!=="Course B";});
+  if(mandatory.length+optional.length>maxRuns){
+    optional.sort(function(a,b){
+      function rank(x){return x.tag==="q"?90:x.tag==="l"?80:x.type==="Endurance + renfo"?65:40;}
+      return rank(b)-rank(a)||a.dow-b.dow;
+    });
+    sessions=mandatory.concat(optional.slice(0,Math.max(0,maxRuns-mandatory.length))).sort(function(a,b){return a.dow-b.dow;});
+  }
   var clubKm=0,otherKm=0;
   sessions.forEach(function(s){if(s.race)return;if(s.club)clubKm+=Math.max(0,+s.km||0);else otherKm+=Math.max(0,+s.km||0);});
   var adjusted=false, warning="";
