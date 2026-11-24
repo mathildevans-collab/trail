@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=144;
+var APPV=145;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -299,13 +299,11 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var keepOptionalLong=Math.max(0,maxLong-mandatoryLong);
   var keepLongIds=optionalLong.slice(0,keepOptionalLong).map(function(s){return s.k;});
   optional=optional.filter(function(s){return s.tag!=="l"||keepLongIds.indexOf(s.k)>=0;});
-  if(mandatory.length+optional.length>maxRuns){
-    optional.sort(function(a,b){
-      function rank(x){return x.tag==="q"?90:x.tag==="l"?80:x.type==="Endurance + renfo"?65:40;}
-      return rank(b)-rank(a)||a.dow-b.dow;
-    });
-    sessions=mandatory.concat(optional.slice(0,Math.max(0,maxRuns-mandatory.length))).sort(function(a,b){return a.dow-b.dow;});
-  }
+  optional.sort(function(a,b){
+    function rank(x){return x.tag==="q"?90:x.tag==="l"?80:x.type==="Endurance + renfo"?65:40;}
+    return rank(b)-rank(a)||a.dow-b.dow;
+  });
+  sessions=mandatory.concat(optional.slice(0,Math.max(0,maxRuns-mandatory.length))).sort(function(a,b){return a.dow-b.dow;});
   var clubKm=0,otherKm=0;
   sessions.forEach(function(s){if(s.race)return;if(s.club)clubKm+=Math.max(0,+s.km||0);else otherKm+=Math.max(0,+s.km||0);});
   var adjusted=false, warning="";
