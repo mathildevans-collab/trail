@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=159;
+var APPV=162;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -836,7 +836,7 @@ function vPrep(r,pl){
   var h=header(fmtL(todayUTC())+" · "+jx(r),isToday?"Aujourd’hui":fmtL(selD))+banners();
   if(ti<0&&!browsing)h+='<div class="banner">Ton plan '+esc(r.name)+' démarre le '+fmtL(pl.start).toLowerCase()+', dans '+(-ti)+' jour'+(-ti>1?"s":"")+'.</div>';
   var nw=nowWeek(pl);
-  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>‹</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>›</button></div>';
+  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>'+I.back+'</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>'+I.back+'</button></div>';
   if(browsing&&cur!==nw)h+='<div class="banner mini"><span>'+(cur<nw?'Semaine passée':'Semaine à venir')+'</span><button data-act="now">Aujourd’hui</button></div>';
   h+='<div class="strip" role="group" aria-label="Jours de la semaine">';
   for(var i=0;i<7;i++){var s0=sessAt(wk,i), dn=s0&&D.done[sk(r,cur,s0.k)], tdy=cur===tw&&i===td;

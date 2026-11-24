@@ -1,3 +1,5 @@
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/bricolage-grotesque-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:"Bricolage Grotesque";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/bricolage-grotesque-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jetbrains-mono-latin-400-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
 @font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:700;font-display:swap;src:url(fonts/jetbrains-mono-latin-700-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -13,7 +15,7 @@
   --ok:#266a43; --ok-soft:#dcefe3; --warn:#87590a; --warn-soft:#f8ecd0; --off:#a8480f; --off-soft:#f8e3d6; --bad:#b3261e; --bad-soft:#fbe3e0;
   --sun:#e2a72e; --down:#2c6e9b; --acc:#ff4b1f; --acc-ink:#c2330a; --acc-btn:#d63a0c; --acc-btn-ink:#ffffff; --acc-soft:#fde4da;
   --display:"Bricolage Grotesque","Arial Narrow",system-ui,sans-serif;
-  --body:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+  --body:"Bricolage Grotesque","Arial Narrow",system-ui,-apple-system,sans-serif;
     --mono:var(--display);
   --veil:rgba(255,255,255,.14);
   color-scheme:light;
@@ -1093,3 +1095,5 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .tabs .side-foot .sf-out svg{width:16px;height:16px}
   .tabs .side-foot .sf-out:hover{background:var(--bad-soft);border-color:transparent;color:var(--bad)}
 }
+.num-t{font-size:1em!important;letter-spacing:0!important;font-weight:inherit}
+.wnav button{display:grid;place-items:center;padding:0}.wnav button svg{width:20px;height:20px}.wnav button[data-wnav="1"] svg{transform:rotate(180deg)}
