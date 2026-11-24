@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=151;
+var APPV=152;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -234,7 +234,7 @@ function raceWeek(r,m){
   var rd=dowOf(dms(r.date)), S=[];
   if(rd>1)S.push(sess({dow:1,tag:"q",type:"Rappel",km:6,dp:0,steps:[["6 km","Zone 2"],["4 × 20 s","À allure course"]],txt:"6 km en Z2, puis 4 × 20 s à allure course."}));
   if(rd>2)S.push(sess({dow:2,tag:"e",type:"Footing",km:4,dp:0,txt:"4 km très faciles. Prépare ton sac, ta tenue et ton ravitaillement."}));
-  if(rd>3)S.push(sess({dow:3,tag:"e",type:"Club allégé",km:5,dp:0,txt:"Au club : échauffement et lignes droites seulement, pas de séance dure."}));
+  if(rd>3)S.push(sess({dow:3,tag:"e",type:"Endurance facile",km:4,dp:0,txt:"Footing facile, sans intensité. Les séances de club sont ajoutées uniquement aux jours déclarés."}));
   if(rd-1>=0&&!S.some(function(s){return s.dow===rd-1;}))S.push(sess({dow:rd-1,tag:"e",type:"Activation",km:3,dp:0,txt:"15 min très faciles et 3 lignes droites. Prépare tout ce soir, couche-toi tôt."}));
   S.push(sess({k:"race",dow:rd,tag:"l",type:"Jour J",km:m.L,dp:m.dp,race:true,txt:r.name+" : "+kmS(m.L)+" km, +"+nb(m.dp)+" m, objectif "+hm(m.goal)+". Départ à "+r.time+"."}));
   if(rd<6)S.push(sess({dow:rd+1,tag:"e",type:"Récupération",km:0,dp:0,txt:"Marche de 30 min et étirements doux."}));
@@ -270,11 +270,12 @@ function genWeek(w,n,taper,r,m){
     var p=(f-0.6)/0.4, nn={cotes:Math.round(4+4*p),tempo:Math.round((15+25*p)/5)*5,courtes:Math.round(6+4*p),paires:Math.round(3+2*p),desc:Math.round(4+2*p),fartlek:Math.round(4+2*p)}[T];
     tu=tuesdayOf(T,Math.max(2,nn),ph);}
   var sk_=Math.max(6,Math.round(peakSat*f)), uk=ph==="Affûtage"?Math.max(10,Math.round(peakSun*f)):Math.max(15,Math.round(peakSun*f));
+  var b2b=ph==="Spécifique"&&!rec&&w%4===2&&w<n-taper;
   var sd=Math.round(sk_*g*0.85/10)*10, ud=ph==="Affûtage"?Math.round(uk*g*0.6/10)*10:Math.max(500,Math.round(uk*g*0.75/10)*10);
   var wed=rec?7:Math.round(6+3*f), code=renfoOf(ph,w);
   var S=[sess(Object.assign({dow:1},tu)),wedOf(wed,code,w),thuOf(rec||ph==="Affûtage"),
     sess({dow:5,tag:"l",type:"Sortie longue",km:sk_,dp:sd,steps:longSteps(sk_),txt:sk_+" km de trail, +"+sd+" m. "+(rec?"Sortie facile pour récupérer.":SATG[ph])}),
-    sess({dow:6,tag:"l",type:"Sortie longue",km:uk,dp:ud,steps:longSteps(uk),txt:(ph==="Affûtage"?"Sortie facile, "+uk+" km, +"+ud+" m.":"Sortie longue vallonnée. Prévu aujourd’hui : "+uk+" km, +"+ud+" m.")+(ph==="Spécifique"&&!rec?" Les 20 dernières minutes à allure course (environ "+mmss(rpace(m,uk,ud))+"/km sur ce relief).":"")})];
+    sess({dow:6,tag:"l",type:b2b?"Jour 2 du bloc":"Sortie longue",km:uk,dp:ud,steps:longSteps(uk),txt:(ph==="Affûtage"?"Sortie facile, "+uk+" km, +"+ud+" m.":"Sortie longue vallonnée. Prévu aujourd’hui : "+uk+" km, +"+ud+" m.")+(ph==="Spécifique"&&!rec?" Les 20 dernières minutes à allure course (environ "+mmss(rpace(m,uk,ud))+"/km sur ce relief).":"")})];
   return {ph:ph,rec:rec,s:S,note:note};
 }
 var PC={};
@@ -285,7 +286,7 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
   base=Math.max(5,base);
   var rate={debutant:0.035,reprise:0.04,regulier:0.055,confirme:0.07}[exp]||0.05;
   var steps=Math.min(8,Math.floor(Math.max(0,weekNo-1)/2));
-  var cap=base*Math.min(1.55,1.05+rate*steps);
+  var cap=base*Math.min(1.55,1+rate*steps);
   if(weekRec)cap*=0.88;
   var target=Math.max(1,Math.min(7,Number(pref.sessions_per_week)||4));
   var currentRuns=Math.max(0,Math.min(14,Number(p.runs_per_week)||0));
@@ -294,7 +295,8 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var mandatory=sessions.filter(function(s){return s.race||isClubSession(s)||s.type==="Course B";});
   var optional=sessions.filter(function(s){return !s.race&&!isClubSession(s)&&s.type!=="Course B";});
   var advancedTrail=(p.discipline==="trail"||p.discipline==="mixte")&&exp==="confirme"&&base>=35&&target>=5;
-  var maxLong=advancedTrail?2:1;
+  var plannedB2B=sessions.some(function(s){return s.tag==="l"&&s.type==="Jour 2 du bloc";});
+  var maxLong=advancedTrail&&plannedB2B?2:1;
   var mandatoryLong=mandatory.filter(function(s){return s.tag==="l";}).length;
   var optionalLong=optional.filter(function(s){return s.tag==="l";}).sort(function(a,b){return (+b.km||0)-(+a.km||0);});
   var keepOptionalLong=Math.max(0,maxLong-mandatoryLong);
@@ -313,24 +315,37 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
     return rank(b)-rank(a)||a.dow-b.dow;
   });
   sessions=mandatory.concat(optional.slice(0,Math.max(0,maxRuns-mandatory.length))).sort(function(a,b){return a.dow-b.dow;});
-  var clubKm=0,otherKm=0;
-  sessions.forEach(function(s){if(s.race)return;if(isClubSession(s))clubKm+=Math.max(0,+s.km||0);else otherKm+=Math.max(0,+s.km||0);});
-  var adjusted=false, warning="";
-  var room=Math.max(0,cap-clubKm);
+  var clubKm=0,otherKm=0,eventKm=0;
+  sessions.forEach(function(s){
+    var km=Math.max(0,+s.km||0);
+    if(isClubSession(s))clubKm+=km;
+    else if(s.race||s.type==="Course B")eventKm+=km;
+    else otherKm+=km;
+  });
+  var adjusted=false, warning="", room=Math.max(0,cap-clubKm-eventKm);
   if(otherKm>room&&otherKm>0){
-    var factor=room/otherKm;
+    var factor=room/otherKm, remaining=room;
     sessions=sessions.map(function(s){
-      if(s.race||isClubSession(s)||!s.km)return s;
+      if(s.race||s.type==="Course B"||isClubSession(s)||!(+s.km>0))return s;
       var copy=Object.assign({},s), oldKm=+copy.km||0;
-      copy.km=Math.max(1,Math.round(oldKm*factor*10)/10);
-      if(copy.dp)copy.dp=Math.round(copy.dp*copy.km/oldKm);
-      copy.steps=null;copy.pace=null;
-      copy.txt=(copy.txt||"Séance prévue.")+" Volume ajusté à "+kmS(copy.km)+" km selon ton volume récent.";
+      var nextKm=Math.floor(Math.min(oldKm*factor,remaining)*10)/10;
+      remaining=Math.max(0,Math.round((remaining-nextKm)*10)/10);
+      copy.km=nextKm;
+      if(copy.dp)copy.dp=oldKm?Math.floor(copy.dp*nextKm/oldKm):0;
+      copy.pace=null;
+      if(nextKm<1){
+        copy.km=0;copy.dp=0;copy.tag="e";copy.type="Renfo seul";
+        copy.steps=[["10–15 min","Mobilité douce, gainage et récupération. Pas de course supplémentaire."]];
+        copy.txt="Séance de mobilité et gainage à la place d’une sortie : le volume de course prévu atteint déjà le plafond prudent.";
+      }else{
+        copy.steps=null;
+        copy.txt=(copy.txt||"Séance prévue.")+" Volume ajusté à "+kmS(copy.km)+" km selon ton volume récent.";
+      }
       return copy;
     });
     adjusted=true;
   }
-  if(clubKm>cap)warning="Le volume de tes séances collectives obligatoires dépasse déjà le plafond prudent calculé à partir de ton volume récent. N’ajoute pas de séance supplémentaire.";
+  if(clubKm+eventKm>cap)warning="Les courses et séances collectives obligatoires dépassent déjà le plafond prudent calculé à partir de ton volume récent. Les autres séances de course sont supprimées ou remplacées par de la mobilité.";
   return {sessions:sessions,cap:Math.round(cap*10)/10,adjusted:adjusted,warning:warning};
 }
 function coachingRules(sessions,pref,weekNo,weekRec,phase){
@@ -417,7 +432,7 @@ function planOf(r){
     weeks.forEach(function(wk){
       var byDow={}; wk.s.forEach(function(s){byDow[s.dow]=s;});
       var mandatory=clubDays.slice();
-      wk.s.forEach(function(s){if(s.race||s.type==="Course B")if(days.indexOf(s.dow)>=0&&mandatory.indexOf(s.dow)<0)mandatory.push(s.dow);});
+      wk.s.forEach(function(s){if(s.race||s.type==="Course B")if(mandatory.indexOf(s.dow)<0)mandatory.push(s.dow);});
       var ranked=days.slice().sort(function(a,b){
         function score(d){if(mandatory.indexOf(d)>=0)return 1000;var s=byDow[d];if(!s)return 0;if(s.tag==="q")return 90;if(s.tag==="l")return 80;if(s.type==="Endurance + renfo")return 65;return 40;}
         return score(b)-score(a)||a-b;
@@ -441,15 +456,17 @@ function planOf(r){
         else planned.push(sess({k:KEYS[d],dow:d,tag:"e",type:"Footing",km:6,dp:0,steps:[[ "6 km","Footing facile en zone 2" ]],txt:"Footing facile en zone 2, ajouté selon tes disponibilités."}));
       });
       if(clubRaceConflict)wk.note=(wk.note?wk.note+" ":"")+"Une course tombe un jour de club : la course est prioritaire et la séance collective n'est pas programmée ce jour-là.";
-      var load=athleteLoadRules(planned,pref,wk.n,wk.rec);
-      var coached=coachingRules(load.sessions,pref,wk.n,wk.rec,wk.ph);
-      wk.s=coached.sessions;
+      if(clubDays.length>target)wk.note=(wk.note?wk.note+" ":"")+"Le nombre de séances de club obligatoires dépasse ton objectif hebdomadaire : toutes sont conservées, les séances individuelles sont retirées.";
+      if(days.length<target)wk.note=(wk.note?wk.note+" ":"")+"Tu as sélectionné moins de jours disponibles que ton objectif de séances : le plan respecte tes jours déclarés.";
+      var coached=coachingRules(planned,pref,wk.n,wk.rec,wk.ph);
+      var load=athleteLoadRules(coached.sessions,pref,wk.n,wk.rec);
+      wk.s=load.sessions;
       if(load.adjusted)wk.note=(wk.note?wk.note+" ":"")+"Volume plafonné progressivement selon ton historique sportif.";
       if(load.warning)wk.note=(wk.note?wk.note+" ":"")+load.warning;
       if(coached.changed)wk.note=(wk.note?wk.note+" ":"")+"Intensités rééquilibrées selon ton niveau et les séances collectives.";
       if(coached.warnings.length)wk.note=(wk.note?wk.note+" ":"")+coached.warnings.join(" ");
       wk.km=0;wk.dp=0;wk.s.forEach(function(s){wk.km+=s.km||0;wk.dp+=s.dp||0;});
-      wk.km=Math.round(wk.km);wk.dp=Math.round(wk.dp);
+      wk.km=Math.round(wk.km*10)/10;wk.dp=Math.round(wk.dp);
     });
   }
   var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date)};
