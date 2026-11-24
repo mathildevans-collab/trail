@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=163;
+var APPV=167;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -427,9 +427,90 @@ function coachingRules(sessions,pref,weekNo,weekRec,phase){
   }
   return {sessions:sessions,changed:changed,warnings:warnings};
 }
+// ---------- calibration personnelle : FC et allures d’après les données de l’utilisateur ----------
+var CAL_CACHE=null, BESTD={"5k":5000,"10k":10000,"Half-Marathon":21097};
+function profOf(){return (TRAIN_PREF&&TRAIN_PREF.athlete_profile)||{};}
+function vdotOf(t,d){var m=t/60,v=d/m,pc=0.8+0.1894393*Math.exp(-0.012778*m)+0.2989558*Math.exp(-0.1932605*m); return (-4.6+0.182258*v+0.000104*v*v)/pc;}
+function paceAt(vdot,f){var vo=vdot*f,v=(-0.182258+Math.sqrt(0.182258*0.182258+4*0.000104*(4.6+vo)))/(2*0.000104); return 60000/v;}
+function calibrate(){
+  var pf=profOf(), last=HIST.length?HIST[HIST.length-1].date:"", sig=HIST.length+":"+last+":"+(pf.hr_max||"");
+  if(CAL_CACHE&&CAL_CACHE.sig===sig)return CAL_CACHE;
+  var c={sig:sig,hrMax:0,est:false,vdot:0,easy:0,thr:0,itv:0,mar:0}, pm=+pf.hr_max;
+  if(pm>=150&&pm<=220)c.hrMax=Math.round(pm);
+  else{var hs=HIST.filter(function(q){return q.hr>=100&&q.t>=1200&&q.km>=3;}).map(function(q){return q.hr;}).sort(function(a,b){return a-b;});
+    if(hs.length>=6){c.hrMax=Math.max(165,Math.min(205,Math.round(hs[Math.min(hs.length-1,Math.floor(hs.length*0.95))]/0.9)));c.est=true;}}
+  HIST.forEach(function(q){(q.be||[]).forEach(function(b){var d=BESTD[b.n]; if(d&&b.t>0){var v=vdotOf(b.t,d); if(v>c.vdot&&v<85)c.vdot=v;}});});
+  var ez=HIST.filter(function(q){return c.hrMax&&q.hr>=c.hrMax*0.62&&q.hr<=c.hrMax*0.78&&q.km>=4&&q.t>0&&q.dp/q.km<20;}).map(function(q){return q.t/q.km;}).sort(function(a,b){return a-b;});
+  if(ez.length>=3)c.easy=ez[Math.floor(ez.length/2)];
+  if(c.vdot){c.thr=paceAt(c.vdot,0.88);c.itv=paceAt(c.vdot,0.975);c.mar=paceAt(c.vdot,0.80);if(!c.easy)c.easy=paceAt(c.vdot,0.66);}
+  else if(c.easy){c.thr=c.easy*0.86;c.itv=c.easy*0.79;c.mar=c.easy*0.92;}
+  CAL_CACHE=c; return c;
+}
+function zoneBpm(z){var c=calibrate(), mx=c.hrMax||196, B=[0.6,0.7,0.78,0.86,0.92,1.0]; return [Math.round(mx*B[z-1]),Math.round(mx*B[z])];}
+function paceTxt(s,w){return s?mmss(s-(w||6))+"–"+mmss(s+(w||6))+"/km":"";}
+function persoOn(){return !!(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&!TRAIN_PREF.legacy);}
+function persoStr(s,zonesOnly){ // adapte les textes d’un plan (bpm, allures, zones) à la personne
+  if(typeof s!=="string"||!s)return s; var c=calibrate();
+  if(!zonesOnly&&c.hrMax&&c.hrMax!==196){var f=c.hrMax/196; s=s.replace(/\b(1\d\d)(?:(\s*(?:-|–|à)\s*)(1\d\d))?(?=\s*bpm)/g,function(m,a,sep,b){return Math.round(a*f)+(b?sep+Math.round(b*f):"");});}
+  if(!zonesOnly&&c.easy&&Math.abs(c.easy/372-1)>0.03){var g=c.easy/372; s=s.replace(/\b([3-9]):([0-5]\d)(?=\s*(?:\/km|à|–|-))/g,function(m,a,b){return mmss(Math.round((+a*60+ +b)*g));});}
+  if(c.hrMax&&!/bpm/.test(s)){
+    s=s.replace(/\b([Zz]one) ([1-5])(?:-([1-5]))?(?![\d-])/g,function(m,w,a,b){return m+" ("+zoneBpm(+a)[0]+"-"+zoneBpm(+(b||a))[1]+" bpm)";});
+    s=s.replace(/\bZ([1-5])-Z([1-5])\b/g,function(m,a,b){return m+" ("+zoneBpm(+a)[0]+"-"+zoneBpm(+b)[1]+" bpm)";});}
+  return s;
+}
+function persoSess(s){
+  if(!s||s.race||s.club)return s; var c=Object.assign({},s), z=!!s.cal, f=function(x){return persoStr(x,z);};
+  c.txt=f(c.txt); if(c.pace&&!z&&calibrate().easy)c.pace=persoStr(c.pace);
+  if(Array.isArray(c.steps))c.steps=c.steps.map(function(x){return Array.isArray(x)?x.map(f):x;});
+  return c;
+}
+function isRoutePlan(m,pref){
+  var p=pref&&pref.athlete_profile||{}; if(p.discipline==="route")return true; if(p.discipline==="trail")return false;
+  var fl=HIST.filter(function(q){return q.km>=3;}); if(fl.length<6)return false;
+  var g=0,k=0; fl.forEach(function(q){g+=q.dp||0;k+=q.km;}); return k>0&&g/k<10&&m.L>0&&m.dp/m.L<12;
+}
+var RWU=["15 min","Échauffement en zone 2, puis 4 lignes droites de 15 s"], RCD=["10 min","Retour au calme en trot lent"];
+function routeQuality(kind,n,wkn,m){
+  var c=calibrate(), z4=zoneBpm(4), z5=zoneBpm(5), pc=Math.max(0,Math.min(1,(wkn-1)/Math.max(8,n)));
+  function ptxt(sec,t){return sec?" à "+paceTxt(sec,5)+" ":" à "+t+" ";}
+  if(kind==="vma30"){var S=2+(pc>0.5?1:0),R=8+Math.round(pc*4),tot=S*R;
+    return {tag:"q",type:"Fractionné 30/30",km:Math.round(4+tot*0.1),dp:0,cal:1,steps:[RWU,[S+" × "+R+" × 30/30","30 s vite"+ptxt(c.itv,"effort 8/10")+"("+z5[0]+"-"+z5[1]+" bpm en fin de série), 30 s de trot lent. 3 min de trot entre les séries."],RCD],
+      txt:"Échauffement 15 min, puis "+S+" séries de "+R+" × (30 s vite / 30 s trot)"+(c.itv?", rapide à "+paceTxt(c.itv,5):"")+". Les 30 s rapides doivent rester relâchées et régulières. Retour au calme 10 min."};}
+  if(kind==="vmal"){var K=4+Math.round(pc*3),r=1000;
+    return {tag:"q",type:"Fractionné long",km:Math.round(5+K*1.25),dp:0,cal:1,steps:[RWU,[K+" × 1 000 m","Allure 5 km"+ptxt(c.itv,"effort 8/10")+"("+z5[0]+"-"+z5[1]+" bpm), 2 min de trot entre"],RCD],
+      txt:"Échauffement 15 min, puis "+K+" × 1 000 m à allure 5 km"+(c.itv?" ("+paceTxt(c.itv,5)+")":"")+", 2 min de trot entre chaque. Régularité avant vitesse : la dernière répétition doit être aussi rapide que la première."};}
+  if(kind==="seuil"){var B=2+(pc>0.35?1:0)+(pc>0.7?1:0),d=6+Math.round(pc*4);
+    return {tag:"q",type:"Seuil",km:Math.round(5+B*d/4.8+B*0.3),dp:0,cal:1,steps:[RWU,[B+" × "+d+" min","Seuil"+ptxt(c.thr,"effort 7/10")+"("+z4[0]+"-"+z4[1]+" bpm), 2 min de trot entre"],RCD],
+      txt:"Échauffement 15 min, puis "+B+" × "+d+" min au seuil"+(c.thr?" ("+paceTxt(c.thr,5)+")":"")+", zone 4 ("+z4[0]+"-"+z4[1]+" bpm), avec 2 min de trot. Effort soutenu mais contrôlé : tu pourrais dire quelques mots, pas une phrase."};}
+  if(kind==="fartlek"){var F=6+Math.round(pc*4);
+    return {tag:"q",type:"Fartlek route",km:9,dp:0,cal:1,steps:[["15 min","Endurance en zone 2"],[F+" × 2 min","Rapide"+ptxt(c.thr,"effort 7-8/10")+"(zone 4), 2 min de trot entre"],RCD],
+      txt:"15 min faciles, puis "+F+" × 2 min rapides"+(c.thr?" (~"+mmss(c.thr)+"/km)":"")+" avec 2 min de trot, retour au calme 10 min."};}
+  var L=m.L||10, sp=L>=35?c.mar:(L>=18?(c.mar+c.thr)/2:c.thr*0.99), spn=L>=35?"marathon":(L>=18?"semi-marathon":"10 km"), zz=L>=35?zoneBpm(3):zoneBpm(4);
+  var blk=2+(pc>0.5?1:0), mn=8+Math.round(pc*8);
+  return {tag:"q",type:"Allure spécifique",km:Math.round(5+blk*mn/5.5+blk*0.4),dp:0,cal:1,steps:[RWU,[blk+" × "+mn+" min","Allure "+spn+ptxt(sp,"effort 6-7/10")+"("+zz[0]+"-"+zz[1]+" bpm), 3 min de trot entre"],RCD],
+    txt:"Échauffement 15 min, puis "+blk+" × "+mn+" min à allure "+spn+(sp?" ("+paceTxt(sp,5)+")":"")+", 3 min de trot entre. C’est ton allure de course : cherche la régularité et note tes sensations."};
+}
+var RQ={Base:["vma30","fartlek","vma30"],Construction:["seuil","vmal","seuil","fartlek"],"Spécifique":["spe","seuil","spe","vmal"]};
+function routeify(sessions,wk,n,m){
+  var c=calibrate(), qi=0, z2=zoneBpm(2);
+  return sessions.map(function(s){
+    if(!s||s.race||s.club||s.type==="Course B"||s.type==="Renfo seul"||s.type==="Autre sport")return s;
+    if(s.tag==="q"){var list=RQ[wk.ph]; if(!list)return s; var kind=list[(wk.n+qi++)%list.length]; return sess(Object.assign({k:s.k,dow:s.dow},routeQuality(kind,n,wk.n,m)));}
+    if(s.tag==="l"&&s.type==="Sortie longue"&&s.km>=8){
+      var c2=Object.assign({},s,{dp:Math.min(s.dp||0,Math.round(s.km*4)),cal:1}), prog=!wk.rec&&(wk.ph==="Construction"||wk.ph==="Spécifique")&&s.km>=12, k=Math.max(3,Math.round(s.km*(wk.ph==="Spécifique"?0.35:0.25))), mz=zoneBpm(3);
+      if(prog){c2.type="Sortie longue progressive"; c2.steps=[[(s.km-k)+" km","Endurance zone 2 ("+z2[0]+"-"+z2[1]+" bpm)"+(c.easy?", ~"+paceTxt(c.easy*1.02,10):"")],[k+" km","Allure marathon"+(c.mar?" ("+paceTxt(c.mar,5)+")":"")+", zone 3 ("+mz[0]+"-"+mz[1]+" bpm)"]]; c2.txt=s.km+" km : "+(s.km-k)+" km en endurance, puis les "+k+" derniers km à allure marathon. Hydrate-toi et teste ton ravitaillement.";}
+      else{c2.type="Sortie longue endurance"; c2.steps=[[s.km+" km","Zone 2 ("+z2[0]+"-"+z2[1]+" bpm)"+(c.easy?", ~"+paceTxt(c.easy*1.02,10):", allure conversation")]]; c2.txt=s.km+" km en endurance fondamentale, allure conversation. Terrain plat ou peu vallonné.";}
+      return c2;}
+    if(s.tag==="e"&&s.km>=5&&!wk.rec&&wk.ph!=="Affûtage"&&(s.type==="Endurance facile"||s.type==="Footing"||s.type==="Progressif")){
+      var c3=Object.assign({},s,{type:"Endurance + lignes droites",cal:1,dp:0});
+      c3.steps=[[s.km+" km","Zone 2 ("+z2[0]+"-"+z2[1]+" bpm)"+(c.easy?", ~"+paceTxt(c.easy,10):"")],["6 × 20 s","Lignes droites relâchées en fin de sortie, 1 min de marche entre"]];
+      c3.txt=s.km+" km en endurance, puis 6 lignes droites de 20 s (foulée vive et relâchée). Ça entretient la vitesse sans fatigue.";
+      return c3;}
+    return s;});
+}
 function planOf(r){
   if(!r)return null;
-  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.club_sessions,TRAIN_PREF.athlete_profile,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy]):"default";
+  var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.club_sessions,TRAIN_PREF.athlete_profile,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy,calibrate().sig]):"default";
   var key=VER+"|"+todayUTC()+"|"+r.date+"|"+r.start+"|"+r.km+"|"+r.dp+"|"+goalOf(r)+"|"+prefKey;
   if(PC[r.id]&&PC[r.id].key===key)return PC[r.id].p;
   var m=model(r), rws=mondayOf(dms(r.date)), start=r.builtin?dms(r.start):mondayOf(dms(isoOk(r.start)?r.start:nextMonday()));
@@ -488,6 +569,8 @@ function planOf(r){
       var coached=coachingRules(planned,pref,wk.n,wk.rec,wk.ph);
       var load=athleteLoadRules(coached.sessions,pref,wk.n,wk.rec);
       wk.s=applyTrailElevation(load.sessions,m,pref);
+      if(isRoutePlan(m,pref))wk.s=routeify(wk.s,wk,n,m);
+      wk.s=wk.s.map(persoSess);
       if(load.adjusted)wk.note=(wk.note?wk.note+" ":"")+"Volume plafonné progressivement selon ton historique sportif.";
       if(load.warning)wk.note=(wk.note?wk.note+" ":"")+load.warning;
       if(coached.changed)wk.note=(wk.note?wk.note+" ":"")+"Intensités rééquilibrées selon ton niveau et les séances collectives.";
@@ -496,6 +579,18 @@ function planOf(r){
       wk.km=Math.round(wk.km*10)/10;wk.dp=Math.round(wk.dp);
     });
   }
+  // indisponibilité ponctuelle : jours choisis pour UNE semaine (stockés dans les modifications : « n-avail »)
+  Object.keys(E).forEach(function(k){var mm=/^(\d+)-avail$/.exec(k); if(!mm||!E[k]||!Array.isArray(E[k].days))return;
+    var wk=weeks[+mm[1]-1]; if(!wk)return;
+    var A=E[k].days.map(Number).filter(function(d){return d>=0&&d<=6;}).sort(function(a,b){return a-b;}); if(!A.length)return;
+    var fixed=wk.s.filter(function(x){return x.race||x.club||x.bid||x.type==="Course B"||isClubSession(x);}), mov=wk.s.filter(function(x){return fixed.indexOf(x)<0;});
+    var taken={}; fixed.forEach(function(x){taken[x.dow]=1;}); var slots=A.filter(function(d){return !taken[d];});
+    function pr(x){return x.tag==="l"?3:x.tag==="q"?2.5:(x.renfo?1.5:1);}
+    var keep=mov.slice().sort(function(a,b){return pr(b)-pr(a)||a.dow-b.dow;}).slice(0,slots.length), lost=mov.length-keep.length;
+    keep.sort(function(a,b){return a.dow-b.dow;}); keep.forEach(function(x,i){x.dow=slots[i];});
+    wk.s=fixed.concat(keep).sort(function(a,b){return a.dow-b.dow;});
+    wk.avail=A; wk.note=(wk.note?wk.note+" ":"")+"Semaine adaptée à tes jours disponibles."+(lost>0?" "+lost+" séance"+(lost>1?"s":"")+" facile"+(lost>1?"s":"")+" retirée"+(lost>1?"s":"")+" faute de jour.":"");
+    wk.km=0;wk.dp=0;wk.s.forEach(function(x){wk.km+=x.km||0;wk.dp+=x.dp||0;}); wk.km=Math.round(wk.km*10)/10; wk.dp=Math.round(wk.dp);});
   var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date)};
   PC[r.id]={key:key,p:p}; return p;
 }
@@ -836,7 +931,7 @@ function vPrep(r,pl){
   var h=header(fmtL(todayUTC())+" · "+jx(r),isToday?"Aujourd’hui":fmtL(selD))+banners();
   if(ti<0&&!browsing)h+='<div class="banner">Ton plan '+esc(r.name)+' démarre le '+fmtL(pl.start).toLowerCase()+', dans '+(-ti)+' jour'+(-ti>1?"s":"")+'.</div>';
   var nw=nowWeek(pl);
-  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>'+I.back+'</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>'+I.back+'</button></div>';
+  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>'+I.back+'</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span><button class="avl" data-act="availwk" data-w="'+wk.n+'">'+(wk.avail?'Mes jours de la semaine ✓':'Indispo cette semaine ?')+'</button></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>'+I.back+'</button></div>';
   if(browsing&&cur!==nw)h+='<div class="banner mini"><span>'+(cur<nw?'Semaine passée':'Semaine à venir')+'</span><button data-act="now">Aujourd’hui</button></div>';
   h+='<div class="strip" role="group" aria-label="Jours de la semaine">';
   for(var i=0;i<7;i++){var s0=sessAt(wk,i), dn=s0&&D.done[sk(r,cur,s0.k)], tdy=cur===tw&&i===td;
@@ -861,13 +956,34 @@ function sessionHero(r,pl,wk,s){
   h+='<div class="facts num">'+(s.km?'<span>'+kmS(s.km)+' km</span>':'')+(s.dp?'<span>+'+nb(s.dp)+' m</span>':'')+(z?'<span>'+esc(z)+'</span>':'')+(ed&&s.type.indexOf("Club")<0?'<span>≈ '+dur(ed)+'</span>':'')+'</div>';
   if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<p class="session-note">'+esc(s.txt)+'</p>':'');
   else if(s.txt)h+='<p>'+esc(s.txt)+'</p>';
-  var a=adjFor(pl,wk.n); if(a&&a.mode==="z2"&&(s.tag==="e"||s.tag==="l"))h+='<p><b>Zone 2 stricte cette semaine :</b> reste sous 150 bpm.</p>';
+  var a=adjFor(pl,wk.n); if(a&&a.mode==="z2"&&(s.tag==="e"||s.tag==="l"))h+='<p><b>Zone 2 stricte cette semaine :</b> reste sous '+(persoOn()?persoStr('150 bpm'):'150 bpm')+'.</p>';
   if(s.race)return h+'<button class="btn" data-go="today-race">'+I.play+' Voir le jour J</button></div>';
   if(isB)h+='<button class="btn" data-race="'+s.bid+'">'+I.play+' Lancer le mode Course</button>';
   h+=woFor(s,wk);
   h+='<button class="btn'+(dn?" isdone":"")+'" data-done="'+k+'"'+(isB?' style="margin-top:8px"':'')+'>'+I.check+(dn?' Faite · toucher pour annuler':' C’est fait')+'</button>';
+  h+=swapChips(pl,wk,s,dn);
   h+='<p class="sub">'+(ac?'Tes chiffres : '+kmS(ac.km)+' km'+(ac.dp?' · +'+ac.dp+' m':'')+(ac.t?' · '+dur(ac.t):'')+'. <button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Corriger</button>':STRAVA?'Le bilan arrive tout seul quand Strava reçoit ta sortie.':'<button data-act="manual" data-w="'+wk.n+'" data-k="'+s.k+'">Ajoute tes chiffres</button> pour avoir le bilan du coach.')+'</p>';
   return h+'</div>';
+}
+var DOWC=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+function swapChips(pl,wk,s,dn){
+  if(dn||s.race||s.club||s.type==="Course B"||s.bid||isClubSession(s))return "";
+  var t=todayUTC(), r=pl.r, L=[];
+  wk.s.forEach(function(o){ if(o===s||o.race||o.club||o.bid||o.type==="Course B"||isClubSession(o)||D.done[sk(r,wk.n,o.k)])return;
+    if(sessDate(pl,wk.n,o)<t||sessDate(pl,wk.n,s)<t)return;
+    L.push('<button class="swap-b" data-swap="'+wk.n+'|'+s.k+'|'+o.k+'"><b>'+DOWC[o.dow]+'</b><span>'+esc(o.type)+'</span></button>');});
+  for(var d=0;d<7;d++){ if(d===s.dow||wk.s.some(function(o){return o.dow===d;}))continue; if(sessDate(pl,wk.n,{dow:d})<t)continue;
+    L.push('<button class="swap-b" data-swap="'+wk.n+'|'+s.k+'|d'+d+'"><b>'+DOWC[d]+'</b><span>Repos</span></button>');}
+  return L.length?'<div class="swap"><p>Pas dispo ce jour-là ? Échange avec :</p><div>'+L.join("")+'</div></div>':"";
+}
+function swapDays(w,k,tgt){
+  var r=activeRace(), pl=planOf(r), wk=pl&&pl.weeks[w-1], s=sessByKey(wk,k); if(!s)return;
+  var E=D.edits[r.id]||(D.edits[r.id]={}), U=snapU();
+  function setDow(x,dow){var ek=w+"-"+x.k, o=Object.assign({},E[ek]||{}); if(x.added&&!E[ek])return; PC={}; var base=sessByKey(planOf(r).weeks[w-1],x.k); o.dow=dow; E[ek]=o; PC={};}
+  var other=/^d\d$/.test(tgt)?null:sessByKey(wk,tgt), dow=/^d\d$/.test(tgt)?+tgt.slice(1):other&&other.dow, from=s.dow;
+  if(dow==null)return;
+  if(other)setDow(other,from); setDow(s,dow);
+  save(); PC={}; toast(other?"Jours échangés : "+DOWC[from]+" ⇄ "+DOWC[dow]+".":"Séance déplacée au "+DOWC[dow].toLowerCase()+".",U); render(true);
 }
 function restCard(wk,dow){return '<div class="card"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+'</span><button class="btn sm" data-act="addses" data-w="'+wk.n+'" data-d="'+dow+'" style="min-height:36px">+ Séance</button></div><h2 style="font-size:26px;margin:6px 0 8px">Repos</h2>'+(function(){var e=D.extra&&D.extra[iso(wk.start+dow*DAY)]; return e?'<p><b>Sortie hors plan : '+kmS(e.km)+' km'+(e.dp?', +'+nb(e.dp)+' m':'')+'.</b> Elle compte dans ta semaine, et le reste de la semaine s’ajuste si besoin.</p>':'<p>Pas de course aujourd’hui. Dix minutes de mobilité suffisent.</p>';})()+(function(){var mc=MOBROT[(wk.n+dow)%MOBROT.length], M=MOBS[mc]; return '<details><summary>'+I.leaf+' '+esc(M.name)+' · '+woMin("mob",mc)+' min</summary><div class="in"><p class="muted small">'+esc(M.goal)+'</p>'+woBtns(null,0,mc)+exHTML(M.ex)+'</div></details>';})()+'</div>';}
 function bilanCard(r,pl,wk,sel,selD){
@@ -1029,7 +1145,7 @@ function vPlan(){
       var ed=wk.s.some(function(s){return s.edited;});
       h+='<button class="wk'+(isCur?" cur":"")+(wk.rec?" rec":"")+'" data-wk="'+w+'" aria-expanded="'+(ow===w)+'"><span class="n">'+w+'</span><span><span class="d">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · <b style="color:var(--warn)">'+esc(wk.adjLabel)+'</b>':'')+(ed?'<span class="ed">modifiée</span>':'')+(isCur?' · <b style="color:var(--brand)">en cours</b>':'')+'</span><div class="b" style="width:'+(rw?20:Math.max(4,wk.km/mx*100))+'%">'+(function(){if(rw)return ""; var q=weekTot(r,wk,6); return q.ak>0&&wk.km>0?'<i style="width:'+Math.min(100,q.ak/wk.km*100)+'%"></i>':"";})()+'</div></span><span class="k num">'+(rw?'Course':wk.km+' km')+'<small>'+weekDone(r,wk)+'/'+nSess(wk)+' faites</small></span></button>';
       if(ow===w)h+='<div class="wkx">'+wk.s.map(function(s){var on=!!D.done[sk(r,w,s.k)]; return '<div class="sesrow"><button class="ses" data-goto="'+w+'-'+s.dow+'"><span class="ck'+(on?" on":"")+'">'+(on?I.check:"")+'</span><span class="dw">'+DOW[s.dow]+'</span><span class="ty">'+esc(s.type==="Course B"?"Course B · "+s.name:s.type)+(s.edited?'<span class="ed">'+(s.added?"ajoutée":"modifiée")+'</span>':'')+'</span><span class="num muted">'+(s.km?kmS(s.km)+' km':'')+(s.dp?' · +'+nb(s.dp):'')+'</span></button>'+(s.race?'':'<button class="pen" data-edit="'+w+'-'+s.k+'" aria-label="Modifier '+esc(s.type)+'">'+I.pen+'</button>')+'</div>';}).join("")+[0,1,2,3,4,5,6].map(function(dw){var e=D.extra&&D.extra[iso(wk.start+dw*DAY)]; return e?'<div class="sesrow"><button class="ses" data-goto="'+w+'-'+dw+'"><span class="ck on">'+I.check+'</span><span class="dw">'+DOW[dw]+'</span><span class="ty">Sortie hors plan</span><span class="num muted">'+kmS(e.km)+' km'+(e.dp?' · +'+nb(e.dp):'')+'</span></button></div>':"";}).join("")+
-        '<button class="addses" data-act="addses" data-w="'+w+'">+ Ajouter une séance</button>'+(wk.note?'<p class="small muted" style="margin:8px 0 0">'+esc(wk.note)+'</p>':'')+'</div>';
+        '<button class="addses" data-act="addses" data-w="'+w+'">+ Ajouter une séance</button><button class="addses" data-act="availwk" data-w="'+w+'">'+(wk.avail?'Mes jours de cette semaine ✓':'Indispo cette semaine ?')+'</button>'+(wk.note?'<p class="small muted" style="margin:8px 0 0">'+esc(wk.note)+'</p>':'')+'</div>';
     });
     h+='</div>';
   });
@@ -1193,7 +1309,7 @@ function openTrainingPrefs(first){
   var h='<h2>'+(first?'Ton profil de coureur':'Mes disponibilités et mon profil')+'</h2><p class="small muted">Quelques repères pour construire un plan adapté à ton expérience et à ta charge actuelle.</p>'+
   '<p class="eyebrow">Ta pratique</p><label class="field">Discipline<select id="athDiscipline">'+[['route','Course sur route'],['trail','Trail'],['mixte','Route et trail']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.discipline||'mixte')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
   '<label class="field">Ton expérience<select id="athExperience">'+[['debutant','Débutant(e)'],['reprise','Reprise après une pause'],['regulier','Pratique régulière'],['confirme','Coureur(se) expérimenté(e)']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.experience||'regulier')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
-  '<label class="field">Volume actuel (km/semaine)<input id="athKm" type="number" min="0" max="200" step="1" required value="'+(athlete.weekly_km==null?'':Number(athlete.weekly_km))+'" placeholder="Ex. 25"></label><label class="field">Sorties par semaine<input id="athRuns" type="number" min="0" max="14" step="1" value="'+(athlete.runs_per_week==null?'':Number(athlete.runs_per_week))+'" placeholder="Ex. 3" required></label>'+
+  '<label class="field">FC max, bpm (facultatif)<input id="athHr" type="number" min="150" max="220" step="1" value="'+(athlete.hr_max==null?'':Number(athlete.hr_max))+'" placeholder="'+(calibrate().hrMax?'Estimée : '+calibrate().hrMax:'Ex. 190')+'"></label><label class="field">Volume actuel (km/semaine)<input id="athKm" type="number" min="0" max="200" step="1" required value="'+(athlete.weekly_km==null?'':Number(athlete.weekly_km))+'" placeholder="Ex. 25"></label><label class="field">Sorties par semaine<input id="athRuns" type="number" min="0" max="14" step="1" value="'+(athlete.runs_per_week==null?'':Number(athlete.runs_per_week))+'" placeholder="Ex. 3" required></label>'+
   '<p class="small muted">Indique la moyenne des 4 dernières semaines. Si tu débutes ou reprends, indique ton volume actuel, même s’il est faible.</p>'+
   '<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Tes entraînements collectifs sont obligatoires : ils seront intégrés au planning et remplaceront la séance prévue le même jour.</p>'+
   '<label class="pref-check"><input id="prefClub" type="checkbox" '+(p.has_club?'checked':'')+'> Je participe à des entraînements collectifs</label>'+
@@ -1270,11 +1386,13 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
     var rawKm=$("athKm").value,rawRuns=$("athRuns").value,weeklyKm=rawKm===""?null:Number(rawKm),runs=rawRuns===""?null:Number(rawRuns);
     if(weeklyKm===null||runs===null){err.textContent="Renseigne ton volume moyen et ton nombre de sorties pour calibrer le plan.";return;}
     if((weeklyKm!==null&&(!isFinite(weeklyKm)||weeklyKm<0||weeklyKm>200))||(runs!==null&&(!isFinite(runs)||runs<0||runs>14))){err.textContent="Vérifie ton volume hebdomadaire et ton nombre de sorties.";return;}
-    var athleteProfile={discipline:$("athDiscipline").value,experience:$("athExperience").value,weekly_km:weeklyKm,runs_per_week:runs};
+    var hrRaw=$("athHr")?Number($("athHr").value):0, athleteProfile={discipline:$("athDiscipline").value,experience:$("athExperience").value,weekly_km:weeklyKm,runs_per_week:runs};
+    if(hrRaw>=150&&hrRaw<=220)athleteProfile.hr_max=Math.round(hrRaw);
     var next={has_club:hasClub,club_name:null,club_days:clubDays,club_sessions:clubSessions,athlete_profile:athleteProfile,sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
     b.disabled=true;window.CadenzoAuth.saveTrainingPreferences(next).then(function(saved){TRAIN_PREF=saved;window.CADENZO_TRAINING_PREFS=saved;PC={};closeSheet();render(true);toast("Tes disponibilités sont enregistrées.");if(!D.races.length)setTimeout(function(){if(!SH)editRace(null);},250);}).catch(function(e){b.disabled=false;err.textContent="Enregistrement impossible : "+(e.message||"réessaie.");});
     return;
   }
+  if(b.dataset.tog!=null){b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");return;}
   if(b.dataset.pick){b.parentNode.querySelectorAll("button").forEach(function(x){x.setAttribute("aria-pressed",x===b);}); if(SH)SH[b.parentNode.dataset.group]=b.dataset.pick; return;}
   if(b.dataset.sact)sheetAct(b.dataset.sact,b);});
 
@@ -1304,6 +1422,13 @@ function watchSheet(w,k){
   if(nW>1)h+='<button class="btn" data-sact="fitweek" style="margin-top:8px">'+I.down+' Toute la semaine '+w+' · '+nW+' séances (.zip)</button>';
   h+='<details style="margin-top:12px"><summary>'+I.help+' Copier sur la montre</summary><div class="in"><ol class="small" style="margin:0;padding-left:18px"><li>Branche la montre au Mac et ouvre OpenMTP.</li><li>Copie le fichier .fit dans <b>GARMIN/NewFiles</b> (pour la semaine, double-clique d’abord le .zip pour avoir les .fit).</li><li>Débranche : la montre importe les séances. Tu les trouves dans <b>Entraînement › Entraînements</b>. Lance la séance, puis démarre l’activité.</li></ol><p class="muted xs" style="margin:8px 0 0">Depuis l’iPhone, le fichier part dans Fichiers : il faut passer par le Mac pour le copier sur la montre. Les étapes « jusqu’à Tour » attendent un appui sur le bouton Tour.</p></div></details>';
   openSheet(h,{kind:"watch",w:w,k:k,rid:r.id});
+}
+function availSheet(w){
+  var r=activeRace(), pl=planOf(r), wk=pl.weeks[w-1], E=D.edits[r.id]||{}, cur=wk.avail||wk.s.map(function(x){return x.dow;}), t=todayUTC();
+  var h='<h2>Mes jours cette semaine</h2><p class="small muted" style="margin:-4px 0 12px">Semaine '+w+' · '+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+'. Choisis les jours où tu peux t’entraîner : le plan est remis à plat pour cette semaine seulement.</p><div class="avail">';
+  for(var d=0;d<7;d++){var past=wk.start+d*DAY<t; h+='<button type="button" class="av" data-tog="'+d+'" aria-pressed="'+(cur.indexOf(d)>=0)+'"'+(past?' disabled':'')+'><b>'+DOWC[d]+'</b><span>'+new Date(wk.start+d*DAY).getUTCDate()+'</span></button>';}
+  h+='</div><button class="btn primary" data-sact="saveavail">Appliquer à cette semaine</button>'+(E[w+"-avail"]?'<button class="btn sm" data-sact="resetavail" style="margin-top:8px;width:100%">Rétablir mes jours habituels</button>':'')+'<p class="muted xs" style="margin:10px 0 0">Les séances de club et les courses gardent leur jour. Les autres semaines ne changent pas.</p>';
+  openSheet(h,{kind:"avail",rid:r.id,w:w});
 }
 function firstFreeDow(wk){var used={}; wk.s.forEach(function(s){used[s.dow]=1;}); for(var i=0;i<7;i++)if(!used[i])return i; return 0;}
 function editSession(w,k,dow){
@@ -1378,6 +1503,11 @@ function sheetAct(a,b){
   if(a==="savemanual"){var km=num($("mKm").value), dp=num($("mDp").value)||0, t=parseDur($("mT").value); if(!(km>0)){toast("Indique au moins les kilomètres.");return;}
     D.actual[SH.key]={km:Math.round(km*100)/100,dp:Math.round(dp),t:Math.round(t),src:"manual"}; D.done[SH.key]=1; if(D.undone)delete D.undone[SH.key]; save(); closeSheet(); toast("Chiffres enregistrés.",U); render(true); return;}
   if(a==="delmanual"){delete D.actual[SH.key]; save(); closeSheet(); render(true); toast("Chiffres retirés.",U); return;}
+  if(a==="saveavail"||a==="resetavail"){
+    var ra=raceById(SH.rid), Ea=D.edits[ra.id]||(D.edits[ra.id]={}), wa=SH.w, ka=wa+"-avail";
+    if(a==="resetavail")delete Ea[ka];
+    else{var days=[].slice.call(document.querySelectorAll('#sheet .av[aria-pressed="true"]')).map(function(x){return +x.dataset.tog;}); if(!days.length){toast("Choisis au moins un jour.");return;} Ea[ka]={days:days};}
+    save(); PC={}; closeSheet(); toast(a==="resetavail"?"Jours habituels rétablis.":"Semaine adaptée à tes jours.",U); render(true); return;}
   if(a==="saveses"||a==="delses"||a==="restoreses"){
     var r=raceById(SH.rid), E=D.edits[r.id]||(D.edits[r.id]={}), w=SH.w, ek=w+"-"+SH.k;
     if(a==="restoreses"){delete E[ek]; save(); closeSheet(); toast("Séance d’origine rétablie.",U); render(true); return;}
@@ -1716,6 +1846,7 @@ $("view").addEventListener("click",function(e){
   if(ds.wk){var w=+ds.wk, ow0=openWk===null?(planCurW||0):openWk; openWk=ow0===w?0:w; render(true); return;}
   if(ds.wnav){var r0=activeRace(), p0=planOf(r0); if(!p0)return; cur=Math.max(1,Math.min(p0.n,cur+(+ds.wnav))); if(cur===nowWeek(p0)&&planIdx(p0)>=0)goNow(); else{browsing=true; var w0=p0.weeks[cur-1]; if(!sessAt(w0,sel)&&w0.s.length)sel=w0.s[0].dow;} render(); return;}
   if(ds.goto){var p=ds.goto.split("-"); cur=+p[0]; sel=+p[1]; browsing=true; tab="today"; prevTab="today"; render(); return;}
+  if(ds.swap){var sq=ds.swap.split("|"); swapDays(+sq[0],sq[1],sq[2]); return;}
   if(ds.edit){var q=ds.edit.split("-"); editSession(+q[0],q[1]); return;}
   if(ds.sheet){showInfo(ds.sheet); return;}
   if(ds.opencourse){D.focus=ds.opencourse; CV="detail"; save(); render(); window.scrollTo(0,0); return;}
@@ -1738,6 +1869,7 @@ function act(a,b){
   else if(a==="now"){goNow(); render();}
   else if(a==="watch")watchSheet(+ds.w,ds.k);
   else if(a==="weekplan"){openWk=+ds.w; try{openPh=planOf(activeRace()).weeks[+ds.w-1].ph;}catch(e){} setTab("plan"); var el=document.querySelector('[data-wk="'+ds.w+'"]'); if(el)el.scrollIntoView({block:"start"});}
+  else if(a==="availwk")availSheet(+ds.w);
   else if(a==="addses")editSession(+ds.w,null,ds.d!=null?+ds.d:null);
   else if(a==="manual")manualSheet(+ds.w,ds.k);
   else if(a==="addrace")editRace(null);
