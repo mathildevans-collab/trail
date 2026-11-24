@@ -1,6 +1,12 @@
 "use strict";
 const assert=require("node:assert/strict");
 const T=require("../training.js");
+require("../fit.js");
+const FIT=global.FIT;
+assert.equal(FIT.hrIn("Z4"),null,"Aucune plage FIT ne doit être inventée sans zones configurées");
+assert.equal(FIT.setZones({1:[100,119],2:[120,139],3:[140,159],4:[160,179],5:[180,195]}),true);
+assert.deepEqual(FIT.hrIn("Z4"),[160,179]);
+assert.deepEqual(FIT.hrIn("Z2-Z3"),[120,159]);
 const fs=require("node:fs");
 const appSource=fs.readFileSync("app.js","utf8");
 assert.match(appSource,/discipline==="route"&&window\.CadenzoTraining\)b=CadenzoTraining\.roadWeek/);
