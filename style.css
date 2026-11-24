@@ -1224,3 +1224,6 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .settings-page-content:has(>.sgroup:only-child){grid-template-columns:minmax(0,760px)}
   .settings-page-content .sitem select{width:auto;min-width:150px;max-width:none;text-overflow:clip;padding-right:30px}
 }
+.avail{gap:5px}
+.av{box-sizing:border-box;height:64px;min-height:0;padding:0;justify-content:center;width:100%;min-width:0}
+.av b{font:700 12px var(--display);line-height:1}.av span{font:700 17px var(--display);line-height:1}

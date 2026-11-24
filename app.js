@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=169;
+var APPV=170;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1460,7 +1460,7 @@ function watchSheet(w,k){
 }
 function availSheet(w){
   var r=activeRace(), pl=planOf(r), wk=pl.weeks[w-1], E=D.edits[r.id]||{}, cur=wk.avail||wk.s.map(function(x){return x.dow;}), t=todayUTC();
-  var h='<h2>Mes jours cette semaine</h2><p class="small muted" style="margin:-4px 0 12px">Semaine '+w+' · '+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+'. Choisis les jours où tu peux t’entraîner : le plan est remis à plat pour cette semaine seulement.</p><div class="avail">';
+  var h='<h2>Mes jours cette semaine</h2><p class="small muted" style="margin:-4px 0 12px">Semaine '+w+' · '+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+' · Choisis les jours où tu peux t’entraîner : le plan est remis à plat pour cette semaine seulement.</p><div class="avail">';
   for(var d=0;d<7;d++){var past=wk.start+d*DAY<t; h+='<button type="button" class="av" data-tog="'+d+'" aria-pressed="'+(cur.indexOf(d)>=0)+'"'+(past?' disabled':'')+'><b>'+DOWC[d]+'</b><span>'+new Date(wk.start+d*DAY).getUTCDate()+'</span></button>';}
   h+='</div><button class="btn primary" data-sact="saveavail">Appliquer à cette semaine</button>'+(E[w+"-avail"]?'<button class="btn sm" data-sact="resetavail" style="margin-top:8px;width:100%">Rétablir mes jours habituels</button>':'')+'<p class="muted xs" style="margin:10px 0 0">Les séances de club et les courses gardent leur jour. Les autres semaines ne changent pas.</p>';
   openSheet(h,{kind:"avail",rid:r.id,w:w});
