@@ -8,7 +8,7 @@ import sys
 # Un titre doit commencer par une action compréhensible, pas par un préfixe technique.
 ACTION = re.compile(
     r"^(Ajoute|Améliore|Automatise|Bloque|Centralise|Charge|Clarifie|"
-    r"Conserve|Corrige|Décrit|Détecte|Documente|Déplace|Évite|"
+    r"Conserve|Préserve|Corrige|Décrit|Détecte|Documente|Déplace|Évite|"
     r"Explique|Affiche|Gère|Limite|Masque|Met à jour|Nettoie|"
     r"Permet|Protège|Répare|Remplace|Renomme|Réorganise|Rétablit|"
     r"Rend|Sécurise|Simplifie|Supprime|Trie|Vérifie|"
