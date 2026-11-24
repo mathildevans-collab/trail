@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=148;
+var APPV=149;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -350,7 +350,7 @@ function coachingRules(sessions,pref,weekNo,weekRec,phase){
       changed=true; return c;
     });
   }
-  if(clubQuality.length>limit)warnings.push("Plusieurs séances collectives intenses sont obligatoires cette semaine. Ne rajoute aucune autre intensité et signale au coach si la récupération est insuffisante.");
+  if(clubQuality.length>limit)warnings.push((clubQuality.length>1?"Plusieurs séances collectives intenses sont obligatoires":"Une séance collective intense est obligatoire")+" cette semaine. Ne rajoute aucune autre intensité et signale au coach si la récupération est insuffisante.");
   if(weekRec)warnings.push("Semaine de récupération : conserve les séances de club obligatoires en demandant une version allégée au coach. Toutes les sorties individuelles restent faciles.");
   if(phase==="Affûtage")warnings.push("Affûtage : réduis la durée des efforts, garde seulement quelques rappels dynamiques et évite toute fatigue résiduelle.");
   if(discipline==="trail"||discipline==="mixte"){
