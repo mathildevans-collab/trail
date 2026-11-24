@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=146;
+var APPV=147;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -335,7 +335,14 @@ function coachingRules(sessions,pref,weekNo,weekRec,phase){
     return priority(b)-priority(a)||a.dow-b.dow;
   });
   var keep=Math.max(0,limit-clubQuality.length), changed=false, warnings=[];
-  var downgrade=optionalQuality.slice(keep).map(function(x){return x.k;});
+  var selected=[], blocked=[];
+  optionalQuality.forEach(function(x){
+    var spaced=clubQuality.concat(selected).every(function(y){return Math.abs((+x.dow||0)-(+y.dow||0))>=2;});
+    if(selected.length<keep&&spaced)selected.push(x);else blocked.push(x);
+  });
+  var downgrade=blocked.map(function(x){return x.k;});
+  var mandatoryClose=clubQuality.some(function(x,i){return clubQuality.slice(i+1).some(function(y){return Math.abs((+x.dow||0)-(+y.dow||0))<2;});});
+  if(mandatoryClose)warnings.push("Tes séances collectives intenses sont trop rapprochées pour garantir 48 h de récupération. Garde les autres sorties faciles et échange avec ton coach si possible.");
   if(downgrade.length){
     sessions=sessions.map(function(x){
       if(downgrade.indexOf(x.k)<0)return x;
@@ -490,7 +497,7 @@ function P0(pl,w){
   var wk=pl.weeks[w-1]; if(!wk||w<2||D.adj[pl.r.id+":"+w]!=="on")return wk;
   var a=adjFor(pl,w); if(!a||(a.mode!=="light"&&a.mode!=="micro"))return wk;
   var f=a.mode==="light"?LIGHT:MICRO, lab=a.mode==="light"?"Allégée −18 %":"Micro-récup. −12 %";
-  var S=wk.s.map(function(s){var c=Object.assign({},s); if(s.type.indexOf("Club")===0||s.race||s.type==="Course B")return c; c.km=Math.round(s.km*f*10)/10; c.dp=Math.round(s.dp*f); c.adjusted=true; c.steps=null;
+  var S=wk.s.map(function(s){var c=Object.assign({},s); if(s.club||s.type.indexOf("Club")===0||s.race||s.type==="Course B")return c; c.km=Math.round(s.km*f*10)/10; c.dp=Math.round(s.dp*f); c.adjusted=true; c.steps=null;
     if(s.club){c.km=Math.max(15,c.km); c.dp=Math.max(500,c.dp);} c.txt=s.txt+" Version allégée : vise "+kmS(c.km)+" km"+(c.dp?" et +"+c.dp+" m":"")+"."; return c;});
   if(a.mode==="micro")S=S.map(function(s){return s.dow===1&&s.tag==="q"?sess({k:s.k,dow:1,tag:"e",type:"Progressif",km:7,dp:100,adjusted:true,steps:[["40 min","De la zone 1-2 à la zone 3 basse"]],txt:"Micro-récupération : 40 min en progressif. Pas de séance de qualité aujourd’hui."}):s;});
   return Object.assign({},wk,{s:S,adjLabel:lab});
