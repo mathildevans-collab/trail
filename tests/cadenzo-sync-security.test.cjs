@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const assert = require("node:assert/strict");
 
 const migration = fs.readFileSync(
-  "supabase/migrations/20261124110000_harden_cadenzo_sync_rpc.sql",
+  "supabase/migrations/20261124094203_harden_cadenzo_sync_rpc.sql",
   "utf8"
 ).toLowerCase();
 const base = fs.readFileSync("supabase/cadenzo_sync.sql", "utf8").toLowerCase();
