@@ -31,7 +31,7 @@ function screen(message,buttonText,action){
     `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=136" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=137" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
   var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
@@ -57,8 +57,7 @@ function loadApp(user){
           return r.json().catch(function(){return {};}).then(function(data){
             if(!r.ok){
               var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";error.retryAfter=data.retryAfter||0;error.retryAt=data.retryAt||null;
-              if(error.code==="STRAVA_REAUTH_REQUIRED"){location.href=FUNCTION_URL+"?action=start";throw error;}
-              if(r.status===401)error.sessionExpired=true;
+              if(r.status===401&&error.code!=="STRAVA_REAUTH_REQUIRED")error.sessionExpired=true;
               throw error;
             }
             return data;
@@ -88,13 +87,13 @@ function loadApp(user){
       function request(session){
         return fetch(FUNCTION_URL+"?action=segments",{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"apikey":SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify(position),cache:"no-store"}).then(function(r){
           return r.json().catch(function(){return {};}).then(function(data){
-            if(!r.ok){var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";if(error.code==="STRAVA_REAUTH_REQUIRED"){location.assign(FUNCTION_URL+"?action=start");}throw error;}
+            if(!r.ok){var error=new Error(data.error||("Erreur "+r.status));error.status=r.status;error.code=data.code||"";if(r.status===401&&error.code!=="STRAVA_REAUTH_REQUIRED")error.sessionExpired=true;throw error;}
             return data;
           });
         });
       }
       return validSession().then(request).catch(function(error){
-        if(error&&error.status===401)return client.auth.refreshSession().then(function(r){
+        if(error&&error.sessionExpired)return client.auth.refreshSession().then(function(r){
           if(r.error||!r.data||!r.data.session)throw new Error("Ta session Cadenzo a expiré. Reconnecte-toi.");
           return request(r.data.session);
         });
@@ -125,7 +124,7 @@ function loadApp(user){
     window.CADENZO_TRAINING_PREFS_LOADED=false;
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=136";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=137";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 
