@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=145;
+var APPV=146;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -324,6 +324,41 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
   if(clubKm>cap)warning="Le volume de tes séances collectives obligatoires dépasse déjà le plafond prudent calculé à partir de ton volume récent. N’ajoute pas de séance supplémentaire.";
   return {sessions:sessions,cap:Math.round(cap*10)/10,adjusted:adjusted,warning:warning};
 }
+function coachingRules(sessions,pref,weekNo,weekRec,phase){
+  var p=pref&&pref.athlete_profile||{}, exp=p.experience||"regulier", discipline=p.discipline||"mixte";
+  var limit=(exp==="debutant"||exp==="reprise")?1:2;
+  if(weekRec||phase==="Affûtage")limit=1;
+  var quality=sessions.filter(function(x){return !x.race&&x.tag==="q";});
+  var clubQuality=quality.filter(function(x){return !!x.club;});
+  var optionalQuality=quality.filter(function(x){return !x.club;}).sort(function(a,b){
+    function priority(x){return x.type==="Tempo long"?90:x.type==="Côtes"||x.type==="Fartlek nature"?80:60;}
+    return priority(b)-priority(a)||a.dow-b.dow;
+  });
+  var keep=Math.max(0,limit-clubQuality.length), changed=false, warnings=[];
+  var downgrade=optionalQuality.slice(keep).map(function(x){return x.k;});
+  if(downgrade.length){
+    sessions=sessions.map(function(x){
+      if(downgrade.indexOf(x.k)<0)return x;
+      var c=Object.assign({},x,{tag:"e",type:"Endurance facile",pace:null,steps:[[String(x.km)+" km","Zone 1-2, respiration facile. Pas de fractionné ni de tempo."]],txt:"Séance transformée en endurance facile pour équilibrer les intensités de la semaine. "+String(x.km)+" km en aisance respiratoire."});
+      changed=true; return c;
+    });
+  }
+  if(clubQuality.length>limit)warnings.push("Plusieurs séances collectives intenses sont obligatoires cette semaine. Ne rajoute aucune autre intensité et signale au coach si la récupération est insuffisante.");
+  if(weekRec)warnings.push("Semaine de récupération : conserve les séances de club obligatoires en demandant une version allégée au coach. Toutes les sorties individuelles restent faciles.");
+  if(phase==="Affûtage")warnings.push("Affûtage : réduis la durée des efforts, garde seulement quelques rappels dynamiques et évite toute fatigue résiduelle.");
+  if(discipline==="trail"||discipline==="mixte"){
+    sessions=sessions.map(function(x){
+      if(x.race||x.tag!=="l"||x.club||!x.km)return x;
+      var c=Object.assign({},x), grade=(+c.dp||0)/(+c.km||1);
+      var terrain=grade>=25?"Terrain vallonné : marche active dans les pentes raides, relance progressive en haut, descente contrôlée sans chercher la vitesse.":grade>=12?"Sentier vallonné : alterne course et marche en côte, cadence courte en descente.":"Sentier roulant : reste en aisance, travaille la pose de pied et la stabilité.";
+      var fueling=(+c.km>=15)?" Teste ton ravitaillement sur cette sortie longue ; prends de petites prises régulières et utilise uniquement des produits déjà tolérés.":"";
+      c.txt=(c.txt||"Sortie trail facile.")+" "+terrain+fueling;
+      if(!c.steps||!c.steps.length)c.steps=[[String(c.km)+" km","Endurance facile sur sentier"],["D+ "+String(c.dp||0)+" m",terrain]];
+      return c;
+    });
+  }
+  return {sessions:sessions,changed:changed,warnings:warnings};
+}
 function planOf(r){
   if(!r)return null;
   var prefKey=TRAIN_PREF?JSON.stringify([TRAIN_PREF.has_club,TRAIN_PREF.club_days,TRAIN_PREF.club_sessions,TRAIN_PREF.athlete_profile,TRAIN_PREF.sessions_per_week,TRAIN_PREF.training_days,TRAIN_PREF.onboarding_completed,TRAIN_PREF.legacy]):"default";
@@ -376,9 +411,12 @@ function planOf(r){
         else planned.push(sess({k:KEYS[d],dow:d,tag:"e",type:"Footing",km:6,dp:0,steps:[[ "6 km","Footing facile en zone 2" ]],txt:"Footing facile en zone 2, ajouté selon tes disponibilités."}));
       });
       var load=athleteLoadRules(planned,pref,wk.n,wk.rec);
-      wk.s=load.sessions;
+      var coached=coachingRules(load.sessions,pref,wk.n,wk.rec,wk.ph);
+      wk.s=coached.sessions;
       if(load.adjusted)wk.note=(wk.note?wk.note+" ":"")+"Volume plafonné progressivement selon ton historique sportif.";
       if(load.warning)wk.note=(wk.note?wk.note+" ":"")+load.warning;
+      if(coached.changed)wk.note=(wk.note?wk.note+" ":"")+"Intensités rééquilibrées selon ton niveau et les séances collectives.";
+      if(coached.warnings.length)wk.note=(wk.note?wk.note+" ":"")+coached.warnings.join(" ");
       wk.km=0;wk.dp=0;wk.s.forEach(function(s){if(!s.race){wk.km+=s.km||0;wk.dp+=s.dp||0;}});
       wk.km=Math.round(wk.km);wk.dp=Math.round(wk.dp);
     });
