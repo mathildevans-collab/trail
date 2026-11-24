@@ -1040,3 +1040,18 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 }
 @media(min-width:900px){#view>.syncline,#view>.syncnote{grid-column:1/-1;text-align:left;padding:0 2px}}
 .wk .d,.wk .k small,.pht small,.sitem .val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* Bouton retour : pastille avec bordure, flèche dans un rond */
+.back{display:inline-flex;align-self:flex-start;width:auto;gap:8px;min-height:38px;padding:0 14px 0 6px;margin:0 0 10px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:14px;font-weight:700;transition:background .15s,border-color .15s}
+.back svg{width:26px;height:26px;padding:5px;border-radius:50%;background:var(--brand-soft);color:var(--brand);flex:none}
+.back:hover{background:var(--bg);border-color:var(--brand)}
+.back:active{transform:scale(.98)}
+@media(min-width:900px){
+  #view>.back{grid-column:1/-1;justify-self:start;margin:14px 0 0}
+  .tabs-in::before{content:none;display:none}
+  .tabs{padding-top:0}
+  .tabs-in{padding-top:6px;gap:4px}
+  .tabs button,.tabs button[aria-current="page"]{min-height:46px;padding:0 14px;gap:12px;font-size:15px}
+  .tabs button svg{width:21px;height:21px}
+  .tabs button[aria-current="page"]::before{top:10px;bottom:10px}
+}
