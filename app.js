@@ -1344,13 +1344,19 @@ function swapSheet(w,k){
 function swapToDay(dow){
   var r=raceById(SH.rid),w=SH.w,k=SH.k,pl=planOf(r),wk=P(pl,w),s=sessByKey(wk,k),other=sessAt(wk,dow);
   if(!s||s.club||s.race||s.type==="Course B"||(other&&(other.club||other.race||other.type==="Course B"))){toast("Échange impossible : une séance obligatoire est concernée.");return;}
+  var available=(TRAIN_PREF&&TRAIN_PREF.training_days||[0,1,2,3,4,5,6]).map(Number);
+  if(available.indexOf(+dow)<0){toast("Ce jour ne fait pas partie de tes disponibilités.");return;}
   var E=D.edits[r.id]||(D.edits[r.id]={}),keys=[w+"-"+s.k],old=[E[w+"-"+s.k]?Object.assign({},E[w+"-"+s.k]):null];
   if(other){keys.push(w+"-"+other.k);old.push(E[w+"-"+other.k]?Object.assign({},E[w+"-"+other.k]):null);}
   E[keys[0]]=Object.assign({},E[keys[0]]||{},{dow:dow});
   if(other)E[keys[1]]=Object.assign({},E[keys[1]]||{},{dow:s.dow});
-  PC={};var next=planOf(r).weeks[w-1],quality=next.s.filter(function(x){return x.tag==="q"&&!x.race;}),conflict=false;
-  for(var i=0;i<quality.length;i++)for(var j=i+1;j<quality.length;j++){var delta=Math.abs(quality[i].dow-quality[j].dow);if(Math.min(delta,7-delta)<2)conflict=true;}
-  if(conflict){keys.forEach(function(key,i){if(old[i])E[key]=old[i];else delete E[key];});PC={};toast("Échange refusé : les séances intenses seraient trop rapprochées. Garde au moins 48 h entre elles.");return;}
+  PC={};var next=planOf(r).weeks[w-1],intense=next.s.filter(function(x){return !x.race&&(x.tag==="q"||x.tag==="l"&&x.type!=="Course B");}),conflict=false;
+  for(var i=0;i<intense.length;i++)for(var j=i+1;j<intense.length;j++){
+    var a=intense[i],b=intense[j];if(a.tag!=="q"&&b.tag!=="q")continue;
+    var delta=Math.abs(a.dow-b.dow),hours=Math.min(delta,7-delta)*24;
+    if(hours<48)conflict=true;
+  }
+  if(conflict){keys.forEach(function(key,i){if(old[i])E[key]=old[i];else delete E[key];});PC={};toast("Échange refusé : une séance intense serait trop proche d’une séance de qualité ou longue. Garde au moins 48 h.");return;}
   save();closeSheet();toast(other?"Séances échangées.":"Séance déplacée.");render(true);
 }
 function firstFreeDow(wk){var used={}; wk.s.forEach(function(s){used[s.dow]=1;}); for(var i=0;i<7;i++)if(!used[i])return i; return 0;}
