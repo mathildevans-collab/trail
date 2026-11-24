@@ -31,7 +31,7 @@ function screen(message,buttonText,action){
     `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=138" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=155" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
   var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
@@ -104,7 +104,7 @@ function loadApp(user){
       return client.from("cadenzo_training_preferences").select("*").eq("user_id",user.id).maybeSingle().then(function(r){if(r.error)throw r.error;return r.data;});
     },
     saveTrainingPreferences:function(p){
-      var row={user_id:user.id,has_club:!!p.has_club,club_name:null,club_days:p.has_club?p.club_days:[],club_sessions:p.has_club?(p.club_sessions||[]):[],sessions_per_week:p.sessions_per_week,training_days:p.training_days,rest_days:p.rest_days,onboarding_completed:true,legacy:false,updated_at:new Date().toISOString()};
+      var row={user_id:user.id,has_club:!!p.has_club,club_name:null,club_days:p.has_club?p.club_days:[],club_sessions:p.has_club?(p.club_sessions||[]):[],athlete_profile:p.athlete_profile||{},sessions_per_week:p.sessions_per_week,training_days:p.training_days,rest_days:p.rest_days,onboarding_completed:true,legacy:false,updated_at:new Date().toISOString()};
       return client.from("cadenzo_training_preferences").upsert(row,{onConflict:"user_id"}).select("*").single().then(function(r){if(r.error)throw r.error;return r.data;});
     },
     signOut:function(){return client.auth.signOut().then(function(){location.reload();});}
@@ -124,7 +124,7 @@ function loadApp(user){
     window.CADENZO_TRAINING_PREFS_LOADED=false;
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=138";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=155";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 

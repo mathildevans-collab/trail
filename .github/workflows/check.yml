@@ -42,6 +42,9 @@ jobs:
             node --check "$file"
           done < <(find . -path './.git' -prune -o -name '*.js' -print0)
 
+      - name: Tester les règles de génération sportive
+        run: node tests/plan-rules.test.cjs
+
       - name: Vérifier les versions PWA
         run: python scripts/check_versions.py
 
