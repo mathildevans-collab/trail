@@ -962,3 +962,13 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .phh .phk,.phh .phk small,.phh .phk b{white-space:nowrap}
   .phh{min-height:68px}
 }
+
+/* Préférences des entraînements collectifs */
+.pref-club-fields[hidden],#prefClubConfig[hidden]{display:none!important}
+.pref-club-list{display:grid;gap:10px;margin:8px 0 18px}
+.pref-club-day{padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.pref-club-day .pref-check{padding:2px 0;cursor:pointer}
+.pref-club-fields{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(100px,.8fr);gap:10px;padding:10px 0 2px 28px}
+.pref-club-fields .field{min-width:0;margin:0}
+.pref-club-fields select,.pref-club-fields input{width:100%;min-width:0}
+@media(max-width:380px){.pref-club-fields{grid-template-columns:1fr;padding-left:0}}

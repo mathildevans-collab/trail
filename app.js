@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=137;
+var APPV=138;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1004,25 +1004,42 @@ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
 document.addEventListener("scroll",function(e){var t=e.target; if(!t.classList||!t.classList.contains("tro-st"))return; var w=t.children[0]?t.children[0].offsetWidth+10:150, i=Math.round(t.scrollLeft/w), d=t.parentNode.querySelectorAll(".tro-dots i"); for(var k=0;k<d.length;k++)d[k].classList.toggle("on",k===i);},true);
 var SSUB=null;
 
+function prefClubSessionRowsHtml(sessions){
+  var byDay={}; (sessions||[]).forEach(function(s){if(s&&Number.isInteger(+s.day))byDay[+s.day]=s;});
+  var types=[["Fractionné / piste",8],["Footing collectif",8],["Sortie longue",14],["Côtes",8],["Sortie trail",10],["Renforcement",0],["Autre",8]];
+  return DOWL.map(function(name,i){
+    var s=byDay[i]||{}, selected=!!byDay[i], type=s.type||"Fractionné / piste", km=s.estimated_km!=null?s.estimated_km:(types.filter(function(t){return t[0]===type;})[0]||types[0])[1];
+    return '<div class="pref-club-day"><label class="pref-check"><input type="checkbox" data-pref-club-day value="'+i+'" '+(selected?'checked':'')+'><span>'+name.charAt(0).toUpperCase()+name.slice(1)+'</span></label>'+
+      '<div class="pref-club-fields" data-pref-club-fields="'+i+'" '+(selected?'':'hidden')+'><label class="field">Type d’entraînement<select data-pref-club-type="'+i+'">'+types.map(function(t){return '<option value="'+t[0]+'" '+(type===t[0]?'selected':'')+'>'+t[0]+'</option>';}).join('')+'</select></label>'+
+      '<label class="field">Distance estimée (km)<input data-pref-club-km="'+i+'" type="number" min="0" max="100" step="0.5" inputmode="decimal" value="'+esc(km)+'"></label></div></div>';
+  }).join("");
+}
 function prefDaysHtml(selected,kind){
   return DOWL.map(function(name,i){return '<label class="pref-day"><input type="checkbox" data-pref-day="'+kind+'" value="'+i+'" '+(selected.indexOf(i)>=0?'checked':'')+'><span>'+name.slice(0,3)+'</span></label>';}).join("");
 }
+function clubEstimate(type){
+  return {"Fractionné / piste":8,"Footing collectif":8,"Sortie longue":14,"Côtes":8,"Sortie trail":10,"Renforcement":0,"Autre":8}[type]||0;
+}
 function openTrainingPrefs(first){
-  var p=TRAIN_PREF||{has_club:false,club_name:"",club_days:[],sessions_per_week:4,training_days:[0,1,2,3,5,6],rest_days:[4],onboarding_completed:false};
-  var h='<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Le plan s’adapte à tes jours disponibles et tient compte des séances de ton club pour éviter les doublons.</p>'+
-  '<label class="pref-check"><input id="prefClub" type="checkbox" '+(p.has_club?'checked':'')+'> Je fais partie d’un club de course</label>'+
-  '<label class="field" id="prefClubNameWrap">Nom du club<input id="prefClubName" maxlength="80" value="'+esc(p.club_name||'')+'" placeholder="Nom de ton club"></label>'+
-  '<p class="eyebrow">Jours avec le club</p><div class="pref-days" id="prefClubDays">'+prefDaysHtml((p.club_days||[]).map(Number),"club")+'</div>'+
+  var p=TRAIN_PREF||{has_club:false,club_days:[],club_sessions:[],sessions_per_week:4,training_days:[0,1,2,3,5,6],rest_days:[4],onboarding_completed:false};
+  var sessions=p.club_sessions||((p.club_days||[]).map(function(day){return {day:+day,type:"Fractionné / piste",estimated_km:8};}));
+  var h='<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Indique tes entraînements collectifs pour qu’ils soient pris en compte dans ton organisation.</p>'+
+  '<label class="pref-check"><input id="prefClub" type="checkbox" '+(p.has_club?'checked':'')+'> Je participe à des entraînements collectifs</label>'+
+  '<div id="prefClubConfig" '+(p.has_club?'':'hidden')+'><p class="eyebrow">Tes jours d’entraînement collectif</p><div class="pref-club-list">'+prefClubSessionRowsHtml(sessions)+'</div></div>'+
   '<label class="field">Nombre de séances souhaitées<select id="prefCount">'+[2,3,4,5,6,7].map(function(n){return '<option value="'+n+'" '+(n===+p.sessions_per_week?'selected':'')+'>'+n+' séances par semaine</option>';}).join('')+'</select></label>'+
   '<p class="eyebrow">Jours où tu peux t’entraîner</p><div class="pref-days">'+prefDaysHtml((p.training_days||[]).map(Number),"train")+'</div>'+
-  '<p class="small muted">Les jours non sélectionnés deviennent tes jours de repos. Les séances du club comptent dans ton total hebdomadaire.</p>'+
+  '<p class="small muted">Les jours non sélectionnés deviennent tes jours de repos. Les entraînements collectifs sont des séances à part entière. Les distances proposées sont modifiables.</p>'+
   '<p class="small" id="prefError" role="alert" style="color:var(--bad)"></p><button class="btn primary" data-sact="saveprefs" style="width:100%">Enregistrer mes disponibilités</button>';
   openSheet(h,{kind:"prefs",first:!!first});
-  var club=$("prefClub"),wrap=$("prefClubNameWrap"),days=$("prefClubDays");
-  function showClub(){wrap.hidden=!club.checked;days.hidden=!club.checked;}
-  club.addEventListener("change",showClub);showClub();
-}
-function vSettings(){
+  var club=$("prefClub"),config=$("prefClubConfig");
+  club.addEventListener("change",function(){config.hidden=!club.checked;});
+  $("sheetBody").addEventListener("change",function(e){
+    var day=e.target.closest("[data-pref-club-day]");
+    if(day){var fields=$("sheetBody").querySelector('[data-pref-club-fields="'+day.value+'"]');if(fields)fields.hidden=!day.checked;return;}
+    var type=e.target.closest("[data-pref-club-type]");
+    if(type){var km=$("sheetBody").querySelector('[data-pref-club-km="'+type.dataset.prefClubType+'"]');if(km)km.value=clubEstimate(type.value);}
+  });
+}function vSettings(){
   var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
   function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
   function gCourse(){return group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
@@ -1040,7 +1057,7 @@ function vSettings(){
   h+='<button class="sd-t sd-w sd-row" data-ssub="trophees" style="min-height:0"><span class="sd-ic" style="background:color-mix(in srgb,var(--sun) 22%,var(--card));color:var(--ink)">'+sv('<circle cx="12" cy="10" r="6"/><path d="M8.5 15L7 22l5-3 5 3-1.5-7"/>')+'</span><span class="sd-tx"><b>Trophées</b><small>'+(TR.length?TR.length+(TR.length>1?" médailles":" médaille"):"Records et étapes")+'</small></span>'+(nNew?'<span class="sd-st"><i style="background:var(--acc)"></i>'+nNew+(nNew>1?" nouvelles":" nouvelle")+'</span>':'')+'</button>';
   h+=tile('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',"Export Garmin",(G&&G.last)?"Import du "+fmtD(dayN(G.last)*864e5).replace(/^\S+\s/,""):"Aucun import",{tag:"button",attr:' data-ssub="sorties"',st:[(gOld==null||gOld>9)?"w":"",gOld==null?"—":gOld+" j"]});
   h+=tile('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',"Données",lastExportTxt().replace(/\.$/,"").replace("Dernier export ","Export "),{tag:"button",attr:' data-ssub="donnees"'});
-  h+='<div class="sd-t sd-w sd-row training-summary"><span class="sd-ic">'+sv('<path d="M3 5h18M6 3v4M18 3v4M5 10h14M5 15h8"/>')+'</span><span class="sd-tx"><b>Organisation d’entraînement</b><small>'+(TRAIN_PREF&&TRAIN_PREF.onboarding_completed?TRAIN_PREF.sessions_per_week+' séances · '+(TRAIN_PREF.has_club?esc(TRAIN_PREF.club_name||'club'):'sans club'):'À définir lors de ta première connexion')+'</small></span></div>';
+  h+='<div class="sd-t sd-w sd-row training-summary"><span class="sd-ic">'+sv('<path d="M3 5h18M6 3v4M18 3v4M5 10h14M5 15h8"/>')+'</span><span class="sd-tx"><b>Organisation d’entraînement</b><small>'+(TRAIN_PREF&&TRAIN_PREF.onboarding_completed?TRAIN_PREF.sessions_per_week+' séances · '+((TRAIN_PREF.club_sessions||[]).length||((TRAIN_PREF.club_days||[]).length))+' entraînements collectifs':'À définir lors de ta première connexion')+'</small></span></div>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>')+'</span><span class="sd-tx"><b>Apparence</b></span><div class="sd-seg" role="radiogroup" aria-label="Thème">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>')+'</span><span class="sd-tx"><b>Check-in du lundi</b></span>'+tg("checkin",D.set.checkin,"Check-in du lundi")+'</div>';
   h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",w:1,row:1,attr:' data-ssub="course"'});
@@ -1065,15 +1082,19 @@ document.addEventListener("keydown",function(e){ if(e.key!=="Tab"||$("sheet").hi
 $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close]")){closeSheet();return;} var b=e.target.closest("button"); if(!b)return;
 
   if(b.dataset.sact==="saveprefs"){
-    var hasClub=$("prefClub").checked, clubName=$("prefClubName").value.trim();
+    var hasClub=$("prefClub").checked;
     var training=Array.from(document.querySelectorAll('[data-pref-day="train"]:checked')).map(function(x){return +x.value;});
-    var clubDays=Array.from(document.querySelectorAll('[data-pref-day="club"]:checked')).map(function(x){return +x.value;});
+    var clubSessions=hasClub?Array.from(document.querySelectorAll("[data-pref-club-day]:checked")).map(function(x){
+      var day=+x.value,type=$("sheetBody").querySelector('[data-pref-club-type="'+day+'"]').value,raw=$("sheetBody").querySelector('[data-pref-club-km="'+day+'"]').value,km=raw===""?0:Number(raw);
+      return {day:day,type:type,estimated_km:km};
+    }):[];
+    var clubDays=clubSessions.map(function(s){return s.day;});
     var count=+$("prefCount").value, err=$("prefError");
-    if(hasClub&&!clubName){err.textContent="Indique le nom de ton club.";return;}
     if(training.length<count){err.textContent="Sélectionne au moins autant de jours que de séances souhaitées.";return;}
-    if(clubDays.some(function(d){return training.indexOf(d)<0;})){err.textContent="Les jours du club doivent aussi être disponibles pour l’entraînement.";return;}
+    if(clubDays.some(function(d){return training.indexOf(d)<0;})){err.textContent="Ajoute les jours de tes entraînements collectifs à tes disponibilités.";return;}
+    if(clubSessions.some(function(s){return !isFinite(s.estimated_km)||s.estimated_km<0||s.estimated_km>100;})){err.textContent="Vérifie les distances estimées de tes entraînements.";return;}
     var rest=[0,1,2,3,4,5,6].filter(function(d){return training.indexOf(d)<0;});
-    var next={has_club:hasClub,club_name:hasClub?clubName:null,club_days:hasClub?clubDays:[],sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
+    var next={has_club:hasClub,club_name:null,club_days:clubDays,club_sessions:clubSessions,sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
     b.disabled=true;window.CadenzoAuth.saveTrainingPreferences(next).then(function(saved){TRAIN_PREF=saved;window.CADENZO_TRAINING_PREFS=saved;PC={};closeSheet();render(true);toast("Tes disponibilités sont enregistrées.");if(!D.races.length)setTimeout(function(){if(!SH)editRace(null);},250);}).catch(function(e){b.disabled=false;err.textContent="Enregistrement impossible : "+(e.message||"réessaie.");});
     return;
   }
