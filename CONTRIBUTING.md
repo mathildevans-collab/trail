@@ -2,25 +2,25 @@
 
 ## Avant de modifier le projet
 
-- Une branche par sujet : `amelioration/...`, `correction/...`, `documentation/...`.
-- Un changement doit rester limité et facile à relire.
+- Créer une branche par sujet : `correction/...`, `amelioration/...`, `documentation/...` ou `securite/...`.
+- Garder chaque changement limité et facile à relire.
 - Vérifier les fichiers qui chargent ou référencent le code modifié.
 - Ne jamais ajouter de jeton, mot de passe, clé privée ou donnée personnelle.
 
-## Titres des commits : du français simple et concret
+## Écrire des titres compréhensibles
 
-Le titre doit permettre de comprendre le changement sans ouvrir le code.
+Le titre d'un commit doit dire précisément ce qui a changé. Écris une phrase courte en français, avec un verbe d'action.
 
-Exemples attendus :
+Exemples :
 
 - `Corrige la recherche des segments proches`
-- `Affiche les records dans l'ordre du meilleur temps`
-- `Explique la configuration de Strava dans le guide`
+- `Affiche les records du meilleur au moins bon`
+- `Explique la connexion Strava dans le guide`
 - `Évite de perdre la session après une mise en veille`
 
-Évite les titres vagues ou artificiels : `update`, `fix bug`, `modifications diverses`, `améliorations`, `mise à jour du code`.
+N'utilise pas de titre vague : `update`, `fix bug`, `modifications diverses`, `améliorations` ou `mise à jour du code`.
 
-Les anciens titres préfixés (`fix(...):`, `feat(...):`) restent acceptés pendant la transition, mais les nouveaux commits doivent privilégier une phrase naturelle en français.
+Les anciens titres au format `fix(...): ...` ou `feat(...): ...` restent acceptés pendant la transition. Pour les nouveaux changements, privilégie une phrase naturelle en français.
 
 ## Vérifications avant d'ouvrir une Pull Request
 
@@ -34,11 +34,11 @@ for file in *.js; do node --check "$file" || exit 1; done
 python3 -m compileall -q scripts
 ```
 
-Relire ensuite le diff et vérifier que les tests annoncés ont réellement été exécutés.
+Relire le diff et ne déclarer que les tests réellement exécutés.
 
-## Pull Requests
+## Décrire une Pull Request
 
-La description doit répondre simplement à ces questions :
+La description doit expliquer simplement :
 
 1. Quel problème est corrigé ?
 2. Qu'est-ce qui change concrètement ?
@@ -46,4 +46,4 @@ La description doit répondre simplement à ces questions :
 4. Quels contrôles ont été exécutés ?
 5. Quel risque reste à surveiller ?
 
-Une Pull Request ne doit être fusionnée que lorsque tous les contrôles obligatoires sont verts.
+Ne jamais fusionner une Pull Request tant qu'un contrôle obligatoire est en échec.

@@ -19,18 +19,34 @@ Le dépôt conserve volontairement une structure simple tant que les dépendance
 
 | Chemin | Rôle |
 | --- | --- |
-| `index.html` | Point d'entrée HTML de l'application et chargement des ressources. |
-| `style.css` | Styles, composants visuels et responsive design. |
-| `app.js` | Initialisation et logique principale de l'application. |
-| `auth.js` | Authentification Supabase et connexion Strava. |
-| `csync.js` | Synchronisation des données entre appareils. |
-| `data.js` | Données et fonctions liées au stockage applicatif. |
-| `fit.js` | Fonctions liées aux fichiers et données FIT. |
-| `garmin.js` | Intégration Garmin. |
-| `safe.js` | Fonctions de sécurité et de protection des données côté client. |
-| `workout.js` | Gestion des entraînements. |
-| `exo*.js` | Données et affichage des exercices. |
-| `sw.js`, `sw-reg.js` | Cache hors ligne et enregistrement du service worker. |
+| Fichier | Rôle |
+| --- | --- |
+| `index.html` | Page d'entrée. Déclare les écrans, la navigation et l'ordre de chargement des scripts. |
+| `style.css` | Apparence de l'application : couleurs, typographie, composants et adaptation mobile/ordinateur. |
+| `data.js` | Données du plan d'entraînement : semaines, séances, zones et contenus associés. |
+| `fit.js` | Création et lecture des fichiers d'entraînement Garmin au format FIT. |
+| `safe.js` | Validation, sauvegarde et fusion des données locales pour éviter les pertes. |
+| `csync.js` | Chiffrement et synchronisation des données entre appareils. |
+| `garmin.js` | Import et analyse des données exportées depuis Garmin. |
+| `exo.js` | Moteur de dessin SVG et catalogue central des exercices. |
+| `exo-data.js` | Positions et dessins des exercices de renforcement. |
+| `exo-mob.js` | Positions et dessins des exercices de mobilité. |
+| `exo-txt.js` | Consignes, muscles sollicités et erreurs à éviter pour chaque exercice. |
+| `workout.js` | Affichage et déroulement des séances d'entraînement. |
+| `auth.js` | Connexion utilisateur, session Supabase et autorisation Strava. |
+| `sw-reg.js` | Enregistrement du service worker dans le navigateur. |
+| `sw.js` | Mise en cache des fichiers et fonctionnement hors ligne. |
+| `app.js` | Assemblage de l'application : navigation, écrans, interactions et logique principale. |
+| `supabase.min.js` | Bibliothèque officielle Supabase utilisée dans le navigateur. Ne pas modifier manuellement. |
+| `scripts/bump.py` | Met à jour ensemble les numéros de version du frontend et du cache PWA. |
+| `scripts/check_versions.py` | Vérifie que les numéros de version sont identiques partout. |
+| `scripts/check_asset_references.py` | Vérifie que les fichiers chargés par la page et le cache hors ligne existent. |
+| `scripts/check_commit_messages.py` | Refuse les titres de commits trop vagues ou illisibles. |
+| `scripts/check_secrets.py` | Recherche les secrets qui auraient été écrits en clair dans le dépôt. |
+| `.github/workflows/check.yml` | Lance automatiquement les vérifications à chaque Pull Request et sur `main`. |
+| `supabase/functions/cadenzo-strava/index.ts` | Traitement serveur des connexions Strava et des demandes sécurisées. |
+| `supabase/migrations/` | Historique des évolutions de la base de données. |
+| `supabase/cadenzo_sync.sql` | Fonctions SQL utilisées pour la synchronisation chiffrée. |
 | `supabase/functions/cadenzo-strava/` | Fonction serveur pour OAuth Strava et opérations sécurisées. |
 | `supabase/migrations/` | Évolutions versionnées du schéma de base de données. |
 | `supabase/cadenzo_sync.sql` | SQL de synchronisation entre appareils. |
@@ -77,32 +93,28 @@ Le contrôle automatique bloque les incohérences de version.
 
 La branche `main` représente la version de référence. Toute évolution doit passer par une branche dédiée et une Pull Request.
 
-1. Créer une branche courte : `feat/...`, `fix/...`, `docs/...`, `refactor/...` ou `chore/...`.
-2. Faire des changements limités à un sujet.
-3. Écrire des commits explicites au format Conventional Commits.
-4. Ouvrir une Pull Request vers `main`.
+1. Créer une branche dont le nom décrit le sujet : `correction/...`, `amelioration/...`, `documentation/...` ou `securite/...`.
+2. Limiter chaque branche à un seul changement cohérent.
+3. Écrire des titres de commits en français, courts et concrets.
+4. Ouvrir une Pull Request vers `main` avec une explication du problème et des vérifications faites.
 5. Attendre le succès de toutes les vérifications GitHub Actions.
-6. Corriger les contrôles en échec avant toute fusion.
+6. Ne jamais fusionner une Pull Request dont un contrôle obligatoire est en échec.
 
-### Format des commits
+### Titres des commits
 
-Format recommandé :
-
-```text
-type(portee): description courte à l'impératif
-```
-
-Types acceptés : `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+Le titre doit expliquer ce qui change sans avoir besoin d'ouvrir les fichiers. Écrire une phrase naturelle, avec un verbe d'action.
 
 Exemples :
 
-- `fix(segments): corrige le calcul de distance GPS`
-- `feat(onboarding): ajoute le choix du nombre de séances`
-- `docs(readme): décrit le lancement local`
-- `ci(github): vérifie les messages de commit`
-- `refactor(auth): centralise le renouvellement de session`
+- `Corrige la recherche des segments proches`
+- `Ajoute le choix du nombre de séances à l'inscription`
+- `Décrit le lancement de Cadenzo dans le guide`
+- `Vérifie les fichiers utilisés par le mode hors ligne`
+- `Évite de perdre la session après une mise en veille`
 
-Éviter les messages comme `update`, `correction`, `test`, `modifs`, `fix bug` ou `améliorations diverses`. Préférer `Corrige la recherche des segments proches`.
+Éviter les titres vagues ou artificiels : `update`, `correction`, `test`, `modifs`, `fix bug`, `améliorations diverses`.
+
+Les anciens titres préfixés comme `fix(segments): ...` restent acceptés pendant la transition, pour ne pas bloquer les branches déjà existantes. Les nouveaux commits doivent utiliser les phrases françaises ci-dessus.
 
 ## Vérifications automatiques
 
