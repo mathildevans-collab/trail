@@ -12,7 +12,7 @@ ACTION = re.compile(
     r"Explique|Affiche|Gère|Limite|Masque|Met à jour|Nettoie|"
     r"Permet|Protège|Répare|Remplace|Renomme|Réorganise|Rétablit|"
     r"Rend|Sécurise|Simplifie|Supprime|Trie|Vérifie|"
-    r"Empêche|Prépare|Réduit|Ajoute|Retire|Fixer|"
+    r"Empêche|Prépare|Réduit|Ajoute|Retire|Fixer|Branche|Renforce|Applique|Couvre|"
     r"Add|Improve|Automate|Block|Centralize|Load|Clarify|Keep|Correct|"
     r"Describe|Detect|Document|Move|Avoid|Explain|Show|Manage|Limit|"
     r"Hide|Update|Clean|Allow|Protect|Repair|Replace|Rename|Refactor|"
