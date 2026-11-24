@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=164;
+var APPV=165;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -439,10 +439,12 @@ function planOf(r){
   if(start>rws)start=rws;
   var n=r.builtin?26:Math.max(1,Math.round((rws-start)/WEEK)+1), taper=n>=14?2:n>=8?1:0, weeks=[];
   var discipline=TRAIN_PREF&&TRAIN_PREF.athlete_profile&&TRAIN_PREF.athlete_profile.discipline||"mixte";
+  var tMetrics=window.CadenzoTraining?trainingMetrics(r,m):null;
   for(var w=1;w<=n;w++){
     var b;
-    if(discipline==="route"&&window.CadenzoTraining)b=CadenzoTraining.roadWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m)});
-    else if(discipline==="mixte"&&window.CadenzoTraining)b=CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m),race:{distance:m.L,elevation:m.dp}});
+    if(w===n)b={ph:"Affûtage",rec:false,s:raceWeek(r,m),note:"Semaine de course. Vérifie l’heure de départ et prépare ton matériel."};
+    else if(discipline==="route"&&window.CadenzoTraining)b=CadenzoTraining.roadWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:tMetrics});
+    else if(discipline==="mixte"&&window.CadenzoTraining)b=CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:tMetrics,race:{distance:m.L,elevation:m.dp}});
     else b=r.builtin?thpWeek(w,r,m):genWeek(w,n,taper,r,m);
     weeks.push({n:w,ph:b.ph,rec:b.rec,s:b.s,note:b.note||"",start:start+(w-1)*WEEK});
   }
@@ -507,10 +509,13 @@ function planOf(r){
     });
   }
   if(window.CadenzoTraining){
-    var metrics=trainingMetrics(r,m);
-    weeks.forEach(function(wk){wk.s=CadenzoTraining.applyTargets(wk.s,metrics,discipline);});
+    weeks.forEach(function(wk){
+      wk.s=CadenzoTraining.applyTargets(wk.s,tMetrics,discipline);
+      wk.km=0;wk.dp=0;wk.s.forEach(function(s){wk.km+=s.km||0;wk.dp+=s.dp||0;});
+      wk.km=Math.round(wk.km*10)/10;wk.dp=Math.round(wk.dp);
+    });
   }
-  var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date),training:window.CadenzoTraining?trainingMetrics(r,m):null};
+  var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date),training:tMetrics};
   PC[r.id]={key:key,p:p}; return p;
 }
 function sk(r,w,k){return r.id+":"+w+"-"+k;}
@@ -1207,6 +1212,8 @@ function openTrainingPrefs(first){
   var h='<h2>'+(first?'Ton profil de coureur':'Mes disponibilités et mon profil')+'</h2><p class="small muted">Quelques repères pour construire un plan adapté à ton expérience et à ta charge actuelle.</p>'+
   '<p class="eyebrow">Ta pratique</p><label class="field">Discipline<select id="athDiscipline">'+[['route','Course sur route'],['trail','Trail'],['mixte','Route et trail']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.discipline||'mixte')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
   '<label class="field">Ton expérience<select id="athExperience">'+[['debutant','Débutant(e)'],['reprise','Reprise après une pause'],['regulier','Pratique régulière'],['confirme','Coureur(se) expérimenté(e)']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.experience||'regulier')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
+  '<div class="fields"><label class="field">FC max (bpm) · facultatif<input id="athMaxHr" type="number" min="120" max="230" step="1" value="'+(athlete.max_hr||'')+'" placeholder="Ex. 190"></label><label class="field">FC repos (bpm) · facultatif<input id="athRestHr" type="number" min="30" max="110" step="1" value="'+(athlete.resting_hr||'')+'" placeholder="Ex. 55"></label></div>'+
+  '<p class="small muted">Les zones Garmin importées sont prioritaires. Sinon, ces valeurs permettent une estimation indicative des zones cardiaques.</p>'+
   '<label class="field">Volume actuel (km/semaine)<input id="athKm" type="number" min="0" max="200" step="1" required value="'+(athlete.weekly_km==null?'':Number(athlete.weekly_km))+'" placeholder="Ex. 25"></label><label class="field">Sorties par semaine<input id="athRuns" type="number" min="0" max="14" step="1" value="'+(athlete.runs_per_week==null?'':Number(athlete.runs_per_week))+'" placeholder="Ex. 3" required></label>'+
   '<p class="small muted">Indique la moyenne des 4 dernières semaines. Si tu débutes ou reprends, indique ton volume actuel, même s’il est faible.</p>'+
   '<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Tes entraînements collectifs sont obligatoires : ils seront intégrés au planning et remplaceront la séance prévue le même jour.</p>'+
@@ -1284,7 +1291,9 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
     var rawKm=$("athKm").value,rawRuns=$("athRuns").value,weeklyKm=rawKm===""?null:Number(rawKm),runs=rawRuns===""?null:Number(rawRuns);
     if(weeklyKm===null||runs===null){err.textContent="Renseigne ton volume moyen et ton nombre de sorties pour calibrer le plan.";return;}
     if((weeklyKm!==null&&(!isFinite(weeklyKm)||weeklyKm<0||weeklyKm>200))||(runs!==null&&(!isFinite(runs)||runs<0||runs>14))){err.textContent="Vérifie ton volume hebdomadaire et ton nombre de sorties.";return;}
-    var athleteProfile={discipline:$("athDiscipline").value,experience:$("athExperience").value,weekly_km:weeklyKm,runs_per_week:runs};
+    var maxRaw=$("athMaxHr").value,restRaw=$("athRestHr").value,maxHr=maxRaw===""?null:Number(maxRaw),restHr=restRaw===""?null:Number(restRaw);
+    if((maxHr!==null&&(!isFinite(maxHr)||maxHr<120||maxHr>230))||(restHr!==null&&(!isFinite(restHr)||restHr<30||restHr>110))||(maxHr!==null&&restHr!==null&&restHr>=maxHr-20)){err.textContent="Vérifie les fréquences cardiaques : FC repos doit être au moins 20 bpm sous la FC max.";return;}
+    var athleteProfile={discipline:$("athDiscipline").value,experience:$("athExperience").value,weekly_km:weeklyKm,runs_per_week:runs,max_hr:maxHr,resting_hr:restHr};
     var next={has_club:hasClub,club_name:null,club_days:clubDays,club_sessions:clubSessions,athlete_profile:athleteProfile,sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
     b.disabled=true;window.CadenzoAuth.saveTrainingPreferences(next).then(function(saved){TRAIN_PREF=saved;window.CADENZO_TRAINING_PREFS=saved;PC={};closeSheet();render(true);toast("Tes disponibilités sont enregistrées.");if(!D.races.length)setTimeout(function(){if(!SH)editRace(null);},250);}).catch(function(e){b.disabled=false;err.textContent="Enregistrement impossible : "+(e.message||"réessaie.");});
     return;
@@ -1472,7 +1481,7 @@ function trainingMetrics(r,m){
   if(!window.CadenzoTraining)return null;
   var g=window.GARMIN&&GARMIN.data?GARMIN.data():null;
   var p=TRAIN_PREF&&TRAIN_PREF.athlete_profile||{};
-  var result=CadenzoTraining.metrics(p,HIST,g,{distance:m&&m.L,targetPaceSecKm:0},Date.now());
+  var result=CadenzoTraining.metrics(p,HIST,g,{distance:m&&m.L,targetPaceSecKm:m&&m.goal&&m.L?m.goal*60/m.L:0},Date.now());
   if(window.FIT&&FIT.setZones)FIT.setZones(result.zones);
   return result;
 }
