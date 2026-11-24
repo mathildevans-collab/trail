@@ -154,6 +154,39 @@
     ];
     return {ph:phase,rec:rec,s:sessions,note:rec?"Volume et intensité réduits pour assimiler la charge.":phase==="Spécifique"?"Les séances se rapprochent de la distance objectif, sans multiplier les intensités.":"Plan route : une séance de qualité, des footings différenciés et une seule sortie longue."};
   }
+  function trailQuality(phase,week,rec){
+    if(rec)return {tag:"e",zone:2,type:"Footing vallonné facile",km:6,dp:80,steps:[["35 min","Endurance facile en Z2, terrain souple"],["5 × 15 s","Relances souples en côte, récupération complète"]],txt:"Semaine allégée : conserve la fréquence sans séance intense."};
+    if(phase==="Base")return week%2?{tag:"q",zone:4,type:"Côtes courtes",km:8,dp:180,steps:[["15 min","Échauffement progressif en Z2"],["8 × 1 min","Montée régulière en Z4, redescendre en trottinant"],["10 min","Retour au calme en Z1-Z2"]],txt:"Développer la force en côte sans sprinter."}:{tag:"q",zone:3,type:"Fartlek nature",km:8,dp:120,steps:[["15 min","Échauffement en Z2"],["6 × 2 min","Effort soutenu Z3-Z4 sur chemin, récupération 2 min facile"],["10 min","Retour au calme"]],txt:"Varier les rythmes sur terrain naturel, sans forcer en descente."};
+    if(phase==="Construction")return week%2?{tag:"q",zone:4,type:"Côtes enchaînées",km:9,dp:260,steps:[["15 min","Échauffement en Z2"],["6 × 3 min","Montée au seuil Z4, récupération en descente facile"],["10 min","Retour au calme en Z1-Z2"]],txt:"Renforcer la capacité à soutenir un effort en montée."}:{tag:"q",zone:3,type:"Tempo trail",km:9,dp:180,steps:[["15 min","Échauffement en Z2"],["3 × 8 min","Effort régulier Z3 sur sentier vallonné, récupération 3 min"],["10 min","Retour au calme"]],txt:"Tenir un effort régulier sur terrain irrégulier."};
+    return {tag:"q",zone:4,type:"Allure spécifique trail",km:9,dp:300,steps:[["15 min","Échauffement en Z2"],["4 × 6 min","Effort course en montée Z3-Z4, récupération en descente contrôlée"],["10 min","Retour au calme en Z1-Z2"]],txt:"Répéter l'effort du jour J sur un relief proche de la course, sans accélérer en descente."};
+  }
+  function trailWeek(options){
+    options=options||{};
+    var w=Number(options.week)||1,n=Math.max(1,Number(options.totalWeeks)||1),phase=options.phase||"Base",rec=!!options.recovery;
+    var profile=options.profile||{},race=options.race||{},dist=Number(options.distance)||Number(race.distance)||20;
+    var grade=clamp(Number(race.elevation||options.elevation||0)/Math.max(1,dist),0,45);
+    var weekly=Math.max(12,Number(profile.weekly_km)||25),progress=n<=1?1:clamp((w-1)/(n-1),0,1);
+    var maxLong=dist>=35?30:dist>=22?24:dist>=12?18:14;
+    var longKm=Math.round(clamp(weekly*.42,8,maxLong)+(maxLong-clamp(weekly*.42,8,maxLong))*progress);
+    if(rec)longKm=Math.max(7,Math.round(longKm*.72));
+    if(phase==="Affûtage")longKm=Math.max(6,Math.min(longKm,Math.round(maxLong*.55)));
+    var q=trailQuality(phase,w,rec), easy=Math.max(5,Math.round(weekly*.18)), short=Math.max(4,Math.round(easy*.75));
+    var longDp=Math.round(longKm*grade*(phase==="Affûtage"?.45:.7));
+    var allowB2B=!!options.backToBack&&!rec&&phase==="Spécifique"&&w<n-1;
+    var sessions=[
+      Object.assign({dow:1},q),
+      {dow:2,tag:"e",type:"Endurance + renfo",km:easy,dp:Math.round(easy*grade*.25),zone:2,renfo:"A1",steps:[[easy+" km","Endurance fondamentale en Z2 sur terrain facile"],["12 min","Renforcement général et gainage"]],txt:"Construire l'endurance et la stabilité sans ajouter d'intensité."},
+      {dow:3,tag:"e",type:"Footing de récupération",km:short,dp:Math.round(short*grade*.15),zone:1,steps:[[short+" km","Très facile en Z1, terrain roulant ou souple"]],txt:"Récupération active. Ralentis ou marche si les jambes restent lourdes."},
+      {dow:5,tag:"e",type:"Technique trail",km:Math.max(5,Math.round(easy*.9)),dp:Math.round(easy*.9*grade*.55),zone:2,steps:[["15 min","Échauffement en Z2"],["6 × 45 s","Montée technique à effort contrôlé, descente en marchant ou très lentement"],["Fin de séance","Endurance facile en Z2"]],txt:"Travail de pied, cadence en montée et contrôle en descente. Aucun sprint."},
+      {dow:6,tag:allowB2B?"l":"e",type:allowB2B?"Jour 2 du bloc":"Sortie longue trail",km:allowB2B?Math.max(10,Math.round(longKm*.65)):longKm,dp:allowB2B?Math.round(longDp*.65):longDp,zone:2,steps:[[String(allowB2B?Math.max(10,Math.round(longKm*.65)):longKm)+" km","Endurance fondamentale en Z2, marche active dans les fortes pentes"]],txt:allowB2B?"Deuxième jour du bloc : effort facile, priorité au temps passé sur les jambes.":"Sortie longue sur sentier : régularité, gestion des montées et descentes contrôlées."}
+    ];
+    if(allowB2B){
+      sessions[4].type="Jour 2 du bloc";
+      sessions[4].txt+=" Le volume du premier jour doit rester maîtrisé.";
+    }
+    sessions[4].dp=Math.max(0,sessions[4].dp||0);
+    return {ph:phase,rec:rec,s:sessions,note:rec?"Semaine allégée : volume et dénivelé réduits pour assimiler la charge.":allowB2B?"Bloc trail réservé aux profils confirmés avec charge et disponibilités suffisantes.":"Plan trail : une séance de montée, une séance technique, des footings différenciés et une seule sortie longue."};
+  }
   function mixedWeek(options){
     var out=roadWeek(options),w=Number(options.week)||1,profile=options.profile||{},race=options.race||{},trailTarget=Number(race.elevation||0)/(Number(race.distance)||1)>=12;
     var sat=out.s.filter(function(s){return s.dow===5;})[0];
@@ -170,7 +203,7 @@
     out.note="Plan mixte : qualité sur route ou terrain varié, endurance sur chemins et sortie longue adaptée à la course.";
     return out;
   }
-  var api={metrics:metrics,applyTargets:applyTargets,roadWeek:roadWeek,mixedWeek:mixedWeek,zoneLabel:zoneLabel,paceRange:paceRange};
+  var api={metrics:metrics,applyTargets:applyTargets,roadWeek:roadWeek,trailWeek:trailWeek,mixedWeek:mixedWeek,zoneLabel:zoneLabel,paceRange:paceRange};
   root.CadenzoTraining=api;
   if(typeof module!=="undefined"&&module.exports)module.exports=api;
 })(typeof window!=="undefined"?window:globalThis);
