@@ -31,7 +31,7 @@ assert.equal(trailBlock.s.filter(s=>s.tag==="l").length,2);
 assert.equal(trailBlock.s.filter(s=>s.type==="Jour 2 du bloc").length,1);
 const mixedHilly=T.mixedWeek({week:4,totalWeeks:16,phase:"Construction",distance:21,profile:{weekly_km:35},race:{distance:21,elevation:700}});
 assert.ok(mixedHilly.s.some(s=>s.type==="Endurance vallonnée"));
-assert.ok(mixedHilly.s.some(s=>s.type==="Tempo trail"||s.type==="Côtes enchaînées"));
+assert.ok(mixedHilly.s.some(s=>s.type==="Fartlek mixte"||s.type==="Tempo trail"||s.type==="Côtes enchaînées"));
 const sessions=T.applyTargets([{type:"Seuil",tag:"q",steps:[["15 min","Échauffement Z2"],["3 × 8 min","Seuil Z4"]]}],m,"route");
 assert.ok(sessions[0].hrTarget.includes("bpm"));
 assert.ok(sessions[0].pace);
