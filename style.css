@@ -947,3 +947,11 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .toast{left:calc(232px + 24px);right:auto;bottom:24px;width:auto;max-width:460px}
 }
 @media(min-width:1400px){#view>[role="tabpanel"]{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Chevrons : trait fin arrondi (SVG) à la place des glyphes texte */
+.chev{position:relative;font-size:0!important;line-height:0;width:20px;height:20px;flex:none;display:inline-grid;place-items:center;color:var(--muted)}
+.chev::before{content:"";width:16px;height:16px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5l7 7-7 7'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 5l7 7-7 7'/%3E%3C/svg%3E") center/contain no-repeat;transition:transform .2s}
+.phh .chev{width:26px;height:26px;border-radius:50%;background:var(--bg)}
+.phh .chev::before{width:14px;height:14px;transform:rotate(90deg)}
+.phh[aria-expanded="true"] .chev::before{transform:rotate(-90deg)}
+.phh[aria-expanded="true"] .chev{color:var(--brand);background:var(--brand-soft)}
