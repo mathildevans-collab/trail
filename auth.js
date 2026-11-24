@@ -104,7 +104,7 @@ function loadApp(user){
       return client.from("cadenzo_training_preferences").select("*").eq("user_id",user.id).maybeSingle().then(function(r){if(r.error)throw r.error;return r.data;});
     },
     saveTrainingPreferences:function(p){
-      var row={user_id:user.id,has_club:!!p.has_club,club_name:null,club_days:p.has_club?p.club_days:[],club_sessions:p.has_club?(p.club_sessions||[]):[],sessions_per_week:p.sessions_per_week,training_days:p.training_days,rest_days:p.rest_days,onboarding_completed:true,legacy:false,updated_at:new Date().toISOString()};
+      var row={user_id:user.id,has_club:!!p.has_club,club_name:null,club_days:p.has_club?p.club_days:[],club_sessions:p.has_club?(p.club_sessions||[]):[],athlete_profile:p.athlete_profile||{},sessions_per_week:p.sessions_per_week,training_days:p.training_days,rest_days:p.rest_days,onboarding_completed:true,legacy:false,updated_at:new Date().toISOString()};
       return client.from("cadenzo_training_preferences").upsert(row,{onConflict:"user_id"}).select("*").single().then(function(r){if(r.error)throw r.error;return r.data;});
     },
     signOut:function(){return client.auth.signOut().then(function(){location.reload();});}
@@ -124,7 +124,7 @@ function loadApp(user){
     window.CADENZO_TRAINING_PREFS_LOADED=false;
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=139";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=140";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 
