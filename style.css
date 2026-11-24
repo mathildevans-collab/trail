@@ -937,3 +937,13 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .course-detail-dashboard>.course-chart-card{grid-column:span 8}
 }
 @media(max-width:899px){.desktop-brand{display:none}.nav-label{display:none}}
+
+/* Desktop : Mes courses (liste) et toast */
+@media(min-width:900px){
+  #view>.wm-seg{grid-column:1/-1;max-width:420px}
+  #view>[role="tabpanel"]{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+  #view>[role="tabpanel"]>.race{margin:0}
+  #view>[role="tabpanel"]>p{grid-column:1/-1}
+  .toast{left:calc(232px + 24px);right:auto;bottom:24px;width:auto;max-width:460px}
+}
+@media(min-width:1400px){#view>[role="tabpanel"]{grid-template-columns:repeat(3,minmax(0,1fr))}}
