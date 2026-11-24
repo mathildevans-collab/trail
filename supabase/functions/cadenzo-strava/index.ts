@@ -101,8 +101,10 @@ async function callback(req: Request, url: URL) {
   const { data: saved, error: stateErr } = await admin.from("cadenzo_oauth_states").select("state").eq("state", state).gt("expires_at", new Date().toISOString()).maybeSingle();
   if (stateErr || !saved) return redirect(safeReturn("Demande de connexion expirée. Réessaie."), clearCookie);
   await admin.from("cadenzo_oauth_states").delete().eq("state", state);
-  // Strava renvoie les droits réellement accordés : l'activité complète est indispensable.
-  const granted = (url.searchParams.get("scope") || "").split(",").map((s) => s.trim());
+  // Strava renvoie les droits réellement accordés. Les segments publics nécessitent read ;
+  // read_all reste facultatif et débloque uniquement les segments privés.
+  const granted = (url.searchParams.get("scope") || "").split(/[\\s,]+/).map((s) => s.trim()).filter(Boolean);
+  if (!granted.includes("read")) return redirect(safeReturn("Autorise l’accès aux données publiques Strava pour utiliser les segments dans Cadenzo."), clearCookie);
   if (!granted.includes("activity:read_all")) return redirect(safeReturn("Autorise l’accès à tes activités sur Strava pour utiliser Cadenzo."), clearCookie);
   const token = await exchange({ code, grant_type: "authorization_code", redirect_uri: REDIRECT_URI });
   const athlete = token.athlete || {};
@@ -175,7 +177,7 @@ async function getAccessToken(userId: string) {
 }
 async function findSegments(req: Request) {
   const auth = req.headers.get("Authorization") || "";
-  const jwt = auth.replace(/^Bearer\s+/i, "");
+  const jwt = auth.replace(/^Bearer\\s+/i, "");
   if (!jwt) return json({ error: "Session requise." }, 401);
 
   const body = await req.json().catch(() => ({}));
@@ -185,18 +187,27 @@ async function findSegments(req: Request) {
     return json({ error: "Position GPS invalide." }, 400);
   }
 
-  // Vérifie le JWT utilisateur via Auth avec le client serveur déjà configuré.
-  // Évite de dépendre d'une variable SUPABASE_ANON_KEY non garantie dans l'environnement Edge.
   const { data: { user }, error } = await admin.auth.getUser(jwt);
   if (error || !user) return json({ error: "Session invalide." }, 401);
 
-  // Recherche exclusivement dans le catalogue Cadenzo : aucun appel à l'API Strava.
-  // Les segments sont mutualisés entre les comptes, car leurs métadonnées décrivent
-  // des segments publics et non les activités privées des contributeurs.
-  const { data: rows, error: rowsErr } = await admin.from("cadenzo_segments")
-    .select("strava_segment_id,name,distance,average_grade,elevation_high,elevation_low,city,raw")
-    .limit(5000);
-  if (rowsErr) throw rowsErr;
+  const { data: account, error: accountErr } = await admin.from("cadenzo_strava_accounts")
+    .select("scopes").eq("user_id", user.id).single();
+  if (accountErr || !account) return json({ error: "Compte Strava non associé." }, 404);
+  const scopes = Array.isArray(account.scopes) ? account.scopes : [];
+  const privateSegmentsAvailable = scopes.includes("read_all");
+
+  // Source de vérité : segments enregistrés (étoilés) par l'athlète sur Strava.
+  // Aucun appel à /segments/explore et aucune dépendance aux activités déjà courues.
+  const access = await getAccessToken(user.id);
+  const starred: any[] = [];
+  const perPage = 200;
+  const maxPages = 20;
+  for (let page = 1; page <= maxPages; page++) {
+    const batch = await strava("/segments/starred?per_page=" + perPage + "&page=" + page, access);
+    if (!Array.isArray(batch)) throw new Error("Réponse Strava invalide pour les segments enregistrés.");
+    starred.push(...batch);
+    if (batch.length < perPage) break;
+  }
 
   const distanceKm = (aLat: number, aLng: number, bLat: number, bLng: number) => {
     const dy = (aLat - bLat) * 111;
@@ -205,23 +216,21 @@ async function findSegments(req: Request) {
   };
 
   const unique = new Map<number, any>();
-  for (const s of rows || []) {
-    const id = Number(s.strava_segment_id);
-    if (!id) continue;
-    const start = s.raw?.start_latlng || [];
+  for (const s of starred) {
+    const id = Number(s.id);
+    if (!id || (s.activity_type && s.activity_type !== "Run")) continue;
+    const start = s.start_latlng || [];
     const sLat = Number(start[0]), sLng = Number(start[1]);
     if (!Number.isFinite(sLat) || !Number.isFinite(sLng) || Math.abs(sLat) > 90 || Math.abs(sLng) > 180) continue;
     const km = distanceKm(sLat, sLng, lat, lng);
     if (km > radiusKm) continue;
 
-    const candidate = {
+    unique.set(id, {
       i: id, n: String(s.name || "Segment"), d: Math.round(Number(s.distance || 0)),
       g: Math.round(Number(s.average_grade || 0) * 10) / 10,
       e: Math.round(Math.max(0, Number(s.elevation_high || 0) - Number(s.elevation_low || 0))),
       v: String(s.city || ""), la: sLat, ln: sLng, s: "e", _distanceKm: km
-    };
-    const previous = unique.get(id);
-    if (!previous || candidate._distanceKm < previous._distanceKm) unique.set(id, candidate);
+    });
   }
 
   const items = Array.from(unique.values())
@@ -229,8 +238,8 @@ async function findSegments(req: Request) {
     .map(({ _distanceKm, ...item }: any) => item);
 
   return json({
-    items, count: items.length, radiusKm, source: "cadenzo_saved_segments",
-    searchedAt: new Date().toISOString()
+    items, count: items.length, radiusKm, source: "strava_starred_segments",
+    privateSegmentsAvailable, searchedAt: new Date().toISOString()
   });
 }
 
@@ -454,7 +463,7 @@ Deno.serve(async (req: Request) => {
       const state = b64(crypto.getRandomValues(new Uint8Array(32))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
       const { error } = await admin.from("cadenzo_oauth_states").insert({ state, expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() });
       if (error) throw error;
-      const q = new URLSearchParams({ client_id: STRAVA_CLIENT_ID, response_type: "code", redirect_uri: REDIRECT_URI, approval_prompt: "auto", scope: "read,activity:read_all,profile:read_all", state });
+      const q = new URLSearchParams({ client_id: STRAVA_CLIENT_ID, response_type: "code", redirect_uri: REDIRECT_URI, approval_prompt: "auto", scope: "read,read_all,activity:read_all,profile:read_all", state });
       return redirect("https://www.strava.com/oauth/authorize?" + q.toString(), COOKIE + "=" + state + "; Max-Age=600; Path=/functions/v1/cadenzo-strava; HttpOnly; Secure; SameSite=Lax");
     }
     if (action === "callback") {
