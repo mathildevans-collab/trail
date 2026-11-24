@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=158;
+var APPV=159;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1435,7 +1435,7 @@ if(MQ&&MQ.addEventListener)MQ.addEventListener("change",function(){applyTheme();
 // ---------- rendu ----------
 function sideFoot(){var el=$("sideFoot"); if(!el)return; var nm=window.CADENZO_PROFILE_NAME||"Mon compte", ph=window.CADENZO_PROFILE_PICTURE, sy=D.sync||{};
   var st=sy.err?(sy.err==="limite Strava temporaire"?"Strava limité":"Synchro en échec"):(sy.t?"Strava à jour":"Strava connecté");
-  el.innerHTML=(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span><button class="ibtn account-logout" type="button" data-account-logout title="Se déconnecter" aria-label="Se déconnecter">'+I.logout+'</button>';}
+  el.innerHTML='<div class="sf-user">'+(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span></div><button class="sf-out" type="button" data-account-logout aria-label="Se déconnecter">'+I.logout+'<span>Se déconnecter</span></button>';}
 function render(keep){
   var y=window.scrollY, v;
   if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else v=vSettings();
