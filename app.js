@@ -874,10 +874,10 @@ function vPrep(r,pl){
 }
 function sessionHero(r,pl,wk,s){
   var k=sk(r,wk.n,s.k), dn=!!D.done[k], z=zoneOf(s.type).split(" · ")[0], ed=estDur(pl.m,s), ac=D.actual[k], isB=s.type==="Course B";
-  var h='<div class="card hero"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+(wk.rec?' · allégée':'')+'</span>'+(s.race?'':'<button class="hedit" data-edit="'+wk.n+'-'+s.k+'">Modifier</button>')+'</div><h2>'+esc(isB?s.name:s.type)+'</h2>';
+  var h='<div class="card hero"><div class="sb"><span class="eyebrow">Semaine '+wk.n+' · '+wk.ph+(wk.rec?' · allégée':'')+'</span>'+(s.race?'':'<button class="hedit" data-act="swap" data-w="'+wk.n+'" data-k="'+s.k+'">Déplacer</button><button class="hedit" data-edit="'+wk.n+'-'+s.k+'">Modifier</button>')+'</div><h2>'+esc(isB?s.name:s.type)+'</h2>';
   var tags=[]; if(isB)tags.push("Course B"); if(s.adjusted&&wk.adjLabel)tags.push(wk.adjLabel); if(s.cw)tags.push("⚠ Sortie club complète déconseillée"); if(s.rbd)tags.push("Ajustée : "+kmS(s.rbFrom)+" → "+kmS(s.km)+" km"); if(s.edited)tags.push(s.added?"Ajoutée par toi":"Modifiée par toi"); if(s.club)tags.push("Club : 15 km, 2 h, +500 m min.");
   if(tags.length)h+='<div class="tagline">'+tags.map(function(t){return '<span class="chip'+(t.indexOf("⚠")===0?' acc':'')+'">'+esc(t)+'</span>';}).join("")+'</div>';
-  h+='<div class="facts num">'+(s.km?'<span>'+kmS(s.km)+' km</span>':'')+(s.dp?'<span>+'+nb(s.dp)+' m</span>':'')+(z?'<span>'+esc(z)+'</span>':'')+(ed&&s.type.indexOf("Club")<0?'<span>≈ '+dur(ed)+'</span>':'')+'</div>';
+  h+='<div class="facts num">'+(s.km?'<span>'+kmS(s.km)+' km</span>':'')+(s.dp?'<span>+'+nb(s.dp)+' m</span>':'')+(s.hrTarget?'<span>'+esc(s.hrTarget)+'</span>':z?'<span>'+esc(z)+'</span>':'')+(s.pace?'<span>'+esc(s.pace)+'</span>':'')+(ed&&s.type.indexOf("Club")<0?'<span>≈ '+dur(ed)+'</span>':'')+'</div>';
   if(s.steps&&s.steps.length)h+='<ul class="steps">'+s.steps.map(function(x){return '<li><span>'+esc(x[0])+'</span><span>'+esc(x[1])+'</span></li>';}).join("")+'</ul>'+(s.txt?'<p class="session-note">'+esc(s.txt)+'</p>':'');
   else if(s.txt)h+='<p>'+esc(s.txt)+'</p>';
   var a=adjFor(pl,wk.n); if(a&&a.mode==="z2"&&(s.tag==="e"||s.tag==="l"))h+='<p><b>Zone 2 stricte cette semaine :</b> reste sous 150 bpm.</p>';
@@ -1328,6 +1328,29 @@ function watchSheet(w,k){
   h+='<details style="margin-top:12px"><summary>'+I.help+' Copier sur la montre</summary><div class="in"><ol class="small" style="margin:0;padding-left:18px"><li>Branche la montre au Mac et ouvre OpenMTP.</li><li>Copie le fichier .fit dans <b>GARMIN/NewFiles</b> (pour la semaine, double-clique d’abord le .zip pour avoir les .fit).</li><li>Débranche : la montre importe les séances. Tu les trouves dans <b>Entraînement › Entraînements</b>. Lance la séance, puis démarre l’activité.</li></ol><p class="muted xs" style="margin:8px 0 0">Depuis l’iPhone, le fichier part dans Fichiers : il faut passer par le Mac pour le copier sur la montre. Les étapes « jusqu’à Tour » attendent un appui sur le bouton Tour.</p></div></details>';
   openSheet(h,{kind:"watch",w:w,k:k,rid:r.id});
 }
+function swapSheet(w,k){
+  var r=activeRace(),pl=planOf(r),wk=P(pl,w),s=sessByKey(wk,k);
+  if(!s||s.club||s.race||s.type==="Course B"){toast("Cette séance ne peut pas être déplacée.");return;}
+  var days=(TRAIN_PREF&&TRAIN_PREF.training_days||[0,1,2,3,4,5,6]).map(Number),club=(TRAIN_PREF&&TRAIN_PREF.has_club?(TRAIN_PREF.club_days||[]):[]).map(Number);
+  var choices=days.filter(function(d){return d!==s.dow&&club.indexOf(d)<0;}).map(function(d){
+    var other=sessAt(wk,d);if(other&&(other.club||other.race||other.type==="Course B"))return "";
+    return '<button class="link" data-sact="swapto" data-dow="'+d+'"><span class="tx"><b>'+DOWL[d]+'</b><small>'+(other?'Échanger avec '+esc(other.type)+' · '+kmS(other.km||0)+' km':'Déplacer ici · jour libre')+'</small></span><span class="chev">›</span></button>';
+  }).filter(Boolean).join("");
+  if(!choices){toast("Aucun autre jour disponible dans cette semaine.");return;}
+  openSheet('<h2>Déplacer la séance</h2><p class="small muted">'+esc(s.type)+' · '+kmS(s.km||0)+' km · '+DOWL[s.dow]+'</p><p class="eyebrow">Choisir un jour disponible</p>'+choices+'<p class="small muted">Si le jour est déjà occupé, les deux séances échangent leur place. Les séances collectives et les courses restent fixes.</p>',{kind:"swap",rid:r.id,w:w,k:k,from:s.dow});
+}
+function swapToDay(dow){
+  var r=raceById(SH.rid),w=SH.w,k=SH.k,pl=planOf(r),wk=P(pl,w),s=sessByKey(wk,k),other=sessAt(wk,dow);
+  if(!s||s.club||s.race||s.type==="Course B"||(other&&(other.club||other.race||other.type==="Course B"))){toast("Échange impossible : une séance obligatoire est concernée.");return;}
+  var E=D.edits[r.id]||(D.edits[r.id]={}),keys=[w+"-"+s.k],old=[E[w+"-"+s.k]?Object.assign({},E[w+"-"+s.k]):null];
+  if(other){keys.push(w+"-"+other.k);old.push(E[w+"-"+other.k]?Object.assign({},E[w+"-"+other.k]):null);}
+  E[keys[0]]=Object.assign({},E[keys[0]]||{},{dow:dow});
+  if(other)E[keys[1]]=Object.assign({},E[keys[1]]||{},{dow:s.dow});
+  PC={};var next=planOf(r).weeks[w-1],quality=next.s.filter(function(x){return x.tag==="q"&&!x.race;}),conflict=false;
+  for(var i=0;i<quality.length;i++)for(var j=i+1;j<quality.length;j++){var delta=Math.abs(quality[i].dow-quality[j].dow);if(Math.min(delta,7-delta)<2)conflict=true;}
+  if(conflict){keys.forEach(function(key,i){if(old[i])E[key]=old[i];else delete E[key];});PC={};toast("Échange refusé : les séances intenses seraient trop rapprochées. Garde au moins 48 h entre elles.");return;}
+  save();closeSheet();toast(other?"Séances échangées.":"Séance déplacée.");render(true);
+}
 function firstFreeDow(wk){var used={}; wk.s.forEach(function(s){used[s.dow]=1;}); for(var i=0;i<7;i++)if(!used[i])return i; return 0;}
 function editSession(w,k,dow){
   var r=activeRace(), pl=planOf(r), wk=pl.weeks[w-1], s=k?sessByKey(wk,k):null, isNew=!s;
@@ -1395,6 +1418,7 @@ function sheetAct(a,b){
       var st=o; if(o&&o.v!==3&&o.done&&o.set)st=migrate(o,blank()); var v=SAFE.validate(st); if(!v.ok){toast("Cette copie est invalide."); return;}
       if(!confirm("Revenir à la copie du "+new Date(rec.id).toLocaleString("fr-FR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})+" ? L’état actuel est copié avant."))return;
       applyState(v.state,null,"replace","avant restauration").then(function(ok){if(ok){closeSheet(); toast("Copie restaurée."); render();}});}); return;}
+  if(a==="swapto"){swapToDay(+b.dataset.dow);return;}
   if(a==="fitone"||a==="fitweek"){var r=raceById(SH.rid), pl=planOf(r), wk=P(pl,SH.w), F=wktFiles(r,pl,wk,a==="fitone"?SH.k:null); if(!F.length)return;
     if(F.length===1)FIT.download(new Blob([F[0].data],{type:"application/octet-stream"}),F[0].name); else FIT.download(FIT.zip(F),FIT.slug(r.name)+"-semaine-"+SH.w+".zip");
     toast(F.length>1?F.length+" séances prêtes : copie-les dans GARMIN/NewFiles.":"Séance prête : copie-la dans GARMIN/NewFiles."); return;}
@@ -1770,6 +1794,7 @@ function act(a,b){
   else if(a==="watch")watchSheet(+ds.w,ds.k);
   else if(a==="weekplan"){openWk=+ds.w; try{openPh=planOf(activeRace()).weeks[+ds.w-1].ph;}catch(e){} setTab("plan"); var el=document.querySelector('[data-wk="'+ds.w+'"]'); if(el)el.scrollIntoView({block:"start"});}
   else if(a==="addses")editSession(+ds.w,null,ds.d!=null?+ds.d:null);
+  else if(a==="swap")swapSheet(+ds.w,ds.k);
   else if(a==="manual")manualSheet(+ds.w,ds.k);
   else if(a==="addrace")editRace(null);
   else if(a==="editrace")editRace(ds.r);
