@@ -1,21 +1,18 @@
-## Pourquoi ce changement ?
-Décrire le problème ou le besoin en quelques phrases.
+## Le problème
+Explique en quelques lignes ce qui ne fonctionnait pas ou ce qui manque.
 
-## Ce qui change
-- 
+## La correction
+- Décris les changements avec des mots simples.
 
-## Fichiers concernés
-Expliquer les principaux fichiers modifiés et leur rôle.
+## Fichiers importants
+- Indique les fichiers touchés et leur rôle.
 
-## Vérifications effectuées
-- [ ] Syntaxe JavaScript et contrôles CI réussis
-- [ ] Versions PWA cohérentes si le frontend change
-- [ ] Authentification / synchronisation testées si concernées
-- [ ] Affichage mobile et ordinateur vérifié si l'interface change
-- [ ] Aucun secret ni donnée personnelle ajouté
+## Vérifications
+- [ ] La CI est verte
+- [ ] Les versions PWA sont cohérentes si le frontend change
+- [ ] L'authentification et la synchronisation sont testées si elles sont concernées
+- [ ] L'affichage mobile et ordinateur est vérifié si l'interface change
+- [ ] Aucun secret ni donnée personnelle n'a été ajouté
 
-## Risques et retour arrière
-Indiquer les risques connus et comment revenir à la version stable.
-
-## Résultat attendu
-Décrire simplement ce que l'utilisateur doit constater.
+## À surveiller
+Indique les limites connues et la façon de revenir à la version stable.
