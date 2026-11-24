@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=142;
+var APPV=143;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -292,6 +292,13 @@ function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var maxRuns=Math.min(target,Math.max(clubCount,Math.max(1,currentRuns+Math.floor(Math.max(0,weekNo-1)/2))));
   var mandatory=sessions.filter(function(s){return s.race||s.club||s.type==="Course B";});
   var optional=sessions.filter(function(s){return !s.race&&!s.club&&s.type!=="Course B";});
+  var advancedTrail=(p.discipline==="trail"||p.discipline==="mixte")&&exp==="confirme"&&base>=35&&target>=5;
+  var maxLong=advancedTrail?2:1;
+  var mandatoryLong=mandatory.filter(function(s){return s.tag==="l";}).length;
+  var optionalLong=optional.filter(function(s){return s.tag==="l";}).sort(function(a,b){return (+b.km||0)-(+a.km||0);});
+  var keepOptionalLong=Math.max(0,maxLong-mandatoryLong);
+  var keepLongIds=optionalLong.slice(0,keepOptionalLong).map(function(s){return s.k;});
+  optional=optional.filter(function(s){return s.tag!=="l"||keepLongIds.indexOf(s.k)>=0;});
   if(mandatory.length+optional.length>maxRuns){
     optional.sort(function(a,b){
       function rank(x){return x.tag==="q"?90:x.tag==="l"?80:x.type==="Endurance + renfo"?65:40;}
