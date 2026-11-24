@@ -550,13 +550,16 @@ function vToday(){
 }
 var COTES={}; try{COTES=JSON.parse(localStorage.getItem(userKey("cadenzo-cotes"))||"{}")||{};}catch(e){}
 var CTS={l:"",off:0,open:false}; try{CTS=Object.assign(CTS,JSON.parse(localStorage.getItem(userKey("cadenzo-ct"))||"{}"));}catch(e){}
+// Une position GPS est propre à l’instant et à l’appareil : ne jamais restaurer une ancienne position depuis le cache.
+delete CTS.pos; CTS.city=""; CTS.l=""; CTS.loading=false; CTS.autoSearchDone=false;
 function ctSave(){try{localStorage.setItem(userKey("cadenzo-ct"),JSON.stringify(CTS));}catch(e){}}
 function cotesList(){ // liste de référence partagée ; GPS utilisé uniquement pour afficher la proximité
   var ids=Object.keys(COTES); if(!ids.length)return null;
   var shared=COTES["strava-cache"], cur=CTS.l;
-  if(!COTES[cur]||cur==="strava-cache")cur=CTS.city?ctSlug(CTS.city):(shared?"strava-cache":ids[0]);
+  if(!COTES[cur]||cur==="strava-cache")cur=CTS.city?ctSlug(CTS.city):(shared?"strava-cache":"");
   if(!COTES[cur]&&shared)cur="strava-cache";
-  if(!COTES[cur])cur=ids[0];
+  // Ne jamais afficher les segments d'une autre ville comme solution de repli.
+  if(!COTES[cur])return null;
   CTS.l=cur;
   var L=COTES[cur]||shared, last={}, best={}, src=L.items||[], loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
@@ -600,8 +603,11 @@ var CTW=null;
 function ctWatch(){
   if(CTW!==null||!navigator.geolocation||!window.isSecureContext)return;
   CTW=navigator.geolocation.watchPosition(function(p){
+    var accuracy=Math.round(p.coords.accuracy||0);
+    if(!accuracy||accuracy>1000)return;
     var o=CTS.pos,moved=!o||ctHav(o.la,o.ln,p.coords.latitude,p.coords.longitude)>0.15;
-    CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)};
+    CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};
+    ctSave();
     if(moved){
       var nearby=cotesList();
       if((!nearby||!nearby.items||!nearby.items.length)&&!CTS.loading&&!CTS.autoSearchDone){
@@ -615,17 +621,28 @@ document.addEventListener("visibilitychange",function(){
   if(!navigator.geolocation||!window.isSecureContext)return;
   ctWatch(); // position fraîche dès le retour dans l’appli
   navigator.geolocation.getCurrentPosition(function(p){
-    var o=CTS.pos;CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)};
+    var accuracy=Math.round(p.coords.accuracy||0);
+    if(!accuracy||accuracy>1000)return;
+    var o=CTS.pos;CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};ctSave();
     var nearby=cotesList();
     if((!nearby||!nearby.items||!nearby.items.length)&&!CTS.loading){CTS.autoSearchDone=false;ctWatch();}
     if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);
   },function(){},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
 });
 function ctLocate(){
-  if(!navigator.geolocation||!window.isSecureContext){toast("La géolocalisation n’est pas disponible sur cet appareil.");return;}
-  if(CTS.pos&&Date.now()-(CTS.pos.t||0)<5*60*1000){ctHere();return;}
-  toast("Localisation en cours…");
-  navigator.geolocation.getCurrentPosition(function(p){CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:Math.round(p.coords.accuracy)};ctSave();ctHere();},function(err){toast(err&&err.code===1?"Autorise la localisation pour trouver les côtes.":"Position GPS indisponible. Réessaie.");},{enableHighAccuracy:true,maximumAge:15000,timeout:20000});
+  if(!navigator.geolocation||!window.isSecureContext){toast("La géolocalisation nécessite une connexion sécurisée et une autorisation GPS.");return;}
+  // Toujours demander une position actuelle : ne jamais réutiliser celle de la recherche précédente.
+  CTS.pos=null;CTS.city="";CTS.l="";CTS.loading=false;
+  toast("Recherche de ta position GPS…");
+  navigator.geolocation.getCurrentPosition(function(p){
+    var accuracy=Math.round(p.coords.accuracy||0);
+    if(!accuracy||accuracy>1000){toast("Position trop imprécise (±"+(accuracy||"inconnue")+" m). Active la localisation précise de ton appareil puis réessaie.");return;}
+    CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};
+    ctSave();ctHere();
+  },function(err){
+    var message=err&&err.code===1?"Autorise la localisation pour Cadenzo dans les réglages de ton appareil.":err&&err.code===3?"Le GPS met trop de temps à répondre. Réessaie à l’extérieur.":"Position GPS indisponible. Vérifie les réglages de localisation et réessaie.";
+    toast(message);
+  },{enableHighAccuracy:true,maximumAge:0,timeout:30000});
 }
 function ctHere(){
   if(!CTS.pos){ctLocate();return;}
