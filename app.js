@@ -1027,7 +1027,13 @@ function clubEstimate(type){
 function openTrainingPrefs(first){
   var p=TRAIN_PREF||{has_club:false,club_days:[],club_sessions:[],sessions_per_week:4,training_days:[0,1,2,3,5,6],rest_days:[4],onboarding_completed:false};
   var sessions=p.club_sessions||((p.club_days||[]).map(function(day){return {day:+day,type:"Fractionné / piste",estimated_km:8};}));
-  var h='<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Tes entraînements collectifs sont obligatoires : ils seront intégrés au planning et remplaceront la séance prévue le même jour.</p>'+
+  var athlete=p.athlete_profile||{};
+  var h='<h2>'+(first?'Ton profil de coureur':'Mes disponibilités et mon profil')+'</h2><p class="small muted">Quelques repères pour construire un plan adapté à ton expérience et à ta charge actuelle.</p>'+
+  '<p class="eyebrow">Ta pratique</p><label class="field">Discipline<select id="athDiscipline">'+[['route','Course sur route'],['trail','Trail'],['mixte','Route et trail']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.discipline||'mixte')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
+  '<label class="field">Ton expérience<select id="athExperience">'+[['debutant','Débutant(e)'],['reprise','Reprise après une pause'],['regulier','Pratique régulière'],['confirme','Coureur(se) expérimenté(e)']].map(function(x){return '<option value="'+x[0]+'" '+((athlete.experience||'regulier')===x[0]?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>'+
+  '<div class="pref-grid"><label class="field">Volume actuel (km/semaine)<input id="athKm" type="number" min="0" max="200" step="1" value="'+(athlete.weekly_km==null?'':Number(athlete.weekly_km))+'" placeholder="Ex. 25"></label><label class="field">Sorties par semaine<input id="athRuns" type="number" min="0" max="14" step="1" value="'+(athlete.runs_per_week==null?'':Number(athlete.runs_per_week))+'" placeholder="Ex. 3"></label></div>'+
+  '<p class="small muted">Indique la moyenne des 4 dernières semaines. Si tu débutes ou reprends, indique ton volume actuel, même s’il est faible.</p>'+
+  '<h2>'+(first?'Ton organisation d’entraînement':'Mes disponibilités')+'</h2><p class="small muted">Tes entraînements collectifs sont obligatoires : ils seront intégrés au planning et remplaceront la séance prévue le même jour.</p>'+
   '<label class="pref-check"><input id="prefClub" type="checkbox" '+(p.has_club?'checked':'')+'> Je participe à des entraînements collectifs</label>'+
   '<div id="prefClubConfig" '+(p.has_club?'':'hidden')+'><p class="eyebrow">Tes jours d’entraînement collectif</p><div class="pref-club-list">'+prefClubSessionRowsHtml(sessions)+'</div></div>'+
   '<label class="field">Nombre de séances souhaitées<select id="prefCount">'+[2,3,4,5,6,7].map(function(n){return '<option value="'+n+'" '+(n===+p.sessions_per_week?'selected':'')+'>'+n+' séances par semaine</option>';}).join('')+'</select></label>'+
@@ -1099,7 +1105,10 @@ $("sheet").addEventListener("click",function(e){if(e.target.closest("[data-close
     if(clubDays.some(function(d){return training.indexOf(d)<0;})){err.textContent="Ajoute les jours de tes entraînements collectifs à tes disponibilités.";return;}
     if(clubSessions.some(function(s){return !isFinite(s.estimated_km)||s.estimated_km<0||s.estimated_km>100;})){err.textContent="Vérifie les distances estimées de tes entraînements.";return;}
     var rest=[0,1,2,3,4,5,6].filter(function(d){return training.indexOf(d)<0;});
-    var next={has_club:hasClub,club_name:null,club_days:clubDays,club_sessions:clubSessions,sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
+    var rawKm=$("athKm").value,rawRuns=$("athRuns").value,weeklyKm=rawKm===""?null:Number(rawKm),runs=rawRuns===""?null:Number(rawRuns);
+    if((weeklyKm!==null&&(!isFinite(weeklyKm)||weeklyKm<0||weeklyKm>200))||(runs!==null&&(!isFinite(runs)||runs<0||runs>14))){err.textContent="Vérifie ton volume hebdomadaire et ton nombre de sorties.";return;}
+    var athleteProfile={discipline:$("athDiscipline").value,experience:$("athExperience").value,weekly_km:weeklyKm,runs_per_week:runs};
+    var next={has_club:hasClub,club_name:null,club_days:clubDays,club_sessions:clubSessions,athlete_profile:athleteProfile,sessions_per_week:count,training_days:training,rest_days:rest,onboarding_completed:true};
     b.disabled=true;window.CadenzoAuth.saveTrainingPreferences(next).then(function(saved){TRAIN_PREF=saved;window.CADENZO_TRAINING_PREFS=saved;PC={};closeSheet();render(true);toast("Tes disponibilités sont enregistrées.");if(!D.races.length)setTimeout(function(){if(!SH)editRace(null);},250);}).catch(function(e){b.disabled=false;err.textContent="Enregistrement impossible : "+(e.message||"réessaie.");});
     return;
   }
