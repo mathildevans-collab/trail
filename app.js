@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=154;
+var APPV=155;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -286,6 +286,24 @@ function canBackToBack(){
     Number(p.weekly_km)>=35&&Number(p.runs_per_week)>=5&&
     Number(TRAIN_PREF.sessions_per_week)>=5&&days.indexOf(5)>=0&&days.indexOf(6)>=0);
 }
+function applyTrailElevation(sessions,m,pref){
+  var p=pref&&pref.athlete_profile||{};
+  var trail=p.discipline==="trail"||(p.discipline==="mixte"&&m.L>0&&m.dp/m.L>=12);
+  if(!trail||!(m.L>0)||!(m.dp>0))return sessions;
+  var grade=m.dp/m.L;
+  return sessions.map(function(s){
+    if(!s||s.race||!(+s.km>0)||(+s.dp||0)>0||s.type==="Renfo seul"||s.type==="Autre sport")return s;
+    var factor=s.tag==="q"?0.3:s.tag==="l"?0.75:0.2;
+    if(isClubSession(s)){
+      var type=String(s.type||"");
+      factor=/sortie trail|sortie longue|côtes/i.test(type)?0.55:0.12;
+    }
+    s.dp=Math.max(10,Math.round((s.km*grade*factor)/10)*10);
+    s.dpEstimated=true;
+    s.txt=(s.txt||"")+" D+ indicatif, à ajuster selon le terrain réellement parcouru.";
+    return s;
+  });
+}
 function athleteLoadRules(sessions,pref,weekNo,weekRec){
   var p=pref&&pref.athlete_profile||{}, base=Number(p.weekly_km), exp=p.experience||"regulier";
   if(!isFinite(base)||base<0)return {sessions:sessions,cap:null,adjusted:false,warning:""};
@@ -469,7 +487,7 @@ function planOf(r){
       if(days.length<target)wk.note=(wk.note?wk.note+" ":"")+"Tu as sélectionné moins de jours disponibles que ton objectif de séances : le plan respecte tes jours déclarés.";
       var coached=coachingRules(planned,pref,wk.n,wk.rec,wk.ph);
       var load=athleteLoadRules(coached.sessions,pref,wk.n,wk.rec);
-      wk.s=load.sessions;
+      wk.s=applyTrailElevation(load.sessions,m,pref);
       if(load.adjusted)wk.note=(wk.note?wk.note+" ":"")+"Volume plafonné progressivement selon ton historique sportif.";
       if(load.warning)wk.note=(wk.note?wk.note+" ":"")+load.warning;
       if(coached.changed)wk.note=(wk.note?wk.note+" ":"")+"Intensités rééquilibrées selon ton niveau et les séances collectives.";
