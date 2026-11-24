@@ -1,19 +1,66 @@
-name: check
+name: Vérifications du dépôt
+
 on:
   pull_request:
+    branches: [main]
   push:
     branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
+  quality:
+    name: Qualité et sécurité
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - name: Syntaxe JS
-        run: for f in app.js auth.js sw.js csync.js safe.js garmin.js sw-reg.js; do node --check "$f"; done
-      - name: Cohérence des versions
-        run: python3 scripts/check_versions.py
-      - name: Pas de secret dans le dépôt
+      - name: Récupérer le dépôt et l'historique
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Vérifier la syntaxe JavaScript
+        shell: bash
         run: |
-          if grep -RInE "(sk_live_|client_secret\s*[:=]\s*['\"][A-Za-z0-9]{20,})" --include=*.js --include=*.html --include=*.ts --exclude=supabase.min.js . ; then echo "Secret suspect"; exit 1; fi
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            [[ "$file" == "supabase.min.js" ]] && continue
+            node --check "$file"
+          done < <(find . -path './.git' -prune -o -name '*.js' -print0)
+
+      - name: Vérifier les versions PWA
+        run: python scripts/check_versions.py
+
+      - name: Vérifier les scripts Python
+        run: python -m compileall -q scripts
+
+      - name: Vérifier les messages des commits
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/check_commit_messages.py
+
+      - name: Détecter les secrets manifestes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE '(sk_live_|service_role|STRAVA_CLIENT_SECRET\s*[:=]\s*["\x27][^"\x27]{12,}|client_secret\s*[:=]\s*["\x27][A-Za-z0-9_-]{20,})' \
+            --include='*.js' --include='*.html' --include='*.ts' --include='*.json' \
+            --exclude='supabase.min.js' --exclude-dir='.git' .; then
+            echo "Un secret potentiel a été détecté. Vérifier avant fusion."
+            exit 1
+          fi
