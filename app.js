@@ -556,9 +556,10 @@ function ctSave(){try{localStorage.setItem(userKey("cadenzo-ct"),JSON.stringify(
 function cotesList(){ // liste de référence partagée ; GPS utilisé uniquement pour afficher la proximité
   var ids=Object.keys(COTES); if(!ids.length)return null;
   var shared=COTES["strava-cache"], cur=CTS.l;
-  if(!COTES[cur]||cur==="strava-cache")cur=CTS.city?ctSlug(CTS.city):(shared?"strava-cache":ids[0]);
+  if(!COTES[cur]||cur==="strava-cache")cur=CTS.city?ctSlug(CTS.city):(shared?"strava-cache":"");
   if(!COTES[cur]&&shared)cur="strava-cache";
-  if(!COTES[cur])cur=ids[0];
+  // Ne jamais afficher les segments d'une autre ville comme solution de repli.
+  if(!COTES[cur])return null;
   CTS.l=cur;
   var L=COTES[cur]||shared, last={}, best={}, src=L.items||[], loc=L.nom||CTS.city||"Autour de toi", nom=loc==="Segments partagés"?"Autour de toi":loc;
   HIST.forEach(function(r){(r.sg||[]).forEach(function(e){
