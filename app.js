@@ -354,7 +354,7 @@ function byDate(pl){var o={}; pl.weeks.forEach(function(wk){wk.s.forEach(functio
 var BADGE=[["ok","En cible"],["warn","À ajuster"],["off","Hors cible"]];
 function review(m,s,ac){
   var L=[],lvl=0,fast=false; function bump(n){if(n>lvl)lvl=n;}
-  if(s.type.indexOf("Club")===0){L.push("Séance du club enregistrée. Elle compte dans ta semaine, rien à comparer avec le plan."); return {lvl:0,lines:L,fast:false};}
+  if(s.club||s.type.indexOf("Club")===0){L.push("Séance collective obligatoire enregistrée. Elle compte dans ta semaine, rien à comparer avec le plan."); return {lvl:0,lines:L,fast:false};}
   if(s.race||s.type==="Course B"){L.push("Course enregistrée : "+kmS(ac.km)+" km"+(ac.t?" en "+dur(ac.t):"")+"."); return {lvl:0,lines:L,fast:false};}
   if(s.km>0){var r=ac.km/s.km;
     if(r>1.15&&ac.km-s.km>=3){bump(2);L.push("Tu as dépassé de "+kmS(Math.round((ac.km-s.km)*10)/10)+" km ("+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus). Reste dans le plan : ce surplus est retiré de tes prochaines sorties, y compris le club.");}
