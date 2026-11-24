@@ -86,7 +86,7 @@ La branche `main` représente la version de référence. Toute évolution doit p
 
 ### Format des commits
 
-Format obligatoire :
+Format recommandé :
 
 ```text
 type(portee): description courte à l'impératif
@@ -102,7 +102,7 @@ Exemples :
 - `ci(github): vérifie les messages de commit`
 - `refactor(auth): centralise le renouvellement de session`
 
-Éviter les messages comme `update`, `correction`, `test`, `modifs` ou `fix bug`.
+Éviter les messages comme `update`, `correction`, `test`, `modifs`, `fix bug` ou `améliorations diverses`. Préférer `Corrige la recherche des segments proches`.
 
 ## Vérifications automatiques
 
