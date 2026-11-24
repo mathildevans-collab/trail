@@ -1284,3 +1284,34 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .phs .wkx>p{grid-column:1/-1;margin:4px 0 0!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .phs .wkx .ses{min-height:38px;padding:3px 0}
 }
+
+/* Séance guidée (renfo, mobilité) en paysage : dessin à gauche, minuteur et consignes à droite */
+@media (orientation:landscape) and (max-height:600px),(orientation:landscape) and (min-width:900px){
+  .wo-in:not(.wo-end){max-width:1000px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-rows:auto auto repeat(6,auto) 1fr;column-gap:22px;align-content:start;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+  .wo-in:not(.wo-end)>.wo-top,.wo-in:not(.wo-end)>.wo-bar{grid-column:1/-1}
+  .wo-in:not(.wo-end)>.wo-bar{margin:8px 0}
+  .wo-in:not(.wo-end)>.wo-stage{grid-column:1;grid-row:3/-1;margin:0;align-self:stretch;display:flex;align-items:center;justify-content:center;min-height:0}
+  .wo-in:not(.wo-end)>.wo-stage .wfig,.wo-in:not(.wo-end)>.wo-stage .wfig.pair{max-height:calc(100dvh - 120px);max-width:100%}
+  .wo-in:not(.wo-end)>:not(.wo-top):not(.wo-bar):not(.wo-stage){grid-column:2}
+  .wo-in:not(.wo-end)>.wo-name{font-size:22px;margin-top:0}
+  .wo-in:not(.wo-end) .wo-ring{width:112px;height:112px;margin:2px auto 4px}
+  .wo-in:not(.wo-end) .wo-t{font-size:34px}
+  .wo-in:not(.wo-end) .wo-reps b{font-size:48px}
+  .wo-in:not(.wo-end)>.wo-ctl{align-self:end;margin-top:6px}
+  .wo-in:not(.wo-end)>.wo-b,.wo-in:not(.wo-end) .wo-b{min-height:48px}
+  .wo-in:not(.wo-end)>.wo-tech{max-height:26dvh;overflow:auto}
+}
+@media (orientation:landscape) and (max-height:600px){
+  .wo-in:not(.wo-end){padding-left:14px;padding-right:14px;row-gap:0}
+  .wo-in:not(.wo-end) .wo-x{width:38px;height:38px;border-radius:12px}
+  .wo-in:not(.wo-end)>.wo-bar{margin:5px 0}
+  .wo-in:not(.wo-end)>.wo-name{font-size:19px;margin:0}
+  .wo-in:not(.wo-end)>.wo-sub{margin:0 0 4px;font-size:12.5px}
+  .wo-in:not(.wo-end)>.wo-mus{margin:0 0 2px;font-size:12px}
+  .wo-in:not(.wo-end) .wo-reps{margin:0 0 4px}.wo-in:not(.wo-end) .wo-reps b{font-size:38px}
+  .wo-in:not(.wo-end) .wo-reps small{margin:0}
+  .wo-in:not(.wo-end) .wo-ring{width:96px;height:96px}.wo-in:not(.wo-end) .wo-t{font-size:30px}
+  .wo-in:not(.wo-end)>.wo-tb{min-height:34px;margin:0 0 4px;font-size:13px}
+  .wo-in:not(.wo-end) .wo-b{min-height:42px;border-radius:13px}
+  .wo-in:not(.wo-end)>.wo-ctl{padding-top:4px;margin-top:0}
+}
