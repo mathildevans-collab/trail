@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=163;
+var APPV=164;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -254,6 +254,9 @@ function thpWeek(w,r,m){
 var CYC={Base:["cotes","fartlek","cotes"],Construction:["tempo","cotes","courtes","tempo"],"Spécifique":["tempo","paires","tempo","desc"]};
 var SATG={Base:"Sentier roulant en zone 2, allure conversation.",Construction:"Z2 sur terrain vallonné, marche active dans les côtes raides.","Spécifique":"Z2 avec 2 × 15 min à allure course sur un relief proche de celui de la course.",Affûtage:"Sortie facile, garde des jambes fraîches."};
 function genWeek(w,n,taper,r,m){
+  var discipline=TRAIN_PREF&&TRAIN_PREF.athlete_profile&&TRAIN_PREF.athlete_profile.discipline||"mixte";
+  if(discipline==="route"&&window.CadenzoTraining)return CadenzoTraining.roadWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m)});
+  if(discipline==="mixte"&&window.CadenzoTraining)return CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m),race:{distance:m.L,elevation:m.dp}});
   if(w===n)return {ph:"Affûtage",rec:false,s:raceWeek(r,m),note:"Semaine de course. Vérifie l’heure de départ et prépare ton matériel."};
   var M=n-1-taper, ph=phaseName(w,n,taper), g=m.dp/m.L, flat=g<12, L=m.L;
   var peakSat=Math.max(8,Math.min(30,Math.round(L*0.62))), peakSun=Math.max(10,Math.min(22,Math.round(L*0.5)));
@@ -435,7 +438,14 @@ function planOf(r){
   var m=model(r), rws=mondayOf(dms(r.date)), start=r.builtin?dms(r.start):mondayOf(dms(isoOk(r.start)?r.start:nextMonday()));
   if(start>rws)start=rws;
   var n=r.builtin?26:Math.max(1,Math.round((rws-start)/WEEK)+1), taper=n>=14?2:n>=8?1:0, weeks=[];
-  for(var w=1;w<=n;w++){var b=r.builtin?thpWeek(w,r,m):genWeek(w,n,taper,r,m); weeks.push({n:w,ph:b.ph,rec:b.rec,s:b.s,note:b.note||"",start:start+(w-1)*WEEK});}
+  var discipline=TRAIN_PREF&&TRAIN_PREF.athlete_profile&&TRAIN_PREF.athlete_profile.discipline||"mixte";
+  for(var w=1;w<=n;w++){
+    var b;
+    if(discipline==="route"&&window.CadenzoTraining)b=CadenzoTraining.roadWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m)});
+    else if(discipline==="mixte"&&window.CadenzoTraining)b=CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:trainingMetrics(r,m),race:{distance:m.L,elevation:m.dp}});
+    else b=r.builtin?thpWeek(w,r,m):genWeek(w,n,taper,r,m);
+    weeks.push({n:w,ph:b.ph,rec:b.rec,s:b.s,note:b.note||"",start:start+(w-1)*WEEK});
+  }
   // courses B dans la période du plan
   D.races.forEach(function(b){if(b.prio!=="B")return; var t=dms(b.date); if(t<start||t>=dms(r.date))return;
     var wk=weeks[Math.floor((t-start)/WEEK)], dw=dowOf(t), bm=model(b);
@@ -496,7 +506,11 @@ function planOf(r){
       wk.km=Math.round(wk.km*10)/10;wk.dp=Math.round(wk.dp);
     });
   }
-  var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date)};
+  if(window.CadenzoTraining){
+    var metrics=trainingMetrics(r,m);
+    weeks.forEach(function(wk){wk.s=CadenzoTraining.applyTargets(wk.s,metrics,discipline);});
+  }
+  var p={r:r,m:m,start:start,n:n,weeks:weeks,end:dms(r.date),training:window.CadenzoTraining?trainingMetrics(r,m):null};
   PC[r.id]={key:key,p:p}; return p;
 }
 function sk(r,w,k){return r.id+":"+w+"-"+k;}
@@ -1453,6 +1467,15 @@ function setTab(t){SSUB=null; if(t!=="settings")prevTab=t; if(t==="course")CV="l
 
 // ---------- Forme : volume + forme/fraîcheur (depuis toutes les sorties Strava lues) ----------
 var HIST=[]; try{HIST=JSON.parse(localStorage.getItem(userKey("thp40hist"))||"[]")||[];}catch(e){HIST=[];}
+if(window.GARMIN&&GARMIN.setOwner)GARMIN.setOwner(USER_ID);
+function trainingMetrics(r,m){
+  if(!window.CadenzoTraining)return null;
+  var g=window.GARMIN&&GARMIN.data?GARMIN.data():null;
+  var p=TRAIN_PREF&&TRAIN_PREF.athlete_profile||{};
+  var result=CadenzoTraining.metrics(p,HIST,g,{distance:m&&m.L,targetPaceSecKm:0},Date.now());
+  if(window.FIT&&FIT.setZones)FIT.setZones(result.zones);
+  return result;
+}
 var VP="week";
 var HRREST=55, HRMAX=196;
 function histSave(a){HIST=a; try{localStorage.setItem(userKey("thp40hist"),JSON.stringify(a));}catch(e){}}
