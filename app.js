@@ -445,8 +445,8 @@ function planOf(r){
     var b;
     if(w===n)b={ph:"Affûtage",rec:false,s:raceWeek(r,m),note:"Semaine de course. Vérifie l’heure de départ et prépare ton matériel."};
     else if(discipline==="route"&&window.CadenzoTraining)b=CadenzoTraining.roadWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:tMetrics});
-    else if(discipline==="mixte"&&window.CadenzoTraining)b=CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:tMetrics,race:{distance:m.L,elevation:m.dp}});
-    else if(discipline==="trail"&&window.CadenzoTraining&&!r.builtin)b=CadenzoTraining.trailWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,race:{distance:m.L,elevation:m.dp},backToBack:canBackToBack()});
+    else if(discipline==="mixte"&&window.CadenzoTraining)b=CadenzoTraining.mixedWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,metrics:tMetrics,race:{distance:m.L,elevation:m.dp},backToBack:canBackToBack()});
+    else if(discipline==="trail"&&window.CadenzoTraining)b=CadenzoTraining.trailWeek({week:w,totalWeeks:n,phase:phaseName(w,n,taper),recovery:w%4===0&&w<n-taper,distance:m.L,profile:TRAIN_PREF.athlete_profile,race:{distance:m.L,elevation:m.dp},backToBack:canBackToBack()});
     else b=r.builtin?thpWeek(w,r,m):genWeek(w,n,taper,r,m);
     weeks.push({n:w,ph:b.ph,rec:b.rec,s:b.s,note:b.note||"",start:start+(w-1)*WEEK});
   }
