@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=177;
+var APPV=178;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1047,10 +1047,10 @@ function swapDays(w,k,tgt){
   save(); PC={}; toast(other?"Jours échangés : "+DOWC[from]+" ⇄ "+DOWC[dow]+".":"Séance déplacée au "+DOWC[dow].toLowerCase()+".",U); render(true);
 }
 var WDRAG=null;
-document.addEventListener("dragstart",function(e){var b=e.target.closest&&e.target.closest(".dc[data-wd]"); if(!b)return; var v=b.dataset.wd.split(":"); WDRAG={w:+v[0],k:v[1]}; e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",b.dataset.wd);}catch(x){} b.classList.add("drag");});
-document.addEventListener("dragover",function(e){var b=WDRAG&&e.target.closest&&e.target.closest(".dc[data-wt]"); if(!b)return; var v=b.dataset.wt.split(":"); if(+v[0]!==WDRAG.w||v[1]===WDRAG.k)return; e.preventDefault(); document.querySelectorAll(".dc.over").forEach(function(x){x.classList.remove("over");}); b.classList.add("over");});
-document.addEventListener("drop",function(e){var b=WDRAG&&e.target.closest&&e.target.closest(".dc[data-wt]"); if(!b)return; var v=b.dataset.wt.split(":"), d=WDRAG; WDRAG=null; if(+v[0]!==d.w)return; e.preventDefault(); swapDays(d.w,d.k,v[1]);});
-document.addEventListener("dragend",function(){WDRAG=null; document.querySelectorAll(".dc.drag,.dc.over").forEach(function(x){x.classList.remove("drag","over");});});
+document.addEventListener("dragstart",function(e){var b=e.target.closest&&e.target.closest("[data-wd]"); if(!b)return; var v=b.dataset.wd.split(":"); WDRAG={w:+v[0],k:v[1]}; e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",b.dataset.wd);}catch(x){} b.classList.add("drag");});
+document.addEventListener("dragover",function(e){var b=WDRAG&&e.target.closest&&e.target.closest("[data-wt]"); if(!b)return; var v=b.dataset.wt.split(":"); if(+v[0]!==WDRAG.w||v[1]===WDRAG.k)return; e.preventDefault(); document.querySelectorAll("[data-wt].over").forEach(function(x){x.classList.remove("over");}); b.classList.add("over");});
+document.addEventListener("drop",function(e){var b=WDRAG&&e.target.closest&&e.target.closest("[data-wt]"); if(!b)return; var v=b.dataset.wt.split(":"), d=WDRAG; WDRAG=null; if(+v[0]!==d.w)return; e.preventDefault(); swapDays(d.w,d.k,v[1]);});
+document.addEventListener("dragend",function(){WDRAG=null; document.querySelectorAll("[data-wt].drag,[data-wt].over").forEach(function(x){x.classList.remove("drag","over");});});
 var DRAG=null;
 document.addEventListener("dragstart",function(e){var b=e.target.closest&&e.target.closest(".strip .day[data-dk]"); if(!b)return; DRAG={k:b.dataset.dk,d:+b.dataset.day}; e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",b.dataset.dk);}catch(_){} b.classList.add("drag");});
 document.addEventListener("dragover",function(e){var b=DRAG&&e.target.closest&&e.target.closest(".strip .day"); if(!b)return; if(+b.dataset.day===DRAG.d||(b.classList.contains("has")&&!b.classList.contains("mv")))return; e.preventDefault(); document.querySelectorAll(".strip .day.over").forEach(function(x){if(x!==b)x.classList.remove("over");}); b.classList.add("over");});
@@ -1207,29 +1207,22 @@ function vPlan(){
   pl.weeks.forEach(function(wk){if(!PH.length||PH[PH.length-1][0]!==wk.ph)PH.push([wk.ph,0]); PH[PH.length-1][1]++;});
   var inPlan=ti>=0&&ti<pl.n*7; planCurW=inPlan?cw:0;
   var curPh=ti<0?pl.weeks[0].ph:ti>=pl.n*7?pl.weeks[pl.n-1].ph:pl.weeks[cw-1].ph, phOpen=openPh===null?curPh:openPh;
-  // première carte : course, phases, avancement
-  h+='<div class="card"><div class="sb"><b style="font-family:var(--display);font-size:18px">'+esc(r.name)+'</b><span class="chip">'+fmtD(pl.end)+'</span></div><div class="phases">'+PH.map(function(p){var K=pl.weeks.filter(function(x){return x.ph===p[0];}).map(function(x){return P(pl,x.n).km;}), a=Math.round(Math.min.apply(null,K)), z=Math.round(Math.max.apply(null,K)); return '<div tabindex="0" data-tip="'+p[0]+' · '+p[1]+' sem. · '+(a===z?a:a+'–'+z)+' km/sem." style="flex:'+p[1]+';background:'+cols[p[0]]+'"></div>';}).join("")+'</div><div class="phlab">'+PH.map(function(p){return '<span'+(p[0]===curPh&&inPlan?' class="on"':'')+'>'+p[0]+'</span>';}).join("")+'</div>'+
-    '<div class="lc" role="img" aria-label="Kilomètres par semaine">'+(function(){var K=pl.weeks.map(function(q){return P(pl,q.n).km;}), M=Math.max.apply(null,K.concat([1])); return pl.weeks.map(function(q,i){return '<i class="'+(q.n===cw&&inPlan?"cur":"")+'" style="height:'+Math.max(6,Math.round(K[i]/M*100))+'%;background:'+cols[q.ph]+'" title="S'+q.n+' · '+K[i]+' km"></i>';}).join("");})()+'</div>'+
-    '<div class="sb small num" style="margin-top:12px"><span>'+t.d+' / '+t.t+' séances faites</span><span class="muted">'+(t.t?Math.round(t.d/t.t*100):0)+' %</span></div><div class="bar" style="margin-top:6px"><i style="width:'+(t.t?t.d/t.t*100:0)+'%"></i></div>'+
-    (ne?'<p class="small" style="margin:10px 0 0">'+ne+' séance'+(ne>1?'s':'')+' modifiée'+(ne>1?'s':'')+' par toi. <button class="rm-ghost" style="color:var(--brand);min-height:0;padding:0" data-act="resetedits">Tout rétablir</button></p>':'')+'</div>';
-  if(inPlan){var cwk=P(pl,cw);
-    h+='<div class="card cwk"><div class="sb"><span class="eyebrow">Cette semaine · S'+cw+' · '+cwk.ph+'</span><b class="num">'+cwk.km+' km</b></div><div class="cwd">'+[0,1,2,3,4,5,6].map(function(dw){var ss=cwk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&D.done[sk(r,cw,s.k)]; return '<button class="cd '+(s?tcls(s):"o")+(on?" on":"")+'" data-goto="'+cw+'-'+dw+'"><em>'+DOWC[dw]+'</em><span class="ti">'+tico(s)+'</span><b>'+(s?(s.km?kmS(s.km)+" km":"—"):"Repos")+'</b></button>';}).join("")+'</div></div>';}
-  var mx=1; pl.weeks.forEach(function(wk){mx=Math.max(mx,wk.km);});
-  var ow=openWk===null?planCurW:openWk;
-  h+='<div class="card phs">';
-  PH.forEach(function(p0){
-    var name=p0[0], ws=pl.weeks.filter(function(x){return x.ph===name;}), w1=ws[0].n, w2=ws[ws.length-1].n, km=0, dn=0, tt=0, open=phOpen===name;
-    ws.forEach(function(x){var wk=P(pl,x.n); km+=wk.km; dn+=weekDone(r,wk); tt+=nSess(wk);});
-    h+='<div class="ph'+(open?" open":"")+'"><button class="phh" data-ph="'+esc(name)+'" aria-expanded="'+open+'"><span class="phd" style="background:'+cols[name]+'"></span><span class="pht"><b>'+name+(name===curPh&&inPlan?' <span class="chip">en cours</span>':'')+'</b><small class="num">'+(w1===w2?'Semaine '+w1:'Semaines '+w1+' à '+w2)+'</small></span><span class="phk num">'+nb(Math.round(km))+' km<small>'+dn+'/'+tt+' faites</small></span><span class="chev" aria-hidden="true">'+""+'</span></button>';
-    if(open)ws.forEach(function(w0){var wk=P(pl,w0.n), w=wk.n, isCur=w===cw&&inPlan, rw=w===pl.n;
-      var ed=wk.s.some(function(s){return s.edited;});
-      h+='<button class="wk'+(isCur?" cur":wk.start+7*DAY<=todayUTC()?" past":" fut")+(wk.rec?" rec":"")+'" data-wk="'+w+'" aria-expanded="'+(ow===w)+'"><span class="n">'+w+'</span><span><span class="d">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · <b style="color:var(--warn)">'+esc(wk.adjLabel)+'</b>':'')+(ed?'<span class="ed">modifiée</span>':'')+(isCur?' · <b style="color:var(--brand)">en cours</b>':'')+'</span><span class="wdots">'+wdays(r,wk,"dot")+'</span><span class="wgrid">'+wdays(r,wk,"cell")+'</span><div class="b" style="width:'+(rw?20:Math.max(4,wk.km/mx*100))+'%">'+(function(){if(rw)return ""; var q=weekTot(r,wk,6); return q.ak>0&&wk.km>0?'<i style="width:'+Math.min(100,q.ak/wk.km*100)+'%"></i>':"";})()+'</div></span><span class="k num">'+(rw?'Course':wk.km+' km')+'<small>'+weekDone(r,wk)+'/'+nSess(wk)+' faites</small></span></button>';
-      if(ow===w)h+='<div class="wkx">'+wk.s.map(function(s){var on=!!D.done[sk(r,w,s.k)]; return '<div class="sesrow"><button class="ses" data-goto="'+w+'-'+s.dow+'"><span class="ck'+(on?" on":"")+'">'+(on?I.check:"")+'</span><span class="dw">'+DOW[s.dow]+'</span><span class="ty">'+esc(s.type==="Course B"?"Course B · "+s.name:s.type)+(s.edited?'<span class="ed">'+(s.added?"ajoutée":"modifiée")+'</span>':'')+'</span><span class="num muted">'+(s.km?kmS(s.km)+' km':'')+(s.dp?' · +'+nb(s.dp):'')+'</span></button>'+(s.race?'':'<button class="pen" data-edit="'+w+'-'+s.k+'" aria-label="Modifier '+esc(s.type)+'">'+I.pen+'</button>')+'</div>';}).join("")+[0,1,2,3,4,5,6].map(function(dw){var e=D.extra&&D.extra[iso(wk.start+dw*DAY)]; return e?'<div class="sesrow"><button class="ses" data-goto="'+w+'-'+dw+'"><span class="ck on">'+I.check+'</span><span class="dw">'+DOW[dw]+'</span><span class="ty">Sortie hors plan</span><span class="num muted">'+kmS(e.km)+' km'+(e.dp?' · +'+nb(e.dp):'')+'</span></button></div>':"";}).join("")+
-        '<button class="addses" data-act="addses" data-w="'+w+'">+ Ajouter une séance</button><button class="addses" data-act="availwk" data-w="'+w+'">'+(wk.avail?'Mes jours de cette semaine ✓':'Indispo cette semaine ?')+'</button>'+(wk.note?'<p class="small muted" style="margin:8px 0 0">'+esc(wk.note)+'</p>':'')+'</div>';
-    });
-    h+='</div>';
-  });
-  return h+'</div>';
+  // piste C : frise des semaines + détail de la semaine choisie
+  var ow=openWk===null?(planCurW||1):openWk; if(ow<1||ow>pl.n)ow=planCurW||1;
+  var K=pl.weeks.map(function(q){return P(pl,q.n).km;}), M=Math.max.apply(null,K.concat([1]));
+  h+='<div class="pl2"><div class="pl2h"><b>'+esc(r.name)+'</b><span class="chip">'+fmtD(pl.end)+'</span></div>';
+  h+='<div class="lc2" role="group" aria-label="Choisir une semaine">'+pl.weeks.map(function(q,i){var wq=P(pl,q.n), cur=q.n===cw&&inPlan, past=wq.start+7*DAY<=todayUTC()&&!cur; return '<button class="wb'+(cur?" cur":"")+(q.n===ow?" sel":"")+(past?" past":"")+'" data-wsel="'+q.n+'" data-tip="S'+q.n+' · '+(q.n===pl.n?"course":K[i]+' km')+'" aria-label="Semaine '+q.n+', '+K[i]+' km" aria-pressed="'+(q.n===ow)+'"><i style="height:'+Math.max(8,Math.round(K[i]/M*100))+'%;background:'+cols[q.ph]+'"></i></button>';}).join("")+'</div>';
+  h+='<div class="plab">'+PH.map(function(p){return '<span style="flex:'+p[1]+'"'+(p[0]===pl.weeks[ow-1].ph?' class="on"':'')+'><i style="background:'+cols[p[0]]+'"></i>'+p[0]+'</span>';}).join("")+'</div>';
+  var wk=P(pl,ow), w=ow, isCur=w===cw&&inPlan, rw=w===pl.n;
+  h+='<div class="pwd"><div class="pwh"><div><span class="pwt">Semaine '+w+'</span><span class="pwm">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(isCur?' · en cours':'')+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · '+esc(wk.adjLabel):'')+'</span></div><b class="num pwk">'+(rw?'Course':wk.km+' km')+'</b></div>';
+  h+='<div class="pdays">'+[0,1,2,3,4,5,6].map(function(dw){
+    var ss=wk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&!!D.done[sk(r,w,s.k)];
+    if(!s)return '<div class="dk o" data-wt="'+w+':d'+dw+'"><em>'+DOW[dw]+'</em><span class="ti">'+tico(null)+'</span><b class="dkm">Repos</b></div>';
+    var mvb=!on&&!s.race&&!s.club&&!s.bid&&!isClubSession(s)&&s.type!=="Course B";
+    return '<button class="dk '+tcls(s)+(on?" on":"")+(mvb?" mv":"")+'"'+(mvb?' draggable="true" data-wd="'+w+':'+s.k+'"':'')+' data-wt="'+w+':'+s.k+'" data-goto="'+w+'-'+dw+'"><em>'+DOW[dw]+'</em><span class="ti">'+tico(s)+'</span><span class="dkm">'+(s.km?kmS(s.km)+' km':'—')+'</span><span class="dkt">'+esc(String(s.type).replace(/ route$/i,""))+(s.dp?'<small>+'+nb(s.dp)+' m</small>':'')+(ss.length>1?'<small>+ '+(ss.length-1)+' séance</small>':'')+'</span>'+(on?'<span class="dkc">'+I.check+'</span>':'')+'</button>';}).join("")+'</div>';
+  h+='<div class="pwa"><button class="addses" data-act="addses" data-w="'+w+'">+ Ajouter une séance</button><button class="addses" data-act="availwk" data-w="'+w+'">'+(wk.avail?'Mes jours de cette semaine ✓':'Indispo cette semaine ?')+'</button></div></div>';
+  h+='<p class="pl2f">'+t.d+' / '+t.t+' séances faites'+(ne?' · '+ne+' modifiée'+(ne>1?'s':'')+' par toi <button class="rm-ghost" style="color:var(--brand);min-height:0;padding:0" data-act="resetedits">Tout rétablir</button>':'')+'</p></div>';
+  return h;
 }
 
 // --- Mes courses ---
@@ -1936,6 +1929,7 @@ $("view").addEventListener("click",function(e){
   if(ds.rb){var rk=activeRace().id+":"+ds.w+":rb"; if(ds.rb==="on")delete D.adj[rk]; else D.adj[rk]="off"; save(); render(true); return;}
   if(ds.adj){var U1=snapU(), ak=activeRace().id+":"+ds.w; if(ds.adj==="reset")delete D.adj[ak]; else D.adj[ak]=ds.adj; save(); render(true); toast(ds.adj==="reset"?"Ajustement retiré.":"Ajustement appliqué.",U1); return;}
   if(ds.todo!=null){var st=ds.store==="kit"?kitOf(activeRace()):D.todo; st[ds.todo]=!st[ds.todo]; if(!st[ds.todo])delete st[ds.todo]; save(); var kd=$("kitd"),op=kd&&kd.open; render(true); if(op&&$("kitd"))$("kitd").open=true; return;}
+  if(ds.wsel){openWk=+ds.wsel; render(true); return;}
   if(ds.ph!=null){openPh=(openPh===null?(function(){var r1=activeRace(),p1=r1&&planOf(r1),t1=p1?planIdx(p1):-1; return !p1?"":t1<0?p1.weeks[0].ph:t1>=p1.n*7?p1.weeks[p1.n-1].ph:p1.weeks[nowWeek(p1)-1].ph;})():openPh)===ds.ph?ds.ph:ds.ph; render(true); return;}
   if(ds.wk){var w=+ds.wk, ow0=openWk===null?(planCurW||0):openWk; openWk=ow0===w?0:w; render(true); return;}
   if(ds.wnav){var r0=activeRace(), p0=planOf(r0); if(!p0)return; cur=Math.max(1,Math.min(p0.n,cur+(+ds.wnav))); if(cur===nowWeek(p0)&&planIdx(p0)>=0)goNow(); else{browsing=true; var w0=p0.weeks[cur-1]; if(!sessAt(w0,sel)&&w0.s.length)sel=w0.s[0].dow;} render(); return;}
