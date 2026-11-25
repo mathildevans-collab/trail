@@ -3,7 +3,7 @@
 var SUPABASE_URL="https://psotpksrdlkivauxdiad.supabase.co";
 var SUPABASE_KEY="sb_publishable_TE_8fhfqw-Y4bPFX60uoTA_UD3K2wrC";
 var FUNCTION_URL=SUPABASE_URL+"/functions/v1/cadenzo-strava";
-var client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+function supabaseAuthLock(name,acquireTimeout,fn){\n  if(navigator.locks&&typeof navigator.locks.request==="function")return navigator.locks.request(name,{mode:"exclusive"},function(){return fn();});\n  return Promise.resolve().then(fn);\n}\nvar client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,lock:supabaseAuthLock}});
 var view=document.getElementById("view"),tabs=document.getElementById("tabs"),rm=document.getElementById("rm");
 function screen(message,buttonText,action){
   tabs.hidden=true;rm.hidden=true;
