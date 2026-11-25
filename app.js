@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=173;
+var APPV=174;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -711,6 +711,9 @@ function rbCard(r,wk){
 }
 // ---------- icônes ----------
 function sv(p,w){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';}
+var TI={cotes:sv('<path d="M3 19l6-11 4 7 3-4 5 8z"/>'),frac:sv('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'),long:sv('<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>'),endu:sv('<path d="M2 12c2.5-4 5-4 7.5 0s5 4 7.5 0 3-3 5-2"/>'),race:sv('<path d="M5 21V4M5 4h12l-2 4 2 4H5"/>'),club:sv('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14a5 5 0 0 1 4 6"/>'),rest:sv('<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>'),renfo:sv('<path d="M6 6v12M18 6v12M3 9v6M21 9v6M6 12h12"/>'),desc:sv('<path d="M12 4v14M6 12l6 6 6-6"/>'),sport:sv('<path d="M3 12h4l3-7 4 14 3-7h4"/>')};
+function tkind(s){if(!s)return "rest"; var t=String(s.type||""); if(s.race||/^Course|Jour J/i.test(t))return "race"; if(s.club||(typeof isClubSession==="function"&&isClubSession(s)))return "club"; if(/renfo seul|mobilit|gainage/i.test(t))return "renfo"; if(/autre sport/i.test(t))return "sport"; if(/descente/i.test(t))return "desc"; if(/c[ôo]te/i.test(t))return "cotes"; if(/fraction|fartlek|seuil|tempo|allure|piste|vma|progress/i.test(t))return "frac"; if(/long/i.test(t))return "long"; return "endu";}
+function tico(s){return TI[tkind(s)];}
 var I={
  bell:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
  logout:sv('<path d="M10 17l5-5-5-5M15 12H3M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>'),
@@ -967,7 +970,7 @@ function vPrep(r,pl){
   if(browsing&&cur!==nw)h+='<div class="banner mini"><span>'+(cur<nw?'Semaine passée':'Semaine à venir')+'</span><button data-act="now">Aujourd’hui</button></div>';
   h+='<div class="strip" role="group" aria-label="Jours de la semaine">';
   for(var i=0;i<7;i++){var s0=sessAt(wk,i), dn=s0&&D.done[sk(r,cur,s0.k)], tdy=cur===tw&&i===td;
-    h+='<button class="day'+(s0?" has":"")+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?" mv":"")+(dn?" done":"")+(tdy?" today":"")+'" data-day="'+i+'"'+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?' draggable="true" data-dk="'+s0.k+'"':'')+' aria-pressed="'+(sel===i)+'" aria-label="'+DOWL[i]+(s0?", "+esc(s0.type):", repos")+(dn?", faite":"")+'"><span>'+DL[i]+'</span><b>'+new Date(pl.start+((cur-1)*7+i)*DAY).getUTCDate()+'</b><i></i>'+(s0?'<em class="dty">'+esc(s0.type)+'</em><em class="dkm">'+(s0.km?kmS(s0.km)+' km':'')+'</em>':'<em class="dty">Repos</em><em class="dkm"></em>')+'</button>';}
+    h+='<button class="day'+(s0?" has":"")+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?" mv":"")+(dn?" done":"")+(tdy?" today":"")+'" data-day="'+i+'"'+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?' draggable="true" data-dk="'+s0.k+'"':'')+' aria-pressed="'+(sel===i)+'" aria-label="'+DOWL[i]+(s0?", "+esc(s0.type):", repos")+(dn?", faite":"")+'"><span>'+DL[i]+'</span><b>'+new Date(pl.start+((cur-1)*7+i)*DAY).getUTCDate()+'</b><em class="dic">'+tico(s0)+'</em><i></i>'+(s0?'<em class="dty">'+esc(s0.type)+'</em><em class="dkm">'+(s0.km?kmS(s0.km)+' km':'')+'</em>':'<em class="dty">Repos</em><em class="dkm"></em>')+'</button>';}
   h+='</div>';
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
@@ -1170,7 +1173,7 @@ function tcls(s){var t=(s.type||"")+" "+(s.name||""); if(s.race||/^Course/i.test
 function wdays(r,wk,mode){var w=wk.n,L=DL,o="";
   for(var i=0;i<7;i++){var dw=i, ss=wk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&D.done[sk(r,w,s.k)], c=s?tcls(s):"o";
     if(mode==="dot")o+='<i class="dd '+c+(on?" on":"")+'" title="'+DOW[dw]+(s?" · "+esc(s.type):" · repos")+'"></i>';
-    else {var dr=s&&!on&&!s.race&&!s.club&&!s.bid&&!isClubSession(s)&&s.type!=="Course B"; o+='<span class="dc '+c+(on?" on":"")+(dr?" mv":"")+'"'+(dr?' draggable="true" data-wd="'+w+':'+s.k+'"':'')+' data-wt="'+w+':'+(s?s.k:"d"+dw)+'"><em>'+L[i]+'</em>'+(s?'<b>'+esc(String(s.type).replace(/ route$/i,"").split(" ")[0])+'</b><small>'+(s.km?kmS(s.km)+" km":"")+'</small>':'<b>Repos</b>')+'</span>';}}
+    else {var dr=s&&!on&&!s.race&&!s.club&&!s.bid&&!isClubSession(s)&&s.type!=="Course B"; o+='<span class="dc '+c+(on?" on":"")+(dr?" mv":"")+'"'+(dr?' draggable="true" data-wd="'+w+':'+s.k+'"':'')+' data-wt="'+w+':'+(s?s.k:"d"+dw)+'" title="'+DOW[dw]+' · '+(s?esc(s.type):"repos")+'"><em>'+L[i]+'</em>'+(s?'<span class="ti">'+tico(s)+'</span><b>'+(s.km?kmS(s.km)+" km":"—")+'</b>':'<span class="ti">'+tico(null)+'</span>')+'</span>';}}
   return o;}
 // --- Plan ---
 function vPlan(){
@@ -1187,7 +1190,7 @@ function vPlan(){
     '<div class="sb small num" style="margin-top:12px"><span>'+t.d+' / '+t.t+' séances faites</span><span class="muted">'+(t.t?Math.round(t.d/t.t*100):0)+' %</span></div><div class="bar" style="margin-top:6px"><i style="width:'+(t.t?t.d/t.t*100:0)+'%"></i></div>'+
     (ne?'<p class="small" style="margin:10px 0 0">'+ne+' séance'+(ne>1?'s':'')+' modifiée'+(ne>1?'s':'')+' par toi. <button class="rm-ghost" style="color:var(--brand);min-height:0;padding:0" data-act="resetedits">Tout rétablir</button></p>':'')+'</div>';
   if(inPlan){var cwk=P(pl,cw);
-    h+='<div class="card cwk"><div class="sb"><span class="eyebrow">Cette semaine · S'+cw+' · '+cwk.ph+'</span><b class="num">'+cwk.km+' km</b></div><div class="cwd">'+[0,1,2,3,4,5,6].map(function(dw){var ss=cwk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&D.done[sk(r,cw,s.k)]; return '<button class="cd '+(s?tcls(s):"o")+(on?" on":"")+'" data-goto="'+cw+'-'+dw+'"><em>'+DOWC[dw]+'</em><b>'+(s?esc(String(s.type).replace(/ route$/i,"").split(" ")[0]):"Repos")+'</b><small>'+(s&&s.km?kmS(s.km)+" km":"")+'</small></button>';}).join("")+'</div></div>';}
+    h+='<div class="card cwk"><div class="sb"><span class="eyebrow">Cette semaine · S'+cw+' · '+cwk.ph+'</span><b class="num">'+cwk.km+' km</b></div><div class="cwd">'+[0,1,2,3,4,5,6].map(function(dw){var ss=cwk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&D.done[sk(r,cw,s.k)]; return '<button class="cd '+(s?tcls(s):"o")+(on?" on":"")+'" data-goto="'+cw+'-'+dw+'"><em>'+DOWC[dw]+'</em><span class="ti">'+tico(s)+'</span><b>'+(s?(s.km?kmS(s.km)+" km":"—"):"Repos")+'</b></button>';}).join("")+'</div></div>';}
   var mx=1; pl.weeks.forEach(function(wk){mx=Math.max(mx,wk.km);});
   var ow=openWk===null?planCurW:openWk;
   h+='<div class="card phs">';
