@@ -1540,3 +1540,68 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .phs .phh .pht b{font-size:13px}
   .phs .wk{grid-template-columns:20px minmax(0,1fr) 52px;gap:4px}
 }
+
+
+/* Plan mobile : phases compactes et semaines moins hautes */
+@media(max-width:899px){
+  #view:has(.phs)>.phs{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:5px!important;
+    padding:0!important;
+  }
+  #view:has(.phs)>.phs>.ph,
+  #view:has(.phs)>.phs>.ph.open{display:contents}
+  .phs .phh{
+    min-width:0;
+    min-height:38px;
+    height:38px;
+    padding:5px 4px!important;
+    border:1px solid var(--line);
+    border-radius:11px;
+    background:var(--card);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    box-shadow:none;
+  }
+  .phs .phh::before{display:none}
+  .phs .phh .phd{
+    display:block!important;
+    width:6px;height:6px;flex:0 0 6px;border-radius:50%;
+  }
+  .phs .phh .pht{min-width:0;display:block}
+  .phs .phh .pht b{
+    display:block;
+    font:700 11px/1.1 var(--display);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    color:inherit;
+  }
+  .phs .phh .pht small,
+  .phs .phh .pht .chip,
+  .phs .phh .phk,
+  .phs .phh .chev{display:none!important}
+  .phs .ph.open .phh{
+    background:color-mix(in srgb,var(--pc) 18%,var(--card));
+    border-color:var(--pc);
+    color:var(--ink);
+  }
+  .phs .phh:active{transform:scale(.98)}
+  .phs .wk{
+    padding:7px 3px!important;
+    gap:3px 6px!important;
+    border-bottom:1px solid var(--line);
+  }
+  .phs .wk .n{font-size:14px!important}
+  .phs .wk .d{font-size:10.5px!important;line-height:1.15!important}
+  .phs .wk .k{font-size:11px!important;line-height:1.1}
+  .phs .wk .k small{font-size:9px!important;margin-top:2px}
+  .phs .wkx{margin:0 0 4px!important;padding:4px 6px!important}
+  .phs .wkx .ses{min-height:32px!important;padding:3px 0!important;font-size:10.5px!important}
+}
+@media(max-width:380px){
+  .phs .phh{gap:3px;padding:4px 2px!important}
+  .phs .phh .pht b{font-size:10px}
+}
