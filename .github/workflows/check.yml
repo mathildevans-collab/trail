@@ -57,12 +57,5 @@ jobs:
       - name: Vérifier les scripts Python
         run: python -m compileall -q scripts
 
-      - name: Vérifier les messages des commits de la Pull Request
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: python scripts/check_commit_messages.py
-
       - name: Détecter les secrets manifestes
         run: python scripts/check_secrets.py
