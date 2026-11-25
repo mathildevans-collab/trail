@@ -1331,8 +1331,10 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 }
 
 /* Pictogrammes par type de séance */
-.ti svg,.dic svg{width:100%;height:100%;display:block}
-.dic{display:block;width:15px;height:15px;color:var(--muted);margin:1px 0 0}
+.ti svg,.dic svg{width:100%;height:100%;display:block;overflow:visible}
+.dic{display:flex;align-items:center;justify-content:center;width:18px;height:18px;color:var(--muted);margin:1px 0 0;font-style:normal}
+.dc .ti,.cd .ti{display:flex;align-items:center;justify-content:center}
+.dc .ti svg,.cd .ti svg{width:100%;height:100%}
 .day.has .dic{color:var(--brand)}.day.today .dic{color:inherit}.day.done .dic{color:var(--ok)}
 .day:not(.has) .dic{opacity:.45}
 .cd .ti,.dc .ti{display:block;width:18px;height:18px}
