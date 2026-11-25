@@ -3,7 +3,12 @@
 var SUPABASE_URL="https://psotpksrdlkivauxdiad.supabase.co";
 var SUPABASE_KEY="sb_publishable_TE_8fhfqw-Y4bPFX60uoTA_UD3K2wrC";
 var FUNCTION_URL=SUPABASE_URL+"/functions/v1/cadenzo-strava";
-var client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+function supabaseAuthLock(name,acquireTimeout,fn){
+  if(!navigator.locks||typeof navigator.locks.request!=="function")return Promise.resolve().then(fn);
+  var timeout=acquireTimeout===0?10000:acquireTimeout,controller=new AbortController(),timer=timeout>0?setTimeout(function(){controller.abort();},timeout):null;
+  return navigator.locks.request(name,{mode:"exclusive",signal:controller.signal},function(){return fn();}).finally(function(){if(timer)clearTimeout(timer);});
+}
+var client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,lock:supabaseAuthLock}});
 var view=document.getElementById("view"),tabs=document.getElementById("tabs"),rm=document.getElementById("rm");
 function screen(message,buttonText,action){
   tabs.hidden=true;rm.hidden=true;
@@ -31,7 +36,7 @@ function screen(message,buttonText,action){
     `;;
     document.head.appendChild(style);
   }
-  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=176" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
+  view.innerHTML='<section class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img class="auth-logo" src="icon-192.png?v=177" alt=""><span class="auth-brand-name">cadenzo</span></div><p class="auth-tagline">Un pas après l’autre.</p><div class="auth-login"><p id="auth-message" role="status"></p><button id="auth-action" class="btn primary auth-connect"></button></div><p class="auth-foot">Connexion sécurisée avec Strava</p></div></section>';
   document.getElementById("auth-message").textContent=message;
   var button=document.getElementById("auth-action");button.textContent=buttonText;button.addEventListener("click",action);
 }
@@ -125,7 +130,7 @@ function loadApp(user){
     window.CADENZO_TRAINING_PREFS_LOADED=false;
   }).then(function(){
     window.CADENZO_FORCE_SYNC=true;
-    var script=document.createElement("script");script.src="app.js?v=176";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
+    var script=document.createElement("script");script.src="app.js?v=177";script.onerror=function(){view.textContent="Impossible de charger Cadenzo. Vérifie ta connexion puis recharge la page.";};document.body.appendChild(script);
   });
 }
 
