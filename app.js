@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=172;
+var APPV=173;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -875,7 +875,13 @@ function ctNeedsSearch(pos){
 }
 function ctLvl(c){return c.g>=9?"raide":c.g>=6?"soutenue":"roulante";}
 function ctWhere(c){var k=ctDist(c), t=c.v||""; if(k==null)return t; var d=k<0.5?"sur place":"à "+String(k).replace(".",",")+" km"+(CTS.pos?" de toi":"")+" ("+(k<=2?"proche":k<=4?"moyen":"loin")+")"; return t?t+" · "+d:d;}
-function cotesCard(){
+function ctFix(){ // correction manuelle de la position (GPS imprécis ou faux)
+  var a=CTS.pos&&CTS.pos.a, h='<div class="ctfix">';
+  if(CTS.fix)return h+'<div class="ctq"><input id="ctq" type="search" placeholder="Ville ou lieu (ex. Annecy)" autocomplete="off" aria-label="Lieu"><button class="ctmore" data-ctq="go">Chercher</button></div>'+(CTS.pos&&CTS.pos.manual?'<button class="ctlnk" data-ctq="gps">Utiliser ma position GPS</button>':'')+'</div>';
+  return h+'<span class="small muted">'+(CTS.pos&&CTS.pos.manual?'Position choisie à la main':a?'Précision GPS ± '+(a>=1000?Math.round(a/100)/10+' km':a+' m'):'')+'</span> <button class="ctlnk" data-ctq="open">Position fausse ? Corriger</button></div>';
+}
+function cotesCard(){var c=cotesCard0(); return c.replace(/<\/div>$/,ctFix()+"</div>");}
+function cotesCard0(){
   var L=cotesList();
   var h='<div class="card ct"><div class="cthd"><b>Segments proposés</b><span class="ctch">📍 '+esc(L&&L.nom||CTS.city||"Localisation indisponible")+'</span>'+(L&&L.items&&L.items.length>1?'<button class="ctib" data-ctn="1" aria-label="Segment suivant">Suivant<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>':'')+'</div>';
   if(!L||!L.items||!L.items.length)return h+'<p class="small muted" style="margin:10px 0 6px">'+(CTS.loading?'Recherche des côtes Strava autour de toi…':'Aucune côte affichée pour le moment. Lance la recherche autour de ta position.')+'</p><button class="ctmore" data-ctg="1" style="margin:0"'+(CTS.loading?' disabled':'')+'>'+(CTS.loading?'Recherche en cours…':'Trouver les côtes autour de moi')+'</button></div>';
@@ -895,7 +901,7 @@ function ctWatch(){
   if(CTW!==null||!navigator.geolocation||!window.isSecureContext)return;
   CTW=navigator.geolocation.watchPosition(function(p){
     var accuracy=Math.round(p.coords.accuracy||0);
-    if(!accuracy||accuracy>500)return;
+    if(!accuracy||accuracy>500||(CTS.pos&&CTS.pos.manual))return;
     var o=CTS.pos,moved=!o||ctHav(o.la,o.ln,p.coords.latitude,p.coords.longitude)>0.15;
     CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};
     ctSave();
@@ -912,7 +918,7 @@ document.addEventListener("visibilitychange",function(){
   ctWatch(); // position fraîche dès le retour dans l’appli
   navigator.geolocation.getCurrentPosition(function(p){
     var accuracy=Math.round(p.coords.accuracy||0);
-    if(!accuracy||accuracy>500)return;
+    if(!accuracy||accuracy>500||(CTS.pos&&CTS.pos.manual))return;
     var o=CTS.pos;CTS.pos={la:p.coords.latitude,ln:p.coords.longitude,t:Date.now(),a:accuracy};ctSave();
     if(ctNeedsSearch(CTS.pos)&&!CTS.loading){CTS.autoSearchDone=true;ctHere();return;}
     if((!o||ctHav(o.la,o.ln,CTS.pos.la,CTS.pos.ln)>0.15)&&$("sheet").hidden)render(true);
@@ -1014,6 +1020,11 @@ function swapDays(w,k,tgt){
   if(other)setDow(other,from); setDow(s,dow); E[mvk]=MV;
   save(); PC={}; toast(other?"Jours échangés : "+DOWC[from]+" ⇄ "+DOWC[dow]+".":"Séance déplacée au "+DOWC[dow].toLowerCase()+".",U); render(true);
 }
+var WDRAG=null;
+document.addEventListener("dragstart",function(e){var b=e.target.closest&&e.target.closest(".dc[data-wd]"); if(!b)return; var v=b.dataset.wd.split(":"); WDRAG={w:+v[0],k:v[1]}; e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",b.dataset.wd);}catch(x){} b.classList.add("drag");});
+document.addEventListener("dragover",function(e){var b=WDRAG&&e.target.closest&&e.target.closest(".dc[data-wt]"); if(!b)return; var v=b.dataset.wt.split(":"); if(+v[0]!==WDRAG.w||v[1]===WDRAG.k)return; e.preventDefault(); document.querySelectorAll(".dc.over").forEach(function(x){x.classList.remove("over");}); b.classList.add("over");});
+document.addEventListener("drop",function(e){var b=WDRAG&&e.target.closest&&e.target.closest(".dc[data-wt]"); if(!b)return; var v=b.dataset.wt.split(":"), d=WDRAG; WDRAG=null; if(+v[0]!==d.w)return; e.preventDefault(); swapDays(d.w,d.k,v[1]);});
+document.addEventListener("dragend",function(){WDRAG=null; document.querySelectorAll(".dc.drag,.dc.over").forEach(function(x){x.classList.remove("drag","over");});});
 var DRAG=null;
 document.addEventListener("dragstart",function(e){var b=e.target.closest&&e.target.closest(".strip .day[data-dk]"); if(!b)return; DRAG={k:b.dataset.dk,d:+b.dataset.day}; e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",b.dataset.dk);}catch(_){} b.classList.add("drag");});
 document.addEventListener("dragover",function(e){var b=DRAG&&e.target.closest&&e.target.closest(".strip .day"); if(!b)return; if(+b.dataset.day===DRAG.d||(b.classList.contains("has")&&!b.classList.contains("mv")))return; e.preventDefault(); document.querySelectorAll(".strip .day.over").forEach(function(x){if(x!==b)x.classList.remove("over");}); b.classList.add("over");});
@@ -1159,7 +1170,7 @@ function tcls(s){var t=(s.type||"")+" "+(s.name||""); if(s.race||/^Course/i.test
 function wdays(r,wk,mode){var w=wk.n,L=DL,o="";
   for(var i=0;i<7;i++){var dw=i, ss=wk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&D.done[sk(r,w,s.k)], c=s?tcls(s):"o";
     if(mode==="dot")o+='<i class="dd '+c+(on?" on":"")+'" title="'+DOW[dw]+(s?" · "+esc(s.type):" · repos")+'"></i>';
-    else o+='<span class="dc '+c+(on?" on":"")+'"><em>'+L[i]+'</em>'+(s?'<b>'+esc(String(s.type).replace(/ route$/i,"").split(" ")[0])+'</b><small>'+(s.km?kmS(s.km)+" km":"")+'</small>':'<b>Repos</b>')+'</span>';}
+    else {var dr=s&&!on&&!s.race&&!s.club&&!s.bid&&!isClubSession(s)&&s.type!=="Course B"; o+='<span class="dc '+c+(on?" on":"")+(dr?" mv":"")+'"'+(dr?' draggable="true" data-wd="'+w+':'+s.k+'"':'')+' data-wt="'+w+':'+(s?s.k:"d"+dw)+'"><em>'+L[i]+'</em>'+(s?'<b>'+esc(String(s.type).replace(/ route$/i,"").split(" ")[0])+'</b><small>'+(s.km?kmS(s.km)+" km":"")+'</small>':'<b>Repos</b>')+'</span>';}}
   return o;}
 // --- Plan ---
 function vPlan(){
@@ -1172,6 +1183,7 @@ function vPlan(){
   var curPh=ti<0?pl.weeks[0].ph:ti>=pl.n*7?pl.weeks[pl.n-1].ph:pl.weeks[cw-1].ph, phOpen=openPh===null?curPh:openPh;
   // première carte : course, phases, avancement
   h+='<div class="card"><div class="sb"><b style="font-family:var(--display);font-size:18px">'+esc(r.name)+'</b><span class="chip">'+fmtD(pl.end)+'</span></div><div class="phases">'+PH.map(function(p){return '<div style="flex:'+p[1]+';background:'+cols[p[0]]+'"></div>';}).join("")+'</div><div class="phlab">'+PH.map(function(p){return '<span'+(p[0]===curPh&&inPlan?' class="on"':'')+'>'+p[0]+'</span>';}).join("")+'</div>'+
+    '<div class="lc" role="img" aria-label="Kilomètres par semaine">'+(function(){var K=pl.weeks.map(function(q){return P(pl,q.n).km;}), M=Math.max.apply(null,K.concat([1])); return pl.weeks.map(function(q,i){return '<i class="'+(q.n===cw&&inPlan?"cur":"")+'" style="height:'+Math.max(6,Math.round(K[i]/M*100))+'%;background:'+cols[q.ph]+'" title="S'+q.n+' · '+K[i]+' km"></i>';}).join("");})()+'</div>'+
     '<div class="sb small num" style="margin-top:12px"><span>'+t.d+' / '+t.t+' séances faites</span><span class="muted">'+(t.t?Math.round(t.d/t.t*100):0)+' %</span></div><div class="bar" style="margin-top:6px"><i style="width:'+(t.t?t.d/t.t*100:0)+'%"></i></div>'+
     (ne?'<p class="small" style="margin:10px 0 0">'+ne+' séance'+(ne>1?'s':'')+' modifiée'+(ne>1?'s':'')+' par toi. <button class="rm-ghost" style="color:var(--brand);min-height:0;padding:0" data-act="resetedits">Tout rétablir</button></p>':'')+'</div>';
   if(inPlan){var cwk=P(pl,cw);
@@ -1553,11 +1565,13 @@ function sheetAct(a,b){
     save(); PC={}; closeSheet(); toast(a==="resetavail"?"Jours habituels rétablis.":"Semaine adaptée à tes jours.",U); render(true); return;}
   if(a==="saveses"||a==="delses"||a==="restoreses"){
     var r=raceById(SH.rid), E=D.edits[r.id]||(D.edits[r.id]={}), w=SH.w, ek=w+"-"+SH.k;
-    if(a==="restoreses"){delete E[ek]; save(); closeSheet(); toast("Séance d’origine rétablie.",U); render(true); return;}
+    if(a==="restoreses"){delete E[ek]; var mvr=E[w+"-mv"]; if(mvr){delete mvr[SH.k]; if(!Object.keys(mvr).length)delete E[w+"-mv"];} save(); closeSheet(); toast("Séance d’origine rétablie.",U); render(true); return;}
     if(a==="delses"){if(SH.added)delete E[ek]; else E[ek]={del:true}; delete D.done[sk(r,w,SH.k)]; delete D.actual[sk(r,w,SH.k)]; save(); closeSheet(); toast("Séance supprimée.",U); render(true); return;}
     var baseSess=SH.k?sessByKey(planOf(r).weeks[w-1],SH.k):null, type=$("eType").value, km=num($("eKm").value)||0, o={dow:+$("eDow").value,type:type,km:Math.round(km*10)/10,dp:Math.round(num($("eDp").value)||0),txt:baseSess&&baseSess.txt||"",tag:tagOf(type)};
     if(SH.k&&!SH.added){var keep=E[ek]; delete E[ek]; PC={}; var orig=sessByKey(planOf(r).weeks[w-1],SH.k); PC={};
-      if(orig){var diff={}; ["dow","type","km","dp","txt"].forEach(function(f){if(o[f]!==orig[f])diff[f]=o[f];}); if(diff.type){diff.tag=o.tag;} if(Object.keys(diff).length)E[ek]=diff;} else if(keep)E[ek]=keep;}
+      if(orig){var diff={}; ["dow","type","km","dp","txt"].forEach(function(f){if(o[f]!==orig[f])diff[f]=o[f];}); if(diff.type){diff.tag=o.tag;}
+        if(diff.dow!=null){var mk=w+"-mv", MV2=Object.assign({},E[mk]||{}); var oth=planOf(r).weeks[w-1].s.filter(function(x){return x.k!==SH.k&&+x.dow===+diff.dow;})[0]; if(oth&&!oth.race&&!oth.club&&!oth.bid&&oth.type!=="Course B"&&!D.done[sk(r,w,oth.k)])MV2[oth.k]=orig.dow; MV2[SH.k]=diff.dow; E[mk]=MV2; delete diff.dow;} // même mécanisme que le glisser-déposer : les jours du profil ne l'écrasent pas
+        if(Object.keys(diff).length)E[ek]=diff;} else if(keep)E[ek]=keep;}
     else E[w+"-"+(SH.k||("x"+Date.now().toString(36)))]=o;
     save(); closeSheet(); toast("Séance enregistrée.",U); render(true); return;
   }
@@ -1866,6 +1880,16 @@ $("view").addEventListener("click",function(e){
   if(ds.ctt){CTS.open=!CTS.open; ctSave(); render(true); return;}
   if(ds.ctn){var cl=cotesList();CTS.off=cl&&cl.items&&cl.items.length?(CTS.off+1)%cl.items.length:0;ctSave();render(true);return;}
 
+  if(ds.ctq){
+    if(ds.ctq==="open"){CTS.fix=true;render(true);return;}
+    if(ds.ctq==="gps"){CTS.fix=false;CTS.pos=null;ctLocate();return;}
+    var q=($("ctq")&&$("ctq").value||"").trim(); if(q.length<2){toast("Écris une ville ou un lieu.");return;}
+    toast("Recherche du lieu…");
+    fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q),{headers:{"Accept-Language":"fr"}}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){
+      var p=j&&j[0]; if(!p||!Number.isFinite(+p.lat)||!Number.isFinite(+p.lon)){toast("Lieu introuvable. Essaie un nom de ville.");return;}
+      CTS.fix=false;CTS.pos={la:+p.lat,ln:+p.lon,t:Date.now(),a:0,manual:true};CTS.l="";CTS.city="";ctSave();ctHere();
+    }).catch(function(){toast("Recherche impossible. Réessaie.");});
+    return;}
   if(ds.ctg){ctLocate(); return;}
   if(ds.trpg){TRPG+=+ds.trpg; render(true); return;}
   if(ds.tro!==undefined){openTro(ds.tro); return;}

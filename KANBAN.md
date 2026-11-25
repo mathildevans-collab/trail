@@ -5,9 +5,7 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 ## 🔴 À faire
 
 ### Bugs
-- [ ] Position « Toulon » bloquée : rafraîchir la liste de segments en cache avec la position réelle
-- [ ] Segments : tester le filtre (pente ≥ 4 %, D+ ≥ 8 m) sur de vraies données
-- [ ] Fiche séance : le changement de jour peut être écrasé pour les profils configurés (passer par le mécanisme du glisser-déposer)
+- [ ] Segments : le catalogue partagé n'a que 13 segments (Toulon). Il faut que les utilisateurs synchronisent leurs segments pour couvrir d'autres régions (Edge Function gérée par l'autre session)
 
 ### À vérifier
 - [ ] Test sur un vrai téléphone : cloche, plan, « Mes jours cette semaine », renfo en paysage
@@ -36,8 +34,6 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 - [ ] Faire le point sur la PR #28 annulée d'une autre session (séparée du travail sur les séances route)
 
 ### Améliorations
-- [ ] Courbe de charge dans le plan
-- [ ] Glisser-déposer des séances dans le plan (ordinateur)
 - [ ] Écran « Séance terminée » en 2 colonnes en paysage
 
 ## 🟡 En cours
@@ -46,6 +42,10 @@ _(rien pour l'instant)_
 
 ## 🟢 Fait
 
+- [x] Position corrigeable à la main dans les segments (le catalogue ne contient que 13 segments, tous autour de Toulon)
+- [x] Filtre segments ≥ 4 % et ≥ 8 m vérifié avec des données simulées
+- [x] Changement de jour de la fiche séance via le même mécanisme que le glisser-déposer
+- [x] Courbe de charge et glisser-déposer dans le plan (ordinateur)
 - [x] Cloche de notifications à la place de la photo
 - [x] Segments : côtes à 4 % de pente et plus
 - [x] Glisser-déposer des séances sur la bande « Aujourd'hui » (ordinateur)

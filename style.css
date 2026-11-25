@@ -1315,3 +1315,17 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .wo-in:not(.wo-end) .wo-b{min-height:42px;border-radius:13px}
   .wo-in:not(.wo-end)>.wo-ctl{padding-top:4px;margin-top:0}
 }
+.ctfix{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.ctlnk{border:0;background:none;padding:6px 0;color:var(--brand);font:700 12.5px var(--display);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.ctq{display:flex;gap:8px;width:100%}.ctq input{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:0 12px;font:inherit}
+.ctq .ctmore{margin:0;width:auto;flex:none;padding:0 14px}
+
+/* Plan ordinateur : courbe de charge et glisser-déposer des cases de jour */
+.lc{display:none}
+@media(min-width:900px){
+  #view:has(.phs)>.card:first-of-type .phases,#view:has(.phs)>.card:first-of-type .phlab{display:none}
+  .lc{display:flex;align-items:flex-end;gap:4px;height:52px;margin:8px 0 2px}
+  .lc i{flex:1;min-width:0;border-radius:4px 4px 1px 1px;opacity:.9}
+  .lc i.cur{outline:2px solid var(--ink);outline-offset:1px;opacity:1}
+  .wk .dc.mv{cursor:grab}.wk .dc.drag{opacity:.4}.wk .dc.over{outline:2px dashed var(--acc);outline-offset:-2px}
+}
