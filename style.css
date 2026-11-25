@@ -1389,3 +1389,32 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
   .phs .wkx>.addses,.phs .wkx>p{grid-column:1/-1}
 }
 @media(min-width:900px){.phs .wkx>.addses{grid-column:auto;justify-self:start}.phs .wkx{border-radius:0}}
+
+/* Plan : phases en couleur, semaines passées / en cours / à venir, survol de la bande des phases */
+.phs .phh{--pc:var(--line);position:relative;transition:background .2s,color .2s,box-shadow .2s,transform .2s}
+.phs .phh[data-ph="Base"]{--pc:#a9cdb8;--pi:#17231c}.phs .phh[data-ph="Construction"]{--pc:#6fa587;--pi:#0f1f16}
+.phs .phh[data-ph="Spécifique"]{--pc:#2f5d46;--pi:#fff}.phs .phh[data-ph="Affûtage"]{--pc:#e2a72e;--pi:#2a1d00}
+.phs .phh::before{content:"";position:absolute;left:12px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--pc)}
+.phs .phh{padding-left:26px}
+.phs .ph.open .phh{background:var(--pc);border-color:var(--pc);color:var(--pi);box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 30%,transparent);transform:translateY(-1px)}
+.phs .ph.open .phh::before{background:var(--pi)}
+.phs .ph.open .phh .pht b{color:var(--pi);font-weight:800}
+.phs .phh:not([aria-expanded="true"]):hover{border-color:var(--pc)}
+.phs .wk{margin:0 0 2px;border-radius:12px;border-bottom:0;padding:14px 10px;transition:background .15s}
+.phs .wk.past{opacity:.5}.phs .wk.past .n{text-decoration:line-through}
+.phs .wk.past:hover{opacity:.85}
+.phs .wk.fut .n{color:var(--muted)}
+.phs .wk.cur{background:color-mix(in srgb,var(--acc) 7%,var(--card));box-shadow:inset 3px 0 0 var(--acc)}
+.phs .wk.cur .n{color:var(--acc);font-size:18px}
+.phs .wk.cur .d{font-weight:700}
+.phs .wk.cur .k{color:var(--acc)}
+.phs .wk.fut:hover{background:color-mix(in srgb,var(--line) 35%,transparent)}
+.phs .wkx{margin:0 0 10px;border-bottom:0}
+/* bande des phases : survol = kilométrage hebdomadaire */
+.card .phases{overflow:visible!important;position:relative}
+.card .phases>div{position:relative;border-radius:5px;transform-origin:center;transition:transform .2s ease,box-shadow .2s ease;outline:0}
+.card .phases>div:hover,.card .phases>div:focus-visible{transform:scale(1.04,2.2);z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.card .phases>div::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);transform-origin:50% 100%;white-space:nowrap;padding:5px 10px;border-radius:8px;background:var(--ink);color:var(--bg);font:700 12px var(--display);opacity:0;pointer-events:none;transition:opacity .15s}
+.card .phases>div:hover::after,.card .phases>div:focus-visible::after{opacity:1;transform:translateX(-50%) scale(.96,.455)}
+@media(prefers-reduced-motion:reduce){.card .phases>div,.phs .phh{transition:none}}
+@media(max-width:640px){.phs .phh::before{display:none}.phs .phh{padding-left:6px}}
