@@ -1665,3 +1665,36 @@ html{scrollbar-width:none;-ms-overflow-style:none}html::-webkit-scrollbar,body::
 .lc2 .wb:nth-child(-n+3)::before{left:0;transform:none}
 .lc2 .wb:nth-last-child(-n+3)::before{left:auto;right:0;transform:none}
 @media(max-width:340px){.top{flex-wrap:wrap}}
+.lc2{touch-action:none;-webkit-user-select:none;user-select:none}
+.pwh{align-items:center}
+.pwx{flex:1;min-width:0}
+.wpn{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font:700 24px/1 var(--display);cursor:pointer;padding:0 0 3px}
+.wpn:disabled{opacity:.3;cursor:default}
+.pwh .pwk{margin:0 4px}
+@media(max-width:700px){.pwh{flex-wrap:nowrap}.lc2{height:96px}.lc2 .wb.sel i{outline-width:2px}}
+
+/* ===== Navigation piste C : pastille blanche (mobile), barre en haut (ordinateur) ===== */
+@media(max-width:899px){
+  .tabs-in{display:flex;gap:2px}
+  .tabs button{flex:1 1 0;flex-direction:row;gap:8px;font:700 14px var(--display)}
+  .tabs button[aria-current="page"]{flex:2.4 1 0;background:#fff;color:#1d2420}
+  .tabs button[aria-current="page"] svg{color:var(--acc);stroke-width:2.2}
+  .tabs button[aria-current="page"] .nav-label{display:inline}
+}
+@media(min-width:900px){
+  .tabs{top:0;left:0;right:0;bottom:auto;width:auto;max-width:none;height:60px;padding:0 clamp(20px,3vw,44px);flex-direction:row;align-items:center;gap:36px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--card);transform:none;z-index:30;box-shadow:none}
+  .desktop-brand{height:auto;padding:0;margin:0;border:0;flex:none}
+  .desktop-brand img{width:30px;height:30px}
+  .tabs-in,.tabs-in{flex-direction:row;flex:1;padding:0;gap:4px;height:auto;max-width:none}
+  .tabs-in::before{content:none;display:none}
+  .tabs button,.tabs button[aria-current="page"]{flex-direction:row;width:auto;height:38px;padding:0 16px;gap:8px;border-radius:999px;border:0;box-shadow:none;font:600 14px var(--display);color:var(--muted);background:none}
+  .tabs button:hover{background:var(--brand-soft);color:var(--brand)}
+  .tabs button[aria-current="page"]{background:var(--ink);color:var(--bg)}
+  .tabs button svg{width:20px;height:20px}
+  .side-foot{flex-direction:row;align-items:center;margin:0;padding:0;border:0;gap:12px}
+  .side-foot .sf-tx small{display:none}
+  .tabs .side-foot .sf-out{width:36px;padding:0}.tabs .side-foot .sf-out span{display:none}
+  .tabs button[aria-current="page"]::before{content:none;display:none}
+  #view{margin:0 auto;width:100%;max-width:1600px;padding-top:60px}
+  #view>.top{top:60px}
+}

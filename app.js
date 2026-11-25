@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=178;
+var APPV=179;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1046,6 +1046,13 @@ function swapDays(w,k,tgt){
   if(other)setDow(other,from); setDow(s,dow); E[mvk]=MV;
   save(); PC={}; toast(other?"Jours échangés : "+DOWC[from]+" ⇄ "+DOWC[dow]+".":"Séance déplacée au "+DOWC[dow].toLowerCase()+".",U); render(true);
 }
+var SCR=false,SWX=null;
+function scrubTo(x){var l=document.querySelector(".lc2"); if(!l)return; var r=l.getBoundingClientRect(), n=l.children.length; var i=Math.max(0,Math.min(n-1,Math.floor((x-r.left)/r.width*n))); var w=i+1; if(openWk!==w){openWk=w; render(true);}}
+document.addEventListener("pointerdown",function(e){if(e.pointerType==="mouse")return; if(e.target.closest&&e.target.closest(".lc2")){SCR=true; scrubTo(e.clientX);}});
+document.addEventListener("pointermove",function(e){if(SCR)scrubTo(e.clientX);});
+["pointerup","pointercancel"].forEach(function(t){document.addEventListener(t,function(){SCR=false;});});
+document.addEventListener("touchstart",function(e){var d=e.target.closest&&e.target.closest(".pdays"); SWX=d?[e.touches[0].clientX,e.touches[0].clientY]:null;},{passive:true});
+document.addEventListener("touchend",function(e){if(!SWX)return; var t=e.changedTouches[0],dx=t.clientX-SWX[0],dy=t.clientY-SWX[1]; SWX=null; if(Math.abs(dx)<60||Math.abs(dx)<2*Math.abs(dy))return; var d=document.querySelector(".pwt"),w=d?+d.textContent.replace(/\D/g,""):0; var nw=w+(dx<0?1:-1); if(nw>=1&&document.querySelector('.lc2').children.length>=nw){openWk=nw; render(true);}},{passive:true});
 var WDRAG=null;
 document.addEventListener("dragstart",function(e){var b=e.target.closest&&e.target.closest("[data-wd]"); if(!b)return; var v=b.dataset.wd.split(":"); WDRAG={w:+v[0],k:v[1]}; e.dataTransfer.effectAllowed="move"; try{e.dataTransfer.setData("text/plain",b.dataset.wd);}catch(x){} b.classList.add("drag");});
 document.addEventListener("dragover",function(e){var b=WDRAG&&e.target.closest&&e.target.closest("[data-wt]"); if(!b)return; var v=b.dataset.wt.split(":"); if(+v[0]!==WDRAG.w||v[1]===WDRAG.k)return; e.preventDefault(); document.querySelectorAll("[data-wt].over").forEach(function(x){x.classList.remove("over");}); b.classList.add("over");});
@@ -1214,7 +1221,7 @@ function vPlan(){
   h+='<div class="lc2" role="group" aria-label="Choisir une semaine">'+pl.weeks.map(function(q,i){var wq=P(pl,q.n), cur=q.n===cw&&inPlan, past=wq.start+7*DAY<=todayUTC()&&!cur; return '<button class="wb'+(cur?" cur":"")+(q.n===ow?" sel":"")+(past?" past":"")+'" data-wsel="'+q.n+'" data-tip="S'+q.n+' · '+(q.n===pl.n?"course":K[i]+' km')+'" aria-label="Semaine '+q.n+', '+K[i]+' km" aria-pressed="'+(q.n===ow)+'"><i style="height:'+Math.max(8,Math.round(K[i]/M*100))+'%;background:'+cols[q.ph]+'"></i></button>';}).join("")+'</div>';
   h+='<div class="plab">'+PH.map(function(p){return '<span style="flex:'+p[1]+'"'+(p[0]===pl.weeks[ow-1].ph?' class="on"':'')+'><i style="background:'+cols[p[0]]+'"></i>'+p[0]+'</span>';}).join("")+'</div>';
   var wk=P(pl,ow), w=ow, isCur=w===cw&&inPlan, rw=w===pl.n;
-  h+='<div class="pwd"><div class="pwh"><div><span class="pwt">Semaine '+w+'</span><span class="pwm">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(isCur?' · en cours':'')+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · '+esc(wk.adjLabel):'')+'</span></div><b class="num pwk">'+(rw?'Course':wk.km+' km')+'</b></div>';
+  h+='<div class="pwd"><div class="pwh"><button class="wpn" data-wsel="'+(w-1)+'" aria-label="Semaine précédente"'+(w<=1?' disabled':'')+'>‹</button><div class="pwx"><span class="pwt">Semaine '+w+'</span><span class="pwm">'+fmtS(wk.start)+' – '+fmtS(wk.start+6*DAY)+(isCur?' · en cours':'')+(wk.rec?' · allégée':'')+(wk.hasB?' · course B':'')+(wk.adjLabel?' · '+esc(wk.adjLabel):'')+'</span></div><b class="num pwk">'+(rw?'Course':wk.km+' km')+'</b><button class="wpn" data-wsel="'+(w+1)+'" aria-label="Semaine suivante"'+(w>=pl.n?' disabled':'')+'>›</button></div>';
   h+='<div class="pdays">'+[0,1,2,3,4,5,6].map(function(dw){
     var ss=wk.s.filter(function(x){return +x.dow===dw;}), s=ss[0], on=s&&!!D.done[sk(r,w,s.k)];
     if(!s)return '<div class="dk o" data-wt="'+w+':d'+dw+'"><em>'+DOW[dw]+'</em><span class="ti">'+tico(null)+'</span><b class="dkm">Repos</b></div>';
@@ -1929,7 +1936,7 @@ $("view").addEventListener("click",function(e){
   if(ds.rb){var rk=activeRace().id+":"+ds.w+":rb"; if(ds.rb==="on")delete D.adj[rk]; else D.adj[rk]="off"; save(); render(true); return;}
   if(ds.adj){var U1=snapU(), ak=activeRace().id+":"+ds.w; if(ds.adj==="reset")delete D.adj[ak]; else D.adj[ak]=ds.adj; save(); render(true); toast(ds.adj==="reset"?"Ajustement retiré.":"Ajustement appliqué.",U1); return;}
   if(ds.todo!=null){var st=ds.store==="kit"?kitOf(activeRace()):D.todo; st[ds.todo]=!st[ds.todo]; if(!st[ds.todo])delete st[ds.todo]; save(); var kd=$("kitd"),op=kd&&kd.open; render(true); if(op&&$("kitd"))$("kitd").open=true; return;}
-  if(ds.wsel){openWk=+ds.wsel; render(true); return;}
+  if(ds.wsel){var nw=+ds.wsel; if(nw<1)return; openWk=nw; render(true); return;}
   if(ds.ph!=null){openPh=(openPh===null?(function(){var r1=activeRace(),p1=r1&&planOf(r1),t1=p1?planIdx(p1):-1; return !p1?"":t1<0?p1.weeks[0].ph:t1>=p1.n*7?p1.weeks[p1.n-1].ph:p1.weeks[nowWeek(p1)-1].ph;})():openPh)===ds.ph?ds.ph:ds.ph; render(true); return;}
   if(ds.wk){var w=+ds.wk, ow0=openWk===null?(planCurW||0):openWk; openWk=ow0===w?0:w; render(true); return;}
   if(ds.wnav){var r0=activeRace(), p0=planOf(r0); if(!p0)return; cur=Math.max(1,Math.min(p0.n,cur+(+ds.wnav))); if(cur===nowWeek(p0)&&planIdx(p0)>=0)goNow(); else{browsing=true; var w0=p0.weeks[cur-1]; if(!sessAt(w0,sel)&&w0.s.length)sel=w0.s[0].dow;} render(); return;}
