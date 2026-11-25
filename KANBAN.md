@@ -15,6 +15,7 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 - [ ] Écrans ordinateur restants : Forme, Mes courses, détail d'une course
 
 ### Sécurité (haute)
+- [ ] Couper les mails GitHub (à faire par toi) : bouton Watch du dépôt > Ignore, puis github.com/settings/notifications ; je pousse déjà directement sur `main`, sans PR
 - [ ] Activer « Leaked password protection » dans Supabase (Authentication > Providers > Email)
 - [ ] Décider de la purge de l'historique git (révoquer d'abord les secrets éventuels)
 - [ ] Limite de 10 athlètes sur l'app Strava : demander une augmentation de quota
@@ -29,6 +30,10 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 - [ ] Index inutilisé `cadenzo_segment_efforts_user_activity_idx` : surveiller avant suppression
 - [ ] Service worker : test de mise à jour (éviter un ancien cache cassé)
 - [ ] Alertes sur les erreurs de l'Edge Function
+
+### Tests
+- [ ] Test de connexion Strava de bout en bout (impossible depuis l'environnement de Claude, à faire sur ton téléphone avec un second compte)
+- [ ] Faire le point sur la PR #28 annulée d'une autre session (séparée du travail sur les séances route)
 
 ### Améliorations
 - [ ] Courbe de charge dans le plan
