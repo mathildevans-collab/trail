@@ -1717,3 +1717,24 @@ p.small.muted,p.muted.xs,.synth p,.synth .in p,details p.muted,.week-card p.mute
 .sd-row .sd-tx small{overflow:hidden;text-overflow:ellipsis}
 .sd-strava .sd-btn.sm{flex:none}
 .training-summary .chev{flex:none}
+
+/* Organisation d'entraînement : champs plus grands, jours collectifs sur une ligne */
+.sheet-in .pref-club-list{display:block;margin:6px 0 18px}
+.sheet-in .pref-club-list .pref-days{margin:8px 0 12px}
+.pref-club-rows{display:grid;gap:10px}
+.pref-club-fields{display:grid;grid-template-columns:44px minmax(0,1.5fr) minmax(76px,.7fr);gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.pref-club-fields[hidden]{display:none!important}
+.pref-club-fields .pcd{align-self:center;font:700 13px var(--display);color:var(--ink)}
+.pref-club-fields .field{margin:0}
+@media(max-width:380px){.pref-club-fields{grid-template-columns:minmax(0,1fr) minmax(76px,.6fr)}.pref-club-fields .pcd{grid-column:1/-1}}
+.sheet-in .field{margin:0 0 18px;gap:6px;font-size:14px}
+.sheet-in .field input,.sheet-in .field select{min-height:52px;padding:10px 14px;border-radius:14px}
+.sheet-in .eyebrow{display:block;margin:22px 0 10px}
+.sheet-in h2{margin-top:6px}
+.sheet-in .pref-check{display:flex;align-items:center;gap:12px;min-height:48px;margin:6px 0 10px;font-size:15px;font-weight:600}
+.sheet-in .pref-days{gap:8px;margin:8px 0 18px}
+.sheet-in .pref-day span{min-height:48px}
+.sheet-in .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.sheet-in .fields .field{margin:0 0 6px}
+.sheet-in p.small.muted{margin:4px 0 14px;line-height:1.45}
+.sheet-in [data-sact="saveprefs"]{display:flex;width:100%!important;justify-content:center}

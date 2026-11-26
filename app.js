@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=180;
+var APPV=181;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1370,12 +1370,13 @@ var SSUB=null;
 function prefClubSessionRowsHtml(sessions){
   var byDay={}; (sessions||[]).forEach(function(s){if(s&&Number.isInteger(+s.day))byDay[+s.day]=s;});
   var types=[["Fractionné / piste",8],["Footing collectif",8],["Sortie longue",14],["Côtes",8],["Sortie trail",10],["Renforcement",0],["Autre",8]];
-  return DOWL.map(function(name,i){
+  var pills='<div class="pref-days">'+DOWL.map(function(name,i){return '<label class="pref-day"><input type="checkbox" data-pref-club-day value="'+i+'" '+(byDay[i]?'checked':'')+'><span>'+name.slice(0,3)+'</span></label>';}).join("")+'</div>';
+  var rows=DOWL.map(function(name,i){
     var s=byDay[i]||{}, selected=!!byDay[i], type=s.type||"Fractionné / piste", km=s.estimated_km!=null?s.estimated_km:(types.filter(function(t){return t[0]===type;})[0]||types[0])[1];
-    return '<div class="pref-club-day"><label class="pref-check"><input type="checkbox" data-pref-club-day value="'+i+'" '+(selected?'checked':'')+'><span>'+name.charAt(0).toUpperCase()+name.slice(1)+'</span></label>'+
-      '<div class="pref-club-fields" data-pref-club-fields="'+i+'" '+(selected?'':'hidden')+'><label class="field">Type d’entraînement<select data-pref-club-type="'+i+'">'+types.map(function(t){return '<option value="'+t[0]+'" '+(type===t[0]?'selected':'')+'>'+t[0]+'</option>';}).join('')+'</select></label>'+
-      '<label class="field">Distance estimée (km)<input data-pref-club-km="'+i+'" type="number" min="0" max="100" step="0.5" inputmode="decimal" value="'+esc(km)+'"></label></div></div>';
+    return '<div class="pref-club-fields" data-pref-club-fields="'+i+'" '+(selected?'':'hidden')+'><b class="pcd">'+name.charAt(0).toUpperCase()+name.slice(1)+'</b><label class="field">Type<select data-pref-club-type="'+i+'">'+types.map(function(t){return '<option value="'+t[0]+'" '+(type===t[0]?'selected':'')+'>'+t[0]+'</option>';}).join('')+'</select></label>'+
+      '<label class="field">Km<input data-pref-club-km="'+i+'" type="number" min="0" max="100" step="0.5" inputmode="decimal" value="'+esc(km)+'"></label></div>';
   }).join("");
+  return pills+'<div class="pref-club-rows">'+rows+'</div>';
 }
 function prefDaysHtml(selected,kind){
   return DOWL.map(function(name,i){return '<label class="pref-day"><input type="checkbox" data-pref-day="'+kind+'" value="'+i+'" '+(selected.indexOf(i)>=0?'checked':'')+'><span>'+name.slice(0,3)+'</span></label>';}).join("");
@@ -1404,7 +1405,7 @@ function openTrainingPrefs(first){
   club.addEventListener("change",function(){config.hidden=!club.checked;});
   $("sheetBody").addEventListener("change",function(e){
     var day=e.target.closest("[data-pref-club-day]");
-    if(day){var fields=$("sheetBody").querySelector('[data-pref-club-fields="'+day.value+'"]');if(fields)fields.hidden=!day.checked;return;}
+    if(day){var fields=$("sheetBody").querySelector('[data-pref-club-fields="'+day.value+'"]');if(fields)fields.hidden=!day.checked; if(day.checked){var av=$("sheetBody").querySelector('[data-pref-day="train"][value="'+day.value+'"]'); if(av)av.checked=true;} return;}
     var type=e.target.closest("[data-pref-club-type]");
     if(type){var km=$("sheetBody").querySelector('[data-pref-club-km="'+type.dataset.prefClubType+'"]');if(km)km.value=clubEstimate(type.value);}
   });
