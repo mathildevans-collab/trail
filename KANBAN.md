@@ -54,6 +54,7 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 - [ ] 17. Relecture des règles par un coach pour les profils à risque (ultra, débutants)
 
 ### Améliorations
+- [ ] Forme : à discuter, regrouper Strava et Garmin dans un seul dashboard (modules en plus si l'import Garmin est fait, Strava seul par défaut)
 - [ ] Écran « Séance terminée » en 2 colonnes en paysage
 
 ## 🟡 En cours

@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=179;
+var APPV=180;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -537,6 +537,7 @@ function planOf(r){
   if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&!TRAIN_PREF.legacy){ // préférences appliquées à tous les plans, y compris les plans intégrés
     var pref=TRAIN_PREF, days=(pref.training_days||[1,2,3,5,6]).map(Number), clubDays=pref.has_club?(pref.club_days||[]).map(Number):[], target=Math.max(2,Math.min(7,+pref.sessions_per_week||4));
     weeks.forEach(function(wk){
+      var addedS=wk.s.filter(function(s){return s.added;}); wk.s=wk.s.filter(function(s){return !s.added;}); // séances ajoutées à la main : jamais retirées par les préférences
       var byDow={}; wk.s.forEach(function(s){byDow[s.dow]=s;});
       var mandatory=clubDays.slice();
       wk.s.forEach(function(s){if(s.race||s.type==="Course B")if(mandatory.indexOf(s.dow)<0)mandatory.push(s.dow);});
@@ -570,7 +571,7 @@ function planOf(r){
       var load=athleteLoadRules(coached.sessions,pref,wk.n,wk.rec);
       wk.s=applyTrailElevation(load.sessions,m,pref);
       if(isRoutePlan(m,pref))wk.s=routeify(wk.s,wk,n,m);
-      wk.s=wk.s.map(persoSess);
+      wk.s=wk.s.map(persoSess).concat(addedS).sort(function(a,b){return a.dow-b.dow;});
       if(load.adjusted)wk.note=(wk.note?wk.note+" ":"")+"Volume plafonné progressivement selon ton historique sportif.";
       if(load.warning)wk.note=(wk.note?wk.note+" ":"")+load.warning;
       if(coached.changed)wk.note=(wk.note?wk.note+" ":"")+"Intensités rééquilibrées selon ton niveau et les séances collectives.";
@@ -775,7 +776,7 @@ function openNotifs(){
   else h+='<div class="ntf">'+L.map(function(x){return '<button class="ntf-i" data-ngo="'+esc(x.go)+'"><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></button>';}).join("")+'</div>';
   openSheet(h,{kind:"ntf"});
 }
-function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions">'+bellBtn()+'<button class="ibtn account-logout" type="button" data-account-logout title="Se déconnecter" aria-label="Se déconnecter">'+I.logout+'</button><button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
+function header(eyebrow,title){return '<div class="top"><div><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1></div><div class="top-actions">'+bellBtn()+'<button class="ibtn" data-go="settings" aria-label="Réglages">'+I.gear+'</button></div></div>';}
 function todoBtn(key,label,store){var st=store||D.todo, on=!!st[key]; return '<button class="todo" data-todo="'+esc(key)+'"'+(store?' data-store="kit"':'')+' aria-pressed="'+on+'"><span class="box">'+(on?I.check:"")+'</span><span class="t">'+label+'</span></button>';}
 function woFor(s,wk){ // séance guidée proposée sur toute séance de renfo ou de mobilité
   if(!window.WORKOUT)return "";
@@ -989,12 +990,12 @@ function vPrep(r,pl){
   var h=header(fmtL(todayUTC())+" · "+jx(r),isToday?"Aujourd’hui":fmtL(selD))+banners();
   if(ti<0&&!browsing)h+='<div class="banner">Ton plan '+esc(r.name)+' démarre le '+fmtL(pl.start).toLowerCase()+', dans '+(-ti)+' jour'+(-ti>1?"s":"")+'.</div>';
   var nw=nowWeek(pl);
-  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>'+I.back+'</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span><button class="avl" data-act="availwk" data-w="'+wk.n+'">'+(wk.avail?'Mes jours de la semaine ✓':'Indispo cette semaine ?')+'</button></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>'+I.back+'</button></div>';
+  h+='<div class="wnav"><button data-wnav="-1" aria-label="Semaine précédente"'+(cur<=1?" disabled":"")+'>'+I.back+'</button><div><b>Semaine '+cur+'<small> / '+pl.n+'</small></b><span>'+esc(wk.ph)+'</span></div><button data-wnav="1" aria-label="Semaine suivante"'+(cur>=pl.n?" disabled":"")+'>'+I.back+'</button></div>';
   if(browsing&&cur!==nw)h+='<div class="banner mini"><span>'+(cur<nw?'Semaine passée':'Semaine à venir')+'</span><button data-act="now">Aujourd’hui</button></div>';
   h+='<div class="strip" role="group" aria-label="Jours de la semaine">';
   for(var i=0;i<7;i++){var s0=sessAt(wk,i), dn=s0&&D.done[sk(r,cur,s0.k)], tdy=cur===tw&&i===td;
     h+='<button class="day'+(s0?" has":"")+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?" mv":"")+(dn?" done":"")+(tdy?" today":"")+'" data-day="'+i+'"'+(s0&&!dn&&!s0.race&&!s0.club&&!s0.bid&&!isClubSession(s0)?' draggable="true" data-dk="'+s0.k+'"':'')+' aria-pressed="'+(sel===i)+'" aria-label="'+DOWL[i]+(s0?", "+esc(s0.type):", repos")+(dn?", faite":"")+'"><span>'+DL[i]+'</span><b>'+new Date(pl.start+((cur-1)*7+i)*DAY).getUTCDate()+'</b><em class="dic">'+tico(s0)+'</em><i></i>'+(s0?'<em class="dty">'+esc(s0.type)+'</em><em class="dkm">'+(s0.km?kmS(s0.km)+' km':'')+'</em>':'<em class="dty">Repos</em><em class="dkm"></em>')+'</button>';}
-  h+='</div>';
+  h+='</div><div class="avl-row"><button class="avl" data-act="availwk" data-w="'+wk.n+'">'+(wk.avail?'Mes jours de la semaine ✓':'Indispo cette semaine ?')+'</button></div>';
   var s=sessAt(wk,sel);
   var showM=cur===tw&&sel===td;
   h+=s?sessionHero(r,pl,wk,s):restCard(wk,sel);
@@ -1409,7 +1410,7 @@ function openTrainingPrefs(first){
   });
 }function vSettings(){
   var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
-  function gSorties(){return group(STRAVA?"Strava":"Sorties",(STRAVA?sitem("sync","Synchroniser maintenant",stravaSub(),null,' data-act="sync"',D.sync.gh==="ko"?"danger":""):"")+sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
+  function gSorties(){return group("Garmin",sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
   function gCourse(){return group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
     swItem("pin","GPS auto","Te situe sur la trace dès l’ouverture","gps",D.set.gps!==false)+
     swItem("vib","Vibration au ravito","Android seulement : l’iPhone ne vibre pas depuis le web","vib",D.set.vib)+
@@ -1420,17 +1421,18 @@ function openTrainingPrefs(first){
   function tile(ic,t,body,o){o=o||{}; return '<'+(o.tag||"div")+' class="sd-t'+(o.w?" sd-w":"")+(o.row?" sd-row":"")+'"'+(o.attr||"")+'><span class="sd-ic">'+sv(ic)+'</span>'+(o.st?'<span class="sd-st '+o.st[0]+'"><i></i>'+o.st[1]+'</span>':'')+'<span class="sd-tx"><b>'+t+'</b>'+(body?'<small>'+body+'</small>':'')+'</span></'+(o.tag||"div")+'>';}
   function tg(key,on,label){return '<div class="sd-tg" role="switch" tabindex="0" aria-checked="'+!!on+'" aria-label="'+label+'" data-sw="'+key+'"><span>'+(on?"Activé":"Désactivé")+'</span><u class="'+(on?"on":"")+'"></u></div>';}
   var sy=D.sync, syOk=!(sy.err||sy.gh==="ko"), h='<button class="back" data-go="back">'+I.back+'Retour</button><h1 style="font-size:30px;margin-bottom:16px">Réglages</h1><div class="sd">';
-  h+='<div class="sd-t sd-w sd-hero"><span class="sd-ic">'+sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')+'</span><span class="sd-st"><i style="background:'+(syOk?'var(--ok)':'var(--acc)')+'"></i>'+(syOk?"À jour":"À vérifier")+'</span><span class="sd-tx"><b>'+(STRAVA?"Strava":"Sorties")+'</b><small>'+(STRAVA?(sy.t?"Dernière synchro "+ago(sy.t):"Jamais synchronisé"):"Importe un CSV pour ranger tes sorties")+'</small></span>'+(STRAVA?'<button class="sd-btn" data-act="sync">Synchroniser maintenant</button>':'<button class="sd-btn" data-act="csv">Importer un CSV</button>')+'</div>';
+  h+='<button type="button" class="sd-t sd-w sd-row training-summary" data-prefopen="1"><span class="sd-ic">'+sv('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>')+'</span><span class="sd-tx"><b>Profil</b><small>'+(TRAIN_PREF&&TRAIN_PREF.onboarding_completed?TRAIN_PREF.sessions_per_week+' séances par semaine'+(function(n){return n?' · '+n+(n>1?' collectifs':' collectif'):'';})((TRAIN_PREF.club_sessions||[]).length||((TRAIN_PREF.club_days||[]).length)):'À définir lors de ta première connexion')+'</small></span><span class="chev">›</span></button>';
   var TR=trophies().list, nNew=TR.filter(function(m){return m.d>(D.tseen||isoAgo(3));}).length;
   h+='<button class="sd-t sd-w sd-row" data-ssub="trophees" style="min-height:0"><span class="sd-ic" style="background:color-mix(in srgb,var(--sun) 22%,var(--card));color:var(--ink)">'+sv('<circle cx="12" cy="10" r="6"/><path d="M8.5 15L7 22l5-3 5 3-1.5-7"/>')+'</span><span class="sd-tx"><b>Trophées</b><small>'+(TR.length?TR.length+(TR.length>1?" médailles":" médaille"):"Records et étapes")+'</small></span>'+(nNew?'<span class="sd-st"><i style="background:var(--acc)"></i>'+nNew+(nNew>1?" nouvelles":" nouvelle")+'</span>':'')+'</button>';
   h+=tile('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',"Export Garmin",(G&&G.last)?"Import du "+fmtD(dayN(G.last)*864e5).replace(/^\S+\s/,""):"Aucun import",{tag:"button",attr:' data-ssub="sorties"',st:[(gOld==null||gOld>9)?"w":"",gOld==null?"—":gOld+" j"]});
   h+=tile('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',"Données",lastExportTxt().replace(/\.$/,"").replace("Dernier export ","Export "),{tag:"button",attr:' data-ssub="donnees"'});
-  h+='<button type="button" class="sd-t sd-w sd-row training-summary" data-prefopen="1"><span class="sd-ic">'+sv('<path d="M3 5h18M6 3v4M18 3v4M5 10h14M5 15h8"/>')+'</span><span class="sd-tx"><b>Organisation d’entraînement</b><small>'+(TRAIN_PREF&&TRAIN_PREF.onboarding_completed?TRAIN_PREF.sessions_per_week+' séances · '+((TRAIN_PREF.club_sessions||[]).length||((TRAIN_PREF.club_days||[]).length))+' entraînements collectifs':'À définir lors de ta première connexion')+'</small></span><span class="chev">›</span></button>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>')+'</span><span class="sd-tx"><b>Apparence</b></span><div class="sd-seg" role="radiogroup" aria-label="Thème">'+[["auto","Auto"],["light","Clair"],["dark","Sombre"]].map(function(o){return '<button role="radio" data-theme="'+o[0]+'" aria-checked="'+(th===o[0])+'">'+o[1]+'</button>';}).join("")+'</div></div>';
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>')+'</span><span class="sd-tx"><b>Check-in du lundi</b></span>'+tg("checkin",D.set.checkin,"Check-in du lundi")+'</div>';
+  h+='<div class="sd-t sd-w sd-row sd-strava"><span class="sd-ic">'+sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')+'</span><span class="sd-tx"><b>'+(STRAVA?"Strava":"Sorties")+'</b><small>'+(STRAVA?(sy.t?(syOk?"À jour · ":"À vérifier · ")+ago(sy.t):"Jamais synchronisé"):"Importe un CSV pour ranger tes sorties")+'</small></span>'+(STRAVA?'<button class="sd-btn sm" data-act="sync">Synchroniser</button>':'<button class="sd-btn sm" data-act="csv">Importer un CSV</button>')+'</div>';
   h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",w:1,row:1,attr:' data-ssub="course"'});
   h+=tile('<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',"Renfo et mobilité","7 renfo · 6 mobilité",{tag:"button",w:1,row:1,attr:' data-sheet="guide"'});
   h+=tile('<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',GS?(GS.err?"Synchro à vérifier":"Synchro entre appareils"):"Mêmes données partout",GS?(GS.err?esc(GS.err):(GS.t?"Active · "+ago(GS.t):"En attente de la première synchro")):"Téléphone et ordinateur, chiffré, sans compte",{tag:"button",w:1,row:1,attr:' data-act="'+(GS?"gmanage":"gsetup")+'"',st:GS?[GS.err?"w":"",""]:null});
+  h+='<button type="button" class="sd-t sd-w sd-row" data-account-logout><span class="sd-ic">'+I.logout+'</span><span class="sd-tx"><b>Se déconnecter</b><small>Fermer ta session</small></span></button>';
   h+='</div><div class="sd-dz"><button data-act="reset">'+(resetArmed?"Toucher encore pour tout effacer":"Tout effacer")+'</button></div>'+foot;
   return h;
 }
@@ -1649,7 +1651,7 @@ if(MQ&&MQ.addEventListener)MQ.addEventListener("change",function(){applyTheme();
 // ---------- rendu ----------
 function sideFoot(){var el=$("sideFoot"); if(!el)return; var nm=window.CADENZO_PROFILE_NAME||"Mon compte", ph=window.CADENZO_PROFILE_PICTURE, sy=D.sync||{};
   var st=sy.err?(sy.err==="limite Strava temporaire"?"Strava limité":"Synchro en échec"):(sy.t?"Strava à jour":"Strava connecté");
-  el.innerHTML='<div class="sf-user">'+(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span></div><button class="sf-out" type="button" data-account-logout aria-label="Se déconnecter">'+I.logout+'<span>Se déconnecter</span></button>';}
+  el.innerHTML='<div class="sf-user">'+(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span></div>';}
 function render(keep){
   var y=window.scrollY, v;
   if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else v=vSettings();
