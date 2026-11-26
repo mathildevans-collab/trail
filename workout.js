@@ -5,7 +5,7 @@
 
 // ---------- dessins et fiches : tout vient de exo.js / exo-txt.js ----------
 function figKey(name){return window.EXO?EXO.find(name):null;}
-function img(name,thumb){var id=figKey(name); if(!id||!window.EXO)return ""; return thumb?EXO.one(id,true):EXO.pair(id);}
+function img(name,thumb){var id=figKey(name); if(!id||!window.EXO)return ''; return EXO.one(id,false);}
 function zone(name){var id=figKey(name); return id&&window.EXO?EXO.zone(id):"";}
 
 // ---------- construction de la séance ----------
