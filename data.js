@@ -49,6 +49,25 @@ B2:{name:"Renfo B2 · Puissance de montée",tours:"3 tours, 45 s de repos. Aucun
 C1:{name:"Renfo C1 · Descentes et excentrique",tours:"3 tours, 60 s de repos. Un sac à dos avec 2 bouteilles d’eau ajoute de la charge.",ex:[["Fente avant, descente en 4 s","8 par jambe"],["Squat avec sac à dos, descente en 4 s","10"],["Descente de marche lente, talon vers le sol","10 par jambe"],["Mollets excentriques, descente en 4 s","10 par jambe"],["Ischios glissés sur une serviette","8"],["Planche","45 s"]]},
 C2:{name:"Renfo C2 · Descentes et excentrique",tours:"3 tours, 60 s de repos. Chaise et sac à dos chargé.",ex:[["Squat bulgare, descente en 3 s","8 par jambe"],["Squat sur une jambe vers la chaise","6 par jambe"],["Pont fessier une jambe, pied sur la chaise","12 par jambe"],["Mollets avec sac à dos","15"],["Pompes","10"],["Planche","45 s"]]},
 D:{name:"Renfo D · Rappel léger",tours:"2 tours, effort facile.",ex:[["Squat poids du corps","10"],["Fente arrière","8 par jambe"],["Pont fessier","12"],["Planche","30 s"]]}};
+// Renforcement spécifique route : force unilatérale, chaîne postérieure, mollets/soléaires et stabilité du bassin.
+var RENFO_ROUTE={
+A1:{name:"Renfo A1 · Force du coureur",tours:"3 tours · 45 s de repos. Contrôle du mouvement, sans aller à l’échec.",ex:[["Squat bulgare, pied arrière sur le canapé","8 par jambe"],["Pont fessier une jambe","10 par jambe"],["Mollets une jambe sur une marche","12 par jambe"],["Charnière de hanche","10"],["Gainage latéral, levée de jambe","8 par côté"],["Planche, toucher d’épaule","10 par côté"]]},
+A2:{name:"Renfo A2 · Stabilité et pied",tours:"2 à 3 tours · 45 s de repos. Priorité à l’alignement.",ex:[["Descente de marche lente, talon vers le sol","8 par jambe"],["Fente arrière","8 par jambe"],["Mollet, genou fléchi","12 par jambe"],["Bird dog (gainage dos)","8 par côté"],["Équilibre sur une jambe, yeux fermés","30 s par jambe"],["Gainage latéral","25 s par côté"]]},
+B1:{name:"Renfo B1 · Force et économie de course",tours:"3 tours · 60 s de repos. Poussée puissante, retour contrôlé.",ex:[["Step-up sur une chaise solide","8 par jambe"],["Squat bulgare, pied arrière sur le canapé","8 par jambe"],["Ischios glissés sur une serviette","8"],["Mollets sur marche","15"],["Pont fessier une jambe","10 par jambe"],["Planche, toucher d’épaule","10 par côté"]]},
+B2:{name:"Renfo B2 · Pied, cheville et stabilité",tours:"2 à 3 tours · 45 s de repos. Qualité d’appui avant vitesse.",ex:[["Fente latérale","8 par côté"],["Sauts de patineur","8 par côté, réception stable"],["Mollet, genou fléchi","12 par jambe"],["Charnière de hanche","10"],["Gainage latéral, levée de jambe","8 par côté"]]},
+C1:{name:"Renfo C1 · Résistance musculaire",tours:"3 tours · 60 s de repos. Descente lente sur 3 à 4 secondes.",ex:[["Fente avant, descente en 4 s","8 par jambe"],["Descente de marche lente, talon vers le sol","8 par jambe"],["Mollets excentriques, descente en 4 s","10 par jambe"],["Ischios glissés sur une serviette","8"],["Planche","40 s"]]},
+C2:{name:"Renfo C2 · Contrôle unilatéral",tours:"2 à 3 tours · 45 s de repos.",ex:[["Squat sur une jambe vers la chaise","6 par jambe"],["Pont fessier une jambe, pied sur la chaise","10 par jambe"],["Mollets, genou fléchi","12 par jambe"],["Bird dog (gainage dos)","8 par côté"],["Gainage latéral","25 s par côté"]]},
+D:{name:"Renfo D · Activation légère",tours:"2 tours · effort facile, sans fatigue résiduelle.",ex:[["Squat poids du corps","10"],["Pont fessier","12"],["Mollets sur marche","12"],["Bird dog (gainage dos)","8 par côté"]]}
+};
+function activeRenfo(){
+ var p=(typeof TRAIN_PREF!=="undefined"&&TRAIN_PREF&&TRAIN_PREF.athlete_profile)||{};
+ if(p.discipline==="route")return RENFO_ROUTE;
+ if(p.discipline==="mixte"){
+   var r=typeof activeRace==="function"?activeRace():null;
+   return r&&r.dp&&r.km&&r.dp/r.km>=12?RENFO:RENFO_ROUTE;
+ }
+ return RENFO;
+}
 var TS=[["cotes",5],["fartlek",6],["cotes",7],["prog",40],["tempo",20],["cotes",8],["courtes",10],["prog",40],
 ["tempo",25],["cotes",8],["tempo",30],["prog",40],["cotes",9],["tempo",35],["desc",6],["fartlek",5],
 ["tempo",35],["paires",5],["tempo",40],["prog",40],["paires",4],["tempo",40],["desc",6],["courtes",8],["prog",35]];

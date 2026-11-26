@@ -1773,3 +1773,54 @@ p.small.muted,p.muted.xs,.synth p,.synth .in p,details p.muted,.week-card p.mute
 @media(max-width:640px){.rf-grid{grid-template-columns:minmax(0,1fr)}.rf-hero h2{font-size:24px}}
 @media(min-width:900px){#view>.rf-hero,#view>.rf-sec,#view>.rf-grid{grid-column:1/-1}}
 @media(min-width:900px){.rf-hero{display:grid;grid-template-columns:1fr auto;column-gap:24px;align-items:center;padding:22px 28px}.rf-hero>*{grid-column:1}.rf-hero p{margin:0}.rf-hero .rf-btns{grid-column:2;grid-row:1/4}.rf-sec{margin-top:30px}}
+
+/* Lecteur guidé : illustration animée au-dessus, chrono et commandes en dessous. */
+.wo-stage{display:flex;align-items:center;justify-content:center;min-height:150px}
+.wo-stage .wfig{width:100%;height:auto;max-height:34dvh}
+.wo-stage .wfig.anim .p1{animation:wo-pose-a 2.4s ease-in-out infinite}
+.wo-stage .wfig.anim .p2{animation:wo-pose-b 2.4s ease-in-out infinite}
+@keyframes wo-pose-a{0%,42%,100%{opacity:1}50%,92%{opacity:0}}
+@keyframes wo-pose-b{0%,42%,100%{opacity:0}50%,92%{opacity:1}}
+@media (orientation:landscape) and (max-height:600px){
+ .wo{overflow:hidden}
+ .wo-in{height:100dvh;min-height:0;max-width:980px;padding:calc(6px + env(safe-area-inset-top)) 18px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,.78fr);grid-template-rows:auto 4px minmax(0,1fr) auto auto;column-gap:22px;row-gap:4px;overflow:hidden}
+ .wo-top{grid-column:1/-1}
+ .wo-bar{grid-column:1/-1;margin:2px 0}
+ .wo-stage{grid-column:1;grid-row:3/6;min-height:0;margin:0;padding:8px 14px;align-self:stretch}
+ .wo-stage .wfig{max-height:100%;height:100%;width:100%}
+ .wo-name{grid-column:2;grid-row:3;align-self:end;font-size:clamp(18px,4vh,25px);margin:0;text-align:left}
+ .wo-sub{grid-column:2;grid-row:4;text-align:left;margin:0;font-size:12px}
+ .wo-mus{grid-column:2;grid-row:4;justify-content:flex-start;align-self:end;margin:0 0 -18px;font-size:11px}
+ .wo-ring,.wo-reps{grid-column:2;grid-row:5;align-self:center;justify-self:center;width:clamp(92px,22vh,132px);height:clamp(92px,22vh,132px);margin:0}
+ .wo-t{font-size:clamp(28px,7vh,42px)}
+ .wo-reps b{font-size:clamp(42px,10vh,60px)}
+ .wo-reps small{display:none}
+ .wo-ctl{grid-column:2;grid-row:6;align-self:end;padding-top:2px;margin:0}
+ .wo-b{min-height:44px}
+ .wo-tech{grid-column:1/-1;max-height:18vh;overflow:auto}
+}
+@media (prefers-reduced-motion:reduce){
+ .wo-stage .wfig.anim .p1,.wo-stage .wfig.anim .p2{animation:none}
+ .wo-stage .wfig.anim .p1{opacity:1}
+ .wo-stage .wfig.anim .p2{opacity:0}
+}
+
+/* Paysage : illustration en haut, chronomètre sous l’illustration. */
+@media (orientation:landscape) and (max-height:600px){
+ .wo{overflow-y:auto}
+ .wo-in{height:auto;min-height:100dvh;max-width:760px;padding:calc(5px + env(safe-area-inset-top)) 14px calc(6px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:4px;overflow:visible}
+ .wo-top{flex:0 0 auto}
+ .wo-bar{flex:0 0 4px;margin:2px 0}
+ .wo-stage{order:1;flex:0 0 auto;min-height:0;height:32dvh;max-height:190px;margin:0;padding:4px 12px}
+ .wo-stage .wfig{width:100%;height:100%;max-height:100%}
+ .wo-name{order:2;font-size:clamp(17px,3.8vh,23px);margin:2px 0 0}
+ .wo-sub{order:3;margin:0 0 2px;font-size:11px}
+ .wo-mus{order:4;margin:0 0 2px;font-size:11px}
+ .wo-ring,.wo-reps{order:5;width:clamp(78px,17vh,104px);height:clamp(78px,17vh,104px);margin:0 auto}
+ .wo-t{font-size:clamp(25px,6vh,36px)}
+ .wo-reps b{font-size:clamp(38px,8vh,52px)}
+ .wo-reps small{display:none}
+ .wo-ctl{order:6;flex:0 0 auto;margin:0;padding-top:3px}
+ .wo-b{min-height:42px}
+ .wo-tech{order:7;max-height:15vh;overflow:auto}
+}

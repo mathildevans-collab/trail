@@ -5,7 +5,7 @@
 
 // ---------- dessins et fiches : tout vient de exo.js / exo-txt.js ----------
 function figKey(name){return window.EXO?EXO.find(name):null;}
-function img(name,thumb){var id=figKey(name); if(!id||!window.EXO)return ""; return thumb?EXO.one(id,true):EXO.pair(id);}
+function img(name,thumb){var id=figKey(name); if(!id||!window.EXO)return ''; return EXO.one(id,false);}
 function zone(name){var id=figKey(name); return id&&window.EXO?EXO.zone(id):"";}
 
 // ---------- construction de la séance ----------
@@ -107,7 +107,7 @@ function render(){
      :'<div class="wo-reps"><b class="num">'+s.reps+'</b><span>répétitions</span><small class="num" data-wt="1">0:00</small></div>';
   el.innerHTML='<div class="wo-in'+(rest?' wo-rest':'')+'"><div class="wo-top"><div><b>'+esc(w.title)+'</b><small class="num">'+(s.t==="ex"?'Exercice '+idx+' / '+exs.length:rest?'Pause':'')+'</small></div><div class="wo-tr"><button class="wo-x" data-wa="sound" aria-label="Son" title="Son">'+(W.mute?"🔇":"🔊")+'</button><button class="wo-x" data-wa="close" aria-label="Fermer">×</button></div></div>'+
     '<div class="wo-bar"><i style="width:'+Math.round(W.i/(n-1)*100)+'%"></i></div>'+
-    '<div class="wo-stage">'+img(s.fig,false)+'</div>'+
+    '<div class="wo-stage">'+img(s.fig,true)+'</div>'+
     '<h2 class="wo-name">'+esc(rest&&s.t!=="ready"?s.name:s.t==="ready"?s.name:s.name)+'</h2>'+
     '<p class="wo-sub">'+esc(s.sub||"")+(s.note?' · '+esc(s.note):'')+'</p>'+(s.t==="ex"&&zone(s.fig)?'<p class="wo-mus"><i></i>'+esc(zone(s.fig))+'</p>':'')+big+techBox(s)+
     '<div class="wo-ctl"><button class="wo-b" data-wa="prev" aria-label="Précédent">‹</button>'+
