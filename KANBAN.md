@@ -9,7 +9,7 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 
 ### À vérifier
 - [ ] Test sur un vrai téléphone : cloche, plan, « Mes jours cette semaine », renfo en paysage
-- [ ] Mode sombre : cloche, plan, trophées, séances guidées en paysage
+- [ ] Mode sombre : cloche, plan, trophées, séances guidées en paysage, onglet Renfo
 - [ ] Écrans ordinateur restants : Forme, Mes courses, détail d'une course
 
 ### Sécurité (haute)

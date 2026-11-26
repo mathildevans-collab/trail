@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=181;
+var APPV=182;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -1409,7 +1409,22 @@ function openTrainingPrefs(first){
     var type=e.target.closest("[data-pref-club-type]");
     if(type){var km=$("sheetBody").querySelector('[data-pref-club-km="'+type.dataset.prefClubType+'"]');if(km)km.value=clubEstimate(type.value);}
   });
-}function vSettings(){
+}
+function vRenfo(){
+  var h=header("Séances à la maison","Renfo et mobilité"), r=activeRace(), rf=null, wn=0;
+  if(r){var pl=planOf(r); wn=nowWeek(pl); var wk=P(pl,wn), t=todayUTC();
+    (wk&&wk.s||[]).forEach(function(x){if(x.renfo&&!rf&&sessDate(pl,wn,x)>=t)rf=x;});}
+  if(rf){var R0=RENFO[rf.renfo], dd=Math.round((sessDate(planOf(r),wn,rf)-todayUTC())/DAY), nm=R0.name.split(" · ");
+    h+='<div class="rf-hero"><span class="eyebrow">À FAIRE '+(dd<=0?"AUJOURD’HUI":dd===1?"DEMAIN":DOWL[rf.dow].toUpperCase())+'</span><h2>'+esc(nm[0])+'</h2><p>'+esc(nm[1]||R0.tours)+' · '+woMin("renfo",rf.renfo)+' min</p><div class="rf-btns">'+woBtns(rf.renfo,1)+'</div></div>';}
+  h+='<div class="rf-sec"><h3>Renforcement</h3><span>7 séances · une chaise suffit</span></div><div class="rf-grid">';
+  ["A1","A2","B1","B2","C1","C2","D"].forEach(function(k){var R1=RENFO[k], n=R1.name.split(" · ");
+    h+='<div class="rf-card"><span class="rf-ic">'+I.dumb+'</span><div class="rf-tx"><b>'+esc(n[0])+'</b><small>'+esc(n[1]||R1.tours)+'</small></div><span class="rf-min">'+woMin("renfo",k)+' min</span><div class="rf-act"><button class="btn sm" data-wo="renfo:'+k+'">▶ Lancer</button><button class="rf-more" data-sheet="renfo:'+k+'">Exercices</button></div></div>';});
+  h+='</div><div class="rf-sec"><h3>Mobilité</h3><span>6 séances · 10 à 15 min</span></div><div class="rf-grid">';
+  ["hanches","chevilles","ischios","genoux","dos","complet"].forEach(function(k){var M=MOBS[k];
+    h+='<div class="rf-card"><span class="rf-ic">'+I.leaf+'</span><div class="rf-tx"><b>'+esc(M.name)+'</b><small>'+esc(M.goal)+'</small></div><span class="rf-min">'+woMin("mob",k)+' min</span><div class="rf-act"><button class="btn sm" data-wo="mob:'+k+'">▶ Lancer</button><button class="rf-more" data-sheet="mob:'+k+'">Exercices</button></div></div>';});
+  return h+'</div>';
+}
+function vSettings(){
   var th=D.set.theme, G=window.GARMIN&&GARMIN.data&&GARMIN.data(), gOld=(G&&G.last)?Math.round(todayUTC()/864e5)-dayN(G.last):null, foot='<p class="foot">Plan trail · données gardées sur ce téléphone</p>';
   function gSorties(){return group("Garmin",sitem("up","Importer .zip Garmin","Sommeil, VFC et activités.",null,' data-act="gimport"'));}
   function gCourse(){return group("Mode Course",srow("gel","Rappel de gel","Vibration et alerte à l’écran",selMin("gelmin",[0,25,30,35,40,45],D.set.gel))+srow("drop","Rappel d’eau","Petite vibration",selMin("watermin",[0,10,15,20,30],D.set.water))+
@@ -1431,7 +1446,6 @@ function openTrainingPrefs(first){
   h+='<div class="sd-t"><span class="sd-ic">'+sv('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10 21h4"/>')+'</span><span class="sd-tx"><b>Check-in du lundi</b></span>'+tg("checkin",D.set.checkin,"Check-in du lundi")+'</div>';
   h+='<div class="sd-t sd-w sd-row sd-strava"><span class="sd-ic">'+sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')+'</span><span class="sd-tx"><b>'+(STRAVA?"Strava":"Sorties")+'</b><small>'+(STRAVA?(sy.t?(syOk?"À jour · ":"À vérifier · ")+ago(sy.t):"Jamais synchronisé"):"Importe un CSV pour ranger tes sorties")+'</small></span>'+(STRAVA?'<button class="sd-btn sm" data-act="sync">Synchroniser</button>':'<button class="sd-btn sm" data-act="csv">Importer un CSV</button>')+'</div>';
   h+=tile('<path d="M2 20l6-10 4 6 3-4 7 8z"/><path d="M15 12V4l4 2-4 2"/>',"Mode Course",(D.set.gel?"Gel "+D.set.gel+" min":"Gel off")+" · "+(D.set.water?"Eau "+D.set.water+" min":"Eau off"),{tag:"button",w:1,row:1,attr:' data-ssub="course"'});
-  h+=tile('<path d="M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12"/>',"Renfo et mobilité","7 renfo · 6 mobilité",{tag:"button",w:1,row:1,attr:' data-sheet="guide"'});
   h+=tile('<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',GS?(GS.err?"Synchro à vérifier":"Synchro entre appareils"):"Mêmes données partout",GS?(GS.err?esc(GS.err):(GS.t?"Active · "+ago(GS.t):"En attente de la première synchro")):"Téléphone et ordinateur, chiffré, sans compte",{tag:"button",w:1,row:1,attr:' data-act="'+(GS?"gmanage":"gsetup")+'"',st:GS?[GS.err?"w":"",""]:null});
   h+='<button type="button" class="sd-t sd-w sd-row" data-account-logout><span class="sd-ic">'+I.logout+'</span><span class="sd-tx"><b>Se déconnecter</b><small>Fermer ta session</small></span></button>';
   h+='</div><div class="sd-dz"><button data-act="reset">'+(resetArmed?"Toucher encore pour tout effacer":"Tout effacer")+'</button></div>'+foot;
@@ -1485,6 +1499,7 @@ document.addEventListener("click",function(e){var b=e.target.closest("[data-wo]"
 function showInfo(key){
   var p=key.split(":"), h="";
   if(p[0]==="renfo"){var R0=RENFO[p[1]]; h='<h2>'+esc(R0.name)+'</h2><p class="small muted">'+esc(R0.tours)+'</p>'+woBtns(p[1])+exHTML(R0.ex)+(function(){var M=mobOf(p[1]); return '<h4 style="font-family:var(--display);margin:14px 0 4px">Mobilité après la séance · '+esc(M.name)+'</h4><p class="muted small">'+esc(M.goal)+'</p>'+exHTML(M.ex);})();}
+  else if(p[0]==="mob"){var MB=MOBS[p[1]]; if(!MB)return; h='<h2>'+esc(MB.name)+'</h2><p class="small muted">'+esc(MB.goal)+'</p>'+woBtns(null,0,p[1])+exHTML(MB.ex);}
   else if(p[0]==="loops"){var r=activeRace(), pl=planOf(r), q=p[1].split("-"), s=sessByKey(P(pl,+q[0]),q[1]); if(!s)return;
     h='<h2>Où courir près de chez toi</h2><p class="small muted">Les boucles les plus proches de '+kmS(s.km)+' km'+(s.dp>=100?' et +'+s.dp+' m':'')+'.</p>'+bestLoops(s).map(loopHTML).join("")+(s.km>16.5?'<p class="small muted" style="margin-top:8px">Pour atteindre '+kmS(s.km)+' km, enchaîne deux boucles voisines, ou ajoute des allers-retours de côtes de 500 m (+73 m).</p>':'')+'<p class="muted xs" style="margin-top:8px">Distances et dénivelés tels que publiés par chaque site. Vérifie le tracé avant de partir.</p>';}
   else if(key==="guide")h='<h2>Renfo et mobilité</h2><p class="muted small">Touche un exercice pour voir le dessin en deux étapes, la position de départ, l’exécution et les erreurs à éviter.</p><h4 style="font-family:var(--display);margin:12px 0 4px">Mobilité · 6 séances</h4>'+["hanches","chevilles","ischios","genoux","dos","complet"].map(function(k){var M=MOBS[k]; return '<details><summary>'+I.leaf+' '+esc(M.name)+' · '+woMin("mob",k)+' min</summary><div class="in"><p class="muted small">'+esc(M.goal)+'</p>'+woBtns(null,0,k)+exHTML(M.ex)+'</div></details>';}).join("")+'<h4 style="font-family:var(--display);margin:14px 0 4px">Renforcement · 7 séances</h4>'+["A1","A2","B1","B2","C1","C2","D"].map(function(k){var R0=RENFO[k]; return '<details><summary>'+I.dumb+' '+esc(R0.name)+' · '+woMin("renfo",k)+' min</summary><div class="in"><p class="muted small">'+esc(R0.tours)+'</p>'+woBtns(k,1)+exHTML(R0.ex)+'</div></details>';}).join("");
@@ -1655,7 +1670,7 @@ function sideFoot(){var el=$("sideFoot"); if(!el)return; var nm=window.CADENZO_P
   el.innerHTML='<div class="sf-user">'+(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span></div>';}
 function render(keep){
   var y=window.scrollY, v;
-  if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else v=vSettings();
+  if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else if(tab==="renfo")v=vRenfo(); else v=vSettings();
   if(tab==="today"||(tab==="forme"&&FSUB!=="garmin"))v+=syncNote();
   $("view").innerHTML=v; sideFoot();
   document.querySelectorAll("#tabs button").forEach(function(b){b.setAttribute("aria-current",b.dataset.t===tab?"page":"false");});
