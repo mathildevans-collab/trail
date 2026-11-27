@@ -433,7 +433,7 @@ function profOf(){return (TRAIN_PREF&&TRAIN_PREF.athlete_profile)||{};}
 function vdotOf(t,d){var m=t/60,v=d/m,pc=0.8+0.1894393*Math.exp(-0.012778*m)+0.2989558*Math.exp(-0.1932605*m); return (-4.6+0.182258*v+0.000104*v*v)/pc;}
 function paceAt(vdot,f){var vo=vdot*f,v=(-0.182258+Math.sqrt(0.182258*0.182258+4*0.000104*(4.6+vo)))/(2*0.000104); return 60000/v;}
 function calibrate(){
-  var pf=profOf(), last=HIST.length?HIST[HIST.length-1].date:"", sig=HIST.length+":"+last+":"+(pf.hr_max||"");
+  var pf=profOf(), sig=JSON.stringify(HIST.map(function(q){return [q.date,q.km,q.t,q.dp,q.hr,q.be||[]];}))+":"+(pf.hr_max||"");
   if(CAL_CACHE&&CAL_CACHE.sig===sig)return CAL_CACHE;
   var c={sig:sig,hrMax:0,est:false,vdot:0,easy:0,thr:0,itv:0,mar:0}, pm=+pf.hr_max;
   if(pm>=150&&pm<=220)c.hrMax=Math.round(pm);
@@ -452,7 +452,7 @@ function persoOn(){return !!(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&!TRAIN
 function persoStr(s,zonesOnly){ // adapte les textes d’un plan (bpm, allures, zones) à la personne
   if(typeof s!=="string"||!s)return s; var c=calibrate();
   if(!zonesOnly&&c.hrMax&&c.hrMax!==196){var f=c.hrMax/196; s=s.replace(/\b(1\d\d)(?:(\s*(?:-|–|à)\s*)(1\d\d))?(?=\s*bpm)/g,function(m,a,sep,b){return Math.round(a*f)+(b?sep+Math.round(b*f):"");});}
-  if(!zonesOnly&&c.easy&&Math.abs(c.easy/372-1)>0.03){var g=c.easy/372; s=s.replace(/\b([3-9]):([0-5]\d)(?=\s*(?:\/km|à|–|-))/g,function(m,a,b){return mmss(Math.round((+a*60+ +b)*g));});}
+  if(!zonesOnly&&c.easy&&Math.abs(c.easy/372-1)>0.03){var g=c.easy/372; s=s.replace(/\b(\d{1,2}):([0-5]\d)(?=\s*(?:\/km|à|–|-))/g,function(m,a,b){return mmss(Math.round((+a*60+ +b)*g));});}
   if(c.hrMax&&!/bpm/.test(s)){
     s=s.replace(/\b([Zz]one) ([1-5])(?:-([1-5]))?(?![\d-])/g,function(m,w,a,b){return m+" ("+zoneBpm(+a)[0]+"-"+zoneBpm(+(b||a))[1]+" bpm)";});
     s=s.replace(/\bZ([1-5])-Z([1-5])\b/g,function(m,a,b){return m+" ("+zoneBpm(+a)[0]+"-"+zoneBpm(+b)[1]+" bpm)";});}
@@ -616,7 +616,7 @@ function byDate(pl){var o={}; pl.weeks.forEach(function(wk){wk.s.forEach(functio
 var BADGE=[["ok","En cible"],["warn","À ajuster"],["off","Hors cible"]];
 function review(m,s,ac){
   var L=[],lvl=0,fast=false; function bump(n){if(n>lvl)lvl=n;}
-  if(s.club||s.type.indexOf("Club")===0){L.push("Séance collective obligatoire enregistrée. Elle compte dans ta semaine, rien à comparer avec le plan."); return {lvl:0,lines:L,fast:false};}
+  if(s.club||String(s.type||"").indexOf("Club")===0){L.push("Séance collective obligatoire enregistrée. Elle compte dans ta semaine, rien à comparer avec le plan."); return {lvl:0,lines:L,fast:false};}
   if(s.race||s.type==="Course B"){L.push("Course enregistrée : "+kmS(ac.km)+" km"+(ac.t?" en "+dur(ac.t):"")+"."); return {lvl:0,lines:L,fast:false};}
   if(s.km>0){var r=ac.km/s.km;
     if(r>1.15&&ac.km-s.km>=3){bump(2);L.push("Tu as dépassé de "+kmS(Math.round((ac.km-s.km)*10)/10)+" km ("+kmS(ac.km)+" km pour "+kmS(s.km)+" prévus). Reste dans le plan : ce surplus est retiré de tes prochaines sorties, y compris le club.");}
@@ -656,7 +656,7 @@ function adjFor(pl,w){
     effx=["Mardi : footing progressif de 40 min"+(tue?" à la place de « "+tue.type.toLowerCase()+" »":"")+".","Mercredi et samedi : environ −12 %"+(sat?" (samedi "+kmS(sat.km)+" → "+kmS(sat.km*MICRO)+" km)":"")+".","Dimanche (club) : jamais sous le minimum du club (15 km, 2 h, +500 m).","Jeudi : club, inchangé."];}
   else if((ok&&pc<75)||(ok&&pc<90&&(heavy||bad))||(heavy&&bad)||c.f===5){mode="light"; lead=cap(volTxt+(volTxt&&ciTxt?" et ":"")+ciTxt+"."); prop="Je te propose une semaine allégée (−18 %).";
     effx=["Mardi, mercredi, samedi : −18 % en distance et en dénivelé"+(sat?" (samedi "+kmS(sat.km)+" → "+kmS(sat.km*LIGHT)+" km)":"")+".","Dimanche (club) : jamais sous le minimum du club.","Jeudi : club, inchangé."];}
-  else if(ok&&st.fast>=2){mode="z2"; lead=st.fast+" sorties faciles trop rapides la semaine dernière."; prop="Cette semaine, Zone 2 stricte."; effx=["Sorties faciles et longues : sous 150 bpm, même si ça paraît lent.","Marche dès que la FC dépasse 150 bpm dans les côtes.","Le volume ne change pas."];}
+  else if(ok&&st.fast>=2){mode="z2"; lead=st.fast+" sorties faciles trop rapides la semaine dernière."; prop="Cette semaine, Zone 2 stricte."; effx=["Sorties faciles et longues : reste sous "+zoneBpm(2)[1]+" bpm, même si ça paraît lent.","Marche dès que la FC dépasse "+zoneBpm(2)[1]+" bpm dans les côtes.","Le volume ne change pas."];}
   else if(ok||hasCi){mode="normal"; lead=cap(volTxt+(volTxt&&hasCi?", ":"")+(hasCi?"ton check-in est bon":"")+"."); prop="On garde le plan normal."; effx=["Aucun changement cette semaine."];}
   if(!mode)return null;
   return {mode:mode,lead:lead,prop:prop,reasons:reasons,eff:effx};
@@ -679,12 +679,12 @@ function rbCompute(pl,w,wk){
   wk.s.forEach(function(x){if(x.race)return; pk+=x.km||0; var ac=D.actual[sk(r,w,x.k)]; if(ac&&ac.km>0){dk+=ac.km-(x.km||0); dd+=(ac.dp||0)-(x.dp||0); any=true;}});
   var ex=extraWk(wk); if(ex.km>0){dk+=ex.km; dd+=ex.dp; any=true;}
   if(!any||pk<=0)return null;
-  function flex(x){return !x.race&&(!x.club||x.tag==="l")&&x.type.indexOf("Club")!==0&&x.type!=="Course B"&&!x.edited&&x.km>0&&x.dow>=td&&!D.actual[sk(r,w,x.k)]&&!D.done[sk(r,w,x.k)]&&(x.tag==="e"||x.tag==="l");}
+  function flex(x){return !x.race&&!x.club&&String(x.type||"").indexOf("Club")!==0&&x.type!=="Course B"&&!x.edited&&x.km>0&&x.dow>=td&&!D.actual[sk(r,w,x.k)]&&!D.done[sk(r,w,x.k)]&&(x.tag==="e"||x.tag==="l");}
   var cand=wk.s.filter(flex), ch={}, items=[], txt="";
   if(dk>=Math.max(3,0.12*pk)&&cand.length){
     var tot=cand.reduce(function(a,x){return a+x.km;},0), A=Math.min(0.7*dk,0.3*tot);
-    cand.forEach(function(x){var cut=A*x.km/tot, to=Math.max(x.tag==="l"?x.km*0.7:Math.min(4,x.km),x.km-cut); if(x.club)to=Math.max(4,x.km-dk); to=Math.round(to*2)/2; if(to<x.km)ch[x.k]=to;});
-    txt=(ex.km>0?"Tu as couru "+kmS(Math.round(ex.km*10)/10)+" km un jour sans séance prévue. ":"")+"Tu as couru "+kmS(Math.round(dk*10)/10)+" km de plus que prévu cette semaine"+(dd>=200?" (et +"+nb(Math.round(dd))+" m de dénivelé)":"")+". Pour arriver reposée à tes prochaines séances de qualité, j’en absorbe environ 70 % sur tes sorties faciles à venir.";
+    cand.forEach(function(x){var cut=A*x.km/tot, to=Math.max(x.tag==="l"?x.km*0.7:Math.min(4,x.km),x.km-cut);  to=Math.round(to*2)/2; if(to<x.km)ch[x.k]=to;});
+    txt=(ex.km>0?"Tu as couru "+kmS(Math.round(ex.km*10)/10)+" km un jour sans séance prévue. ":"")+"Tu as couru "+kmS(Math.round(dk*10)/10)+" km de plus que prévu cette semaine"+(dd>=200?" (et +"+nb(Math.round(dd))+" m de dénivelé)":"")+". Pour arriver reposée à tes prochaines séances de qualité, j’en absorbe environ 70 % sur tes sorties individuelles faciles à venir.";
   } else if(dk<=-Math.max(3,0.15*pk)){
     var lg=cand.filter(function(x){return x.tag==="l";})[0], fr=null; try{var S=formeSeries(); fr=S&&S.pts[S.pts.length-1].z;}catch(e){}
     if(lg&&!(fr!=null&&fr<-25)){var to2=Math.round(Math.min(lg.km*1.1,lg.km+0.5*(-dk))*2)/2; if(to2>lg.km)ch[lg.k]=to2;}
@@ -707,7 +707,7 @@ function P(pl,w){
 function rbCard(r,wk){
   var rb=wk.rb; if(!rb||!rb.items.length)return ""; var off=wk.rbOff, h='<details class="card fold"><summary><h2>Ajustement de ta semaine</h2><span>'+(off?"désactivé":rb.items.length+" séance"+(rb.items.length>1?"s":"")+" adaptée"+(rb.items.length>1?"s":""))+'</span></summary><p class="small" style="margin:6px 0 8px">'+esc(rb.txt)+'</p>';
   h+='<ul class="pts">'+rb.items.map(function(x){return '<li>'+DOWL[x.dow]+' ('+esc(x.type.toLowerCase())+') : '+kmS(x.from)+' → <b>'+kmS(x.to)+' km</b>'+(off?" (non appliqué)":"")+'</li>';}).join("")+'</ul>';
-  h+='<p class="small muted" style="margin:8px 0 10px">Les séances du jeudi au club, les courses et celles que tu as modifiées ne changent jamais. La sortie club du dimanche peut passer sous le minimum du club.</p>';
+  h+='<p class="small muted" style="margin:8px 0 10px">Les séances de club, les courses et celles que tu as modifiées ne changent jamais.</p>';
   return h+'<button class="btn sm" data-rb="'+(off?"on":"off")+'" data-w="'+wk.n+'">'+(off?"Appliquer l’ajustement":"Annuler l’ajustement")+'</button></details>';
 }
 // ---------- icônes ----------
