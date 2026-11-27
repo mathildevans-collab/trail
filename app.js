@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=183;
+var APPV=184;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -848,54 +848,88 @@ function bindProfile(m){
 }
 
 // ---------- navigation ----------
-var FOLD={}, planCurW=0, tab="today", cur=1, sel=1, browsing=false, openWk=null, openPh=null, CV="list", CT="", prevTab="today", resetArmed=false, editRes=false;
+var FOLD={}, planCurW=0, tab="home", cur=1, sel=1, browsing=false, openWk=null, openPh=null, CV="list", CT="", prevTab="home", resetArmed=false, editRes=false;
 function goNow(){browsing=false; var r=activeRace(), pl=planOf(r); if(!pl)return; var i=planIdx(pl); cur=nowWeek(pl);
   if(i>=0&&i<pl.n*7)sel=i%7; else{var wk=pl.weeks[cur-1]; sel=wk&&wk.s.length?wk.s[0].dow:1;}}
 
 // ---------- Aujourd’hui ----------
+function homeChartSvg(series,labels,min,max,aria){
+  var W=560,H=166,L=18,R=542,T=14,B=124,span=Math.max(1,max-min),n=Math.max(2,labels.length);
+  function xy(v,i){return [L+(R-L)*i/(n-1),T+(max-v)/span*(B-T)];}
+  var h='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(aria)+'">';
+  [T,(T+B)/2,B].forEach(function(y){h+='<line class="home-chart-grid" x1="'+L+'" x2="'+R+'" y1="'+y+'" y2="'+y+'"/>';});
+  series.forEach(function(s){
+    var pts=[],dots=[];
+    s.values.forEach(function(v,i){if(v==null||!isFinite(v))return;var p=xy(v,i);pts.push(p[0].toFixed(1)+','+p[1].toFixed(1));dots.push('<circle class="home-chart-dot '+s.cls+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3"/>');});
+    if(pts.length>1)h+='<polyline class="home-chart-line '+s.cls+'" points="'+pts.join(' ')+'"/>';
+    h+=dots.join('');
+  });
+  labels.forEach(function(label,i){if(!label)return;var p=xy(min,i);h+='<text class="home-chart-label" x="'+p[0].toFixed(1)+'" y="151" text-anchor="middle">'+esc(label)+'</text>';});
+  return h+'</svg>';
+}
+function homeLegend(items){
+  return '<div class="home-chart-legend">'+items.map(function(x){return '<span><i class="'+x[0]+'"></i>'+esc(x[1])+'</span>';}).join('')+'</div>';
+}
 function vHome(){
-  var r=activeRace(), pl=r&&planOf(r), today=todayUTC(), w=pl?nowWeek(pl):0, wk=pl?P(pl,w):null;
+  var r=activeRace(), pl=r&&planOf(r), today=todayUTC(), todayN=Math.round(today/DAY), w=pl?nowWeek(pl):0, wk=pl?P(pl,w):null;
   var h=header(fmtL(today),"Accueil")+'<div class="home-grid">';
-  // Forme : réutilise le calcul de fraîcheur existant, sans inventer de score si l’historique manque.
+  // Forme : courbe réelle sur 28 jours, issue du calcul de charge Strava existant.
   var fs=typeof formeSeries==="function"?formeSeries():null, fcard='<section class="card home-card home-form"><div class="home-card-head"><h2>Ta forme</h2><button class="home-link" data-go="forme">Voir le suivi →</button></div>';
   if(fs&&fs.pts.length){
     var z=fs.pts[fs.pts.length-1], st=z.z>15?["Très frais","ok"]:z.z>5?["Frais","ok"]:z.z>=-10?["Équilibré","ok"]:z.z>=-25?["Chargé","warn"]:["Fatigue élevée","bad"];
-    fcard+='<div class="home-form-score"><b>'+st[0]+'</b><span class="chip '+st[1]+'">Fraîcheur '+(z.z>=0?"+":"")+Math.round(z.z)+'</span></div><p class="small muted">Forme '+Math.round(z.f)+' · Fatigue '+Math.round(z.a)+'</p>';
-    fcard+='<div class="home-spark" aria-label="Évolution de la forme"><i style="height:'+Math.max(12,Math.min(100,50+z.z))+'%"></i><span>Basé sur '+fs.n+' sorties</span></div>';
+    var byDay={};fs.pts.forEach(function(p){byDay[p.d]=p;});
+    var formVals=[],fatVals=[],freshVals=[],formLabels=[],all=[];
+    for(var fi=0;fi<28;fi++){
+      var fd=todayN-27+fi, fp=byDay[fd]||null;
+      formVals.push(fp?fp.f:null);fatVals.push(fp?fp.a:null);freshVals.push(fp?fp.z:null);
+      formLabels.push(fi===0||fi===6||fi===13||fi===20||fi===27?String(new Date(fd*DAY).getUTCDate()):"");
+      if(fp)all.push(fp.f,fp.a,fp.z);
+    }
+    var fmin=all.length?Math.min.apply(null,all):0,fmax=all.length?Math.max.apply(null,all):1,margin=Math.max(3,(fmax-fmin)*0.08);
+    fmin-=margin;fmax+=margin;
+    fcard+='<div class="home-form-score"><b>'+st[0]+'</b><span class="chip '+st[1]+'">Fraîcheur '+(z.z>=0?"+":"")+Math.round(z.z)+'</span></div>';
+    fcard+='<p class="small muted">Forme '+Math.round(z.f)+' · Fatigue '+Math.round(z.a)+'</p>';
+    fcard+='<div class="home-chart">'+homeChartSvg([{cls:"form",values:formVals},{cls:"fatigue",values:fatVals},{cls:"fresh",values:freshVals}],formLabels,fmin,fmax,"Évolution de la forme, de la fatigue et de la fraîcheur sur les 28 derniers jours")+'</div>';
+    fcard+=homeLegend([["form","Forme"],["fatigue","Fatigue"],["fresh","Fraîcheur"]]);
+    fcard+='<p class="xs muted" style="margin:8px 0 0">28 derniers jours · '+fs.n+' sorties synchronisées</p>';
   }else fcard+='<p class="small muted">Tes indicateurs apparaîtront après la synchronisation de tes premières sorties Strava.</p><button class="btn sm" data-act="sync">Synchroniser Strava</button>';
-  fcard+='</section>'; h+=fcard;
+  fcard+='</section>';h+=fcard;
   // Prochaine séance : première séance non terminée à partir d’aujourd’hui.
-  var next=null, nw=0, nd=0;
+  var next=null,nd=0;
   if(pl){
     for(var wi=Math.max(1,w);wi<=Math.min(pl.n,w+2)&&!next;wi++){
       var ww=P(pl,wi);
       ww.s.slice().sort(function(a,b){return a.dow-b.dow;}).forEach(function(ss){
-        var dt=sessDate(pl,wi,ss), key=sk(r,wi,ss.k);
+        var dt=sessDate(pl,wi,ss),key=sk(r,wi,ss.k);
         if(!next&&dt>=today&&!ss.race&&!D.done[key]&&!D.actual[key]&&ss.km>0){next={s:ss,wk:ww,w:wi,date:dt};nd=ss.dow;}
       });
     }
   }
   h+='<section class="card home-card home-next"><div class="home-card-head"><span class="eyebrow">À venir</span><span class="chip">'+(next?fmtL(next.date):"Plan")+'</span></div>';
   if(next){
-    var ns=next.s, mins=estDur(pl.m,ns), desc=[ns.km?kmS(ns.km)+" km":"",ns.dp?"+"+nb(ns.dp)+" m D+":"",mins?"≈ "+dur(mins):"",zoneOf(ns.type).split(" · ")[0]].filter(Boolean).join(" · ");
+    var ns=next.s,mins=estDur(pl.m,ns),desc=[ns.km?kmS(ns.km)+" km":"",ns.dp?"+"+nb(ns.dp)+" m D+":"",mins?"≈ "+dur(mins):"",zoneOf(ns.type).split(" · ")[0]].filter(Boolean).join(" · ");
     h+='<h2>'+esc(ns.type)+'</h2><p class="home-next-date">'+esc(fmtL(next.date))+' · '+esc(DOWL[nd])+'</p><p class="small muted">'+esc(desc)+'</p>'+(ns.txt?'<p class="small">'+esc(ns.txt)+'</p>':'')+'<button class="btn primary sm" data-go="plan">Voir ma séance →</button>';
   }else h+='<h2>Aucune séance à venir</h2><p class="small muted">Ton planning est à jour.</p><button class="btn sm" data-go="plan">Ouvrir mon plan</button>';
   h+='</section>';
   // Notifications du coach et de synchronisation.
-  var N=notifs(), nh='<section class="card home-card home-notifs"><div class="home-card-head"><h2>Notifications</h2><span class="chip'+(N.length?' warn':' ok')+'">'+N.length+'</span></div>';
-  if(N.length)nh+='<div class="home-notif-list">'+N.slice(0,3).map(function(x){return '<button data-act="notifs"><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></button>';}).join("")+'</div>';
+  var N=notifs(),nh='<section class="card home-card home-notifs"><div class="home-card-head"><h2>Notifications</h2><span class="chip'+(N.length?' warn':' ok')+'">'+N.length+'</span></div>';
+  if(N.length)nh+='<div class="home-notif-list">'+N.slice(0,3).map(function(x){return '<button data-act="notifs"><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></button>';}).join('')+'</div>';
   else nh+='<p class="small muted">Rien à signaler. Ton plan est à jour.</p>';
-  nh+='</section>'; h+=nh;
-  // Récapitulatif kilométrique réel de la semaine, comparé au plan.
-  var start=weekStart(Math.round(today/ DAY)), actual=sumRuns(start,start+6), planned=0, plannedDp=0;
-  if(wk){wk.s.forEach(function(ss){planned+=+ss.km||0;plannedDp+=+ss.dp||0;});}
-  var ratio=planned>0?Math.min(100,actual.km/planned*100):0;
-  h+='<section class="card home-card home-week"><div class="home-card-head"><h2>Récap de ta semaine</h2><span class="eyebrow">'+(wk?'Semaine '+w:'Activité')+'</span></div><div class="home-week-km"><b>'+kmS(actual.km)+'</b><span> / '+(planned?kmS(planned):"—")+' km</span></div><div class="bar home-progress"><i style="width:'+ratio.toFixed(1)+'%"></i></div><div class="home-week-stats"><div><b>+'+nb(actual.dp)+' m</b><span>D+ réalisé</span></div><div><b>+'+nb(plannedDp)+' m</b><span>D+ prévu</span></div><div><b>'+actual.n+'</b><span>sortie'+(actual.n>1?'s':'')+'</span></div></div></section>';
+  nh+='</section>';h+=nh;
+  // Comparaison jour par jour des kilomètres réellement courus et de ceux prévus.
+  var start=weekStart(todayN),actual=sumRuns(start,start+6),planned=0,plannedDp=0,actualDays=[],plannedDays=[0,0,0,0,0,0,0],weekLabels=["L","M","M","J","V","S","D"];
+  for(var di=0;di<7;di++){actualDays.push(di<=dowOf(todayN)?sumRuns(start+di,start+di).km:null);}
+  if(wk){wk.s.forEach(function(ss){var sd=Math.round(sessDate(pl,w,ss)/DAY),ix=sd-start;if(ix>=0&&ix<7){plannedDays[ix]+=+ss.km||0;planned+=+ss.km||0;plannedDp+=+ss.dp||0;}});}
+  var chartMax=Math.max.apply(null,actualDays.concat(plannedDays).filter(function(v){return v!=null;}).concat([1]))*1.18;
+  h+='<section class="card home-card home-week"><div class="home-card-head"><h2>Récap de ta semaine</h2><span class="eyebrow">'+(wk?'Semaine '+w:'Activité')+'</span></div>';
+  h+='<div class="home-week-km"><b>'+kmS(actual.km)+'</b><span> / '+(planned?kmS(planned):"—")+' km</span></div>';
+  h+='<div class="home-chart">'+homeChartSvg([{cls:"actual",values:actualDays},{cls:"planned",values:wk?plannedDays:[null,null,null,null,null,null,null]}],weekLabels,0,chartMax,"Kilomètres réalisés et prévus pour chaque jour de la semaine")+'</div>';
+  h+=homeLegend([["actual","Réalisés"],["planned","Prévus"]]);
+  h+='<div class="home-week-stats"><div><b>+'+nb(actual.dp)+' m</b><span>D+ réalisé</span></div><div><b>+'+nb(plannedDp)+' m</b><span>D+ prévu</span></div><div><b>'+actual.n+'</b><span>sortie'+(actual.n>1?'s':'')+'</span></div></div></section>';
   // Segments Strava : reprend les segments sauvegardés et les actions de recherche déjà présentes.
   ctWatch();
   var segHtml=cotesCard0().replace("Segments proposés","Segments proches de toi");
-  h+='<section class="home-segments">'+segHtml+'</section>';
-  h+='</div>';
+  h+='<section class="home-segments">'+segHtml+'</section></div>';
   return h;
 }
 function vToday(){
@@ -1715,8 +1749,8 @@ function sideFoot(){var el=$("sideFoot"); if(!el)return; var nm=window.CADENZO_P
   el.innerHTML='<div class="sf-user">'+(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span></div>';}
 function render(keep){
   var y=window.scrollY, v;
-  if(tab==="today")v=(window.matchMedia&&window.matchMedia("(min-width:900px)").matches)?vHome():vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else if(tab==="renfo")v=vRenfo(); else v=vSettings();
-  if(tab==="today"||(tab==="forme"&&FSUB!=="garmin"))v+=syncNote();
+  if(tab==="home")v=vHome(); else if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else if(tab==="renfo")v=vRenfo(); else v=vSettings();
+  if((tab==="home"||tab==="today")||(tab==="forme"&&FSUB!=="garmin"))v+=syncNote();
   $("view").innerHTML=v; sideFoot();
   document.querySelectorAll("#tabs button").forEach(function(b){b.setAttribute("aria-current",b.dataset.t===tab?"page":"false");});
   if(tab==="course"){var f=focusRace(); if(f){var g=$("goal");
