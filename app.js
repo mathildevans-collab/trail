@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=182;
+var APPV=183;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -853,6 +853,51 @@ function goNow(){browsing=false; var r=activeRace(), pl=planOf(r); if(!pl)return
   if(i>=0&&i<pl.n*7)sel=i%7; else{var wk=pl.weeks[cur-1]; sel=wk&&wk.s.length?wk.s[0].dow:1;}}
 
 // ---------- Aujourd’hui ----------
+function vHome(){
+  var r=activeRace(), pl=r&&planOf(r), today=todayUTC(), w=pl?nowWeek(pl):0, wk=pl?P(pl,w):null;
+  var h=header(fmtL(today),"Accueil")+'<div class="home-grid">';
+  // Forme : réutilise le calcul de fraîcheur existant, sans inventer de score si l’historique manque.
+  var fs=typeof formeSeries==="function"?formeSeries():null, fcard='<section class="card home-card home-form"><div class="home-card-head"><h2>Ta forme</h2><button class="home-link" data-go="forme">Voir le suivi →</button></div>';
+  if(fs&&fs.pts.length){
+    var z=fs.pts[fs.pts.length-1], st=z.z>15?["Très frais","ok"]:z.z>5?["Frais","ok"]:z.z>=-10?["Équilibré","ok"]:z.z>=-25?["Chargé","warn"]:["Fatigue élevée","bad"];
+    fcard+='<div class="home-form-score"><b>'+st[0]+'</b><span class="chip '+st[1]+'">Fraîcheur '+(z.z>=0?"+":"")+Math.round(z.z)+'</span></div><p class="small muted">Forme '+Math.round(z.f)+' · Fatigue '+Math.round(z.a)+'</p>';
+    fcard+='<div class="home-spark" aria-label="Évolution de la forme"><i style="height:'+Math.max(12,Math.min(100,50+z.z))+'%"></i><span>Basé sur '+fs.n+' sorties</span></div>';
+  }else fcard+='<p class="small muted">Tes indicateurs apparaîtront après la synchronisation de tes premières sorties Strava.</p><button class="btn sm" data-act="sync">Synchroniser Strava</button>';
+  fcard+='</section>'; h+=fcard;
+  // Prochaine séance : première séance non terminée à partir d’aujourd’hui.
+  var next=null, nw=0, nd=0;
+  if(pl){
+    for(var wi=Math.max(1,w);wi<=Math.min(pl.n,w+2)&&!next;wi++){
+      var ww=P(pl,wi);
+      ww.s.slice().sort(function(a,b){return a.dow-b.dow;}).forEach(function(ss){
+        var dt=sessDate(pl,wi,ss), key=sk(r,wi,ss.k);
+        if(!next&&dt>=today&&!ss.race&&!D.done[key]&&!D.actual[key]&&ss.km>0){next={s:ss,wk:ww,w:wi,date:dt};nd=ss.dow;}
+      });
+    }
+  }
+  h+='<section class="card home-card home-next"><div class="home-card-head"><span class="eyebrow">À venir</span><span class="chip">'+(next?fmtL(next.date):"Plan")+'</span></div>';
+  if(next){
+    var ns=next.s, mins=estDur(pl.m,ns), desc=[ns.km?kmS(ns.km)+" km":"",ns.dp?"+"+nb(ns.dp)+" m D+":"",mins?"≈ "+dur(mins):"",zoneOf(ns.type).split(" · ")[0]].filter(Boolean).join(" · ");
+    h+='<h2>'+esc(ns.type)+'</h2><p class="home-next-date">'+esc(fmtL(next.date))+' · '+esc(DOWL[nd])+'</p><p class="small muted">'+esc(desc)+'</p>'+(ns.txt?'<p class="small">'+esc(ns.txt)+'</p>':'')+'<button class="btn primary sm" data-go="plan">Voir ma séance →</button>';
+  }else h+='<h2>Aucune séance à venir</h2><p class="small muted">Ton planning est à jour.</p><button class="btn sm" data-go="plan">Ouvrir mon plan</button>';
+  h+='</section>';
+  // Notifications du coach et de synchronisation.
+  var N=notifs(), nh='<section class="card home-card home-notifs"><div class="home-card-head"><h2>Notifications</h2><span class="chip'+(N.length?' warn':' ok')+'">'+N.length+'</span></div>';
+  if(N.length)nh+='<div class="home-notif-list">'+N.slice(0,3).map(function(x){return '<button data-act="notifs"><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></button>';}).join("")+'</div>';
+  else nh+='<p class="small muted">Rien à signaler. Ton plan est à jour.</p>';
+  nh+='</section>'; h+=nh;
+  // Récapitulatif kilométrique réel de la semaine, comparé au plan.
+  var start=weekStart(Math.round(today/ DAY)), actual=sumRuns(start,start+6), planned=0, plannedDp=0;
+  if(wk){wk.s.forEach(function(ss){planned+=+ss.km||0;plannedDp+=+ss.dp||0;});}
+  var ratio=planned>0?Math.min(100,actual.km/planned*100):0;
+  h+='<section class="card home-card home-week"><div class="home-card-head"><h2>Récap de ta semaine</h2><span class="eyebrow">'+(wk?'Semaine '+w:'Activité')+'</span></div><div class="home-week-km"><b>'+kmS(actual.km)+'</b><span> / '+(planned?kmS(planned):"—")+' km</span></div><div class="bar home-progress"><i style="width:'+ratio.toFixed(1)+'%"></i></div><div class="home-week-stats"><div><b>+'+nb(actual.dp)+' m</b><span>D+ réalisé</span></div><div><b>+'+nb(plannedDp)+' m</b><span>D+ prévu</span></div><div><b>'+actual.n+'</b><span>sortie'+(actual.n>1?'s':'')+'</span></div></div></section>';
+  // Segments Strava : reprend les segments sauvegardés et les actions de recherche déjà présentes.
+  ctWatch();
+  var segHtml=cotesCard0().replace("Segments proposés","Segments proches de toi");
+  h+='<section class="home-segments">'+segHtml+'</section>';
+  h+='</div>';
+  return h;
+}
 function vToday(){
   var r=activeRace();
   if(!r)return header(fmtL(todayUTC()),"Aujourd’hui")+banners()+'<div class="card empty"><h2>Aucune course au programme</h2><p class="muted">Ajoute une course objectif : l’appli te prépare un plan jusqu’au jour J.</p><button class="btn primary" data-act="addrace">+ Ajouter une course</button></div>';
@@ -1670,7 +1715,7 @@ function sideFoot(){var el=$("sideFoot"); if(!el)return; var nm=window.CADENZO_P
   el.innerHTML='<div class="sf-user">'+(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span></div>';}
 function render(keep){
   var y=window.scrollY, v;
-  if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else if(tab==="renfo")v=vRenfo(); else v=vSettings();
+  if(tab==="today")v=(window.matchMedia&&window.matchMedia("(min-width:900px)").matches)?vHome():vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else if(tab==="renfo")v=vRenfo(); else v=vSettings();
   if(tab==="today"||(tab==="forme"&&FSUB!=="garmin"))v+=syncNote();
   $("view").innerHTML=v; sideFoot();
   document.querySelectorAll("#tabs button").forEach(function(b){b.setAttribute("aria-current",b.dataset.t===tab?"page":"false");});
