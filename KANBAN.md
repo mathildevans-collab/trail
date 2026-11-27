@@ -34,14 +34,14 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 - [ ] Faire le point sur la PR #28 annulée d'une autre session (séparée du travail sur les séances route)
 
 ### Moteur de plan : réalisme (toutes distances, tous niveaux)
-À valider ensemble avant de coder. Les chiffres sont des ordres de grandeur de coaching, à tester sur 3 profils (débutant 10 km, régulier marathon, confirmé ultra).
-- [ ] 1. Familles de course par km-effort (km + D+/100), pas par distance seule : 10 km, semi, marathon, trail court, trail moyen, ultra
+À valider ensemble avant de coder. Les chiffres sont des ordres de grandeur de coaching, à tester sur 3 profils (débutant 10 km, régulier marathon, confirmé trail long).
+- [ ] 1. Familles de course par km-effort (km + D+/100), pas par distance seule : 10 km, semi, marathon, trail court, trail moyen, trail long (plafond environ 80 km-effort, ultra hors périmètre)
 - [ ] 2. Paramètres par famille : durée de plan, sortie longue max, affûtage (7 j à 3 sem.), séances clés
 - [ ] 3. Plafonds selon le niveau : sortie longue d'un débutant 10 km à 60-75 min ; marathon débutant ~2h45 et 28 km max
 - [ ] 4. Prérequis de base : un débutant doit courir régulièrement avant un marathon ou un trail moyen, sinon plan plus long ou refus
 - [ ] 5. Alerte de réalisme : plan trop court pour la famille et le niveau, objectif trop ambitieux, avec proposition d'une course B ou d'un objectif plus doux
 - [ ] 6. Trail en heures et D+ par heure (sortie longue en temps), route en km
-- [ ] 7. Ultra : sorties de 3-4 h et week-ends enchaînés plutôt que 4-6 h d'un coup ; volume hebdo en heures ; nuit, nutrition, marche active, bâtons
+- [ ] 7. Hors périmètre : pas d'ultra. Au-delà de 80 km-effort, l'app prévient et propose un objectif plus court ; trail long : sortie longue en heures, marche active, test du ravitaillement
 - [ ] 8. Plafond de charge basé sur les 4 dernières semaines Strava, pas sur les km déclarés, avec limite de hausse par semaine
 - [ ] 9. Recalcul des allures : après 3 séances au-dessus ou en dessous des cibles ; une séance isolée est ignorée
 - [ ] 10. Bouton « Pas en forme » : un tap pour alléger la semaine (maladie, douleur, manque de temps), puis reprise progressive
@@ -51,7 +51,7 @@ Mis à jour le 25 nov. 2026. Pour ajouter un ticket : le demander à Claude.
 - [ ] 14. Semaine flexible : 3 séances = 1 qualité + 1 longue + 1 facile ; fini les jours fixes mardi et week-end
 - [ ] 15. Environ 80 % d'intensité facile : plafonner la qualité
 - [ ] 16. Temps objectif comparé aux vrais records Strava (formule actuelle trop simple)
-- [ ] 17. Relecture des règles par un coach pour les profils à risque (ultra, débutants)
+- [ ] 17. Relecture des règles par un coach pour les profils à risque (débutants, trail long)
 
 ### Améliorations
 - [ ] Forme : à discuter, regrouper Strava et Garmin dans un seul dashboard (modules en plus si l'import Garmin est fait, Strava seul par défaut)
