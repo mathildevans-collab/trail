@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=185;
+var APPV=186;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -355,6 +355,15 @@ function setDp(s,nd){ // change le D+ d’une séance, y compris dans ses textes
   c.txt=f(c.txt); if(Array.isArray(c.steps))c.steps=c.steps.map(function(x){return Array.isArray(x)?x.map(f):x;}); return c;
 }
 function timeAt(vdot,d){var lo=300,hi=90000,i,mid; for(i=0;i<40;i++){mid=(lo+hi)/2; if(vdotOf(mid,d)>vdot)lo=mid; else hi=mid;} return (lo+hi)/2;}
+function capWeekKm(S,limit){ // hausse de charge : la semaine ne dépasse pas la limite ; on coupe la qualité d’abord, la sortie longue en dernier
+  var tot=0; S.forEach(function(s){tot+=+s.km||0;}); var need=tot-limit; if(need<=0.3)return S;
+  var cut={}; S.forEach(function(s,i){if(!s.race&&!s.added&&s.type!=="Course B"&&!isClubSession(s)&&(+s.km||0)>0)cut[i]=0;});
+  [["q",0.55],["e",0.5],["l",0.85]].forEach(function(g){S.forEach(function(s,i){
+    if(need<=0||cut[i]==null)return; var t=s.tag==="q"?"q":s.tag==="l"?"l":"e"; if(t!==g[0])return;
+    var can=(+s.km)*(1-g[1])-cut[i]; if(can<=0)return; var d=Math.min(can,need); cut[i]+=d; need-=d;});});
+  return S.map(function(s,i){if(!cut[i])return s; var c=Object.assign({},s), old=+s.km, nk=Math.floor((old-cut[i])*10)/10; if(nk>=old-0.05)return s;
+    c.km=nk; if(c.dp)c.dp=Math.floor(c.dp*nk/old); c.pace=null; c.steps=null; c.txt=(c.txt||"")+" Réduite à "+kmS(nk)+" km : la charge monte de 10 % par semaine au plus."; return c;});
+}
 function planAlerts(r,m,n,weeks,pref){ // alertes de réalisme : jamais de plan irréaliste construit en silence
   var A=[], f=famOf(m.L,m.dp,pref), lvl=effLevel(pref), p=pref&&pref.athlete_profile||{}, ss=stravaStats();
   if(f.eff>80)A.push("Cette course dépasse 80 km-effort. Cadenzo ne prépare pas l’ultra : choisis un objectif plus court ou prends un coach.");
@@ -634,7 +643,7 @@ function planOf(r){
   });
   if(TRAIN_PREF&&TRAIN_PREF.onboarding_completed&&!TRAIN_PREF.legacy){ // préférences appliquées à tous les plans, y compris les plans intégrés
     var pref=TRAIN_PREF, days=(pref.training_days||[1,2,3,5,6]).map(Number), clubDays=pref.has_club?(pref.club_days||[]).map(Number):[], target=Math.max(2,Math.min(7,+pref.sessions_per_week||4));
-    var ss=stravaStats(), lvl=effLevel(pref), fam=famOf(m.L,m.dp,pref), td0=mondayOf(todayUTC()), easyS=calibrate().easy||372, prevLong=ss.ok?ss.longKm:0, prevDp=ss.ok?ss.dp:0, noted=false;
+    var ss=stravaStats(), lvl=effLevel(pref), fam=famOf(m.L,m.dp,pref), td0=mondayOf(todayUTC()), easyS=calibrate().easy||372, prevLong=ss.ok?ss.longKm:0, prevDp=ss.ok?ss.dp:0, prevBuild=0, noted=false;
     weeks.forEach(function(wk){
       var wi=Math.floor((wk.start-td0)/WEEK), addedS=wk.s.filter(function(s){return s.added;}); wk.s=wk.s.filter(function(s){return !s.added;}); // séances ajoutées à la main : jamais retirées par les préférences
       var byDow={}; wk.s.forEach(function(s){byDow[s.dow]=s;});
@@ -681,6 +690,9 @@ function planOf(r){
         if(!wk.rec&&prevDp>0&&dsum>prevDp*1.1+50){var ex=dsum-Math.round(prevDp*1.1), lgi=-1; wk.s.forEach(function(x,i){if(x.tag==="l"&&!x.race&&!isClubSession(x)&&x.type!=="Course B"&&(lgi<0||(+x.dp||0)>(+wk.s[lgi].dp||0)))lgi=i;});
           if(lgi>=0){var od=Math.round(+wk.s[lgi].dp||0); wk.s[lgi]=setDp(wk.s[lgi],Math.max(0,od-Math.min(ex,od))); dsum-=od-wk.s[lgi].dp;}}
         if(!wk.rec)prevDp=Math.max(dsum,0.0001);}
+      if(!rcs){var wsum=0; wk.s.forEach(function(x){wsum+=+x.km||0;}); // hausse de charge : +10 % au plus sur la dernière semaine de charge
+        if(!wk.rec&&prevBuild>0&&wsum>prevBuild*1.1+1){wk.s=capWeekKm(wk.s,prevBuild*1.1+1); wsum=0; wk.s.forEach(function(x){wsum+=+x.km||0;}); wk.note=(wk.note?wk.note+" ":"")+"Volume limité : la charge monte de 10 % par semaine au plus.";}
+        if(!wk.rec)prevBuild=wsum;}
       if(wi>=0&&!wk.rec&&!rcs){var lkm=0; wk.s.forEach(function(x){if(x.tag==="l"&&!x.race&&x.type!=="Course B"&&(+x.km||0)>lkm)lkm=+x.km;}); if(lkm>0)prevLong=lkm;}
       wk.s=wk.s.map(persoSess).concat(addedS).sort(function(a,b){return a.dow-b.dow;});
       if(ss.ok&&wi>=0&&!noted){noted=true; var pr0=pauseRamp(ss.since), nt="D’après tes 4 dernières semaines : "+kmS(Math.round(ss.km))+" km par semaine, "+(Math.round(ss.runs*10)/10)+" sorties.";

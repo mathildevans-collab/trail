@@ -34,7 +34,7 @@ const context = {
   RENFO: {},
   woMin: () => 12
 };
-const names = ["stravaStats", "effLevel", "pauseRamp", "famOf", "longCapKm", "isClubSession", "canBackToBack", "applyTrailElevation", "athleteLoadRules", "coachingRules"];
+const names = ["stravaStats", "effLevel", "pauseRamp", "famOf", "longCapKm", "isClubSession", "capWeekKm", "canBackToBack", "applyTrailElevation", "athleteLoadRules", "coachingRules"];
 vm.createContext(context);
 vm.runInContext("var LVL=[\"debutant\",\"reprise\",\"regulier\",\"confirme\"], SS_CACHE=null, FAMLONG={\"10k\":[60,75,90],semi:[90,105,120],marathon:[150,165,180],tcourt:[75,105,120],tmoyen:[120,165,210],tlong:[180,225,270]};", context);
 vm.runInContext(names.map(extractFunction).join("\n"), context);
@@ -135,5 +135,12 @@ assert.equal(context.pauseRamp(10).f, 0.7);
 assert.equal(context.pauseRamp(20).f, 0.6);
 assert.equal(context.pauseRamp(40).f, 0.5);
 context.HIST.length = 0; context.SS_CACHE = null;
+
+// 8. Hausse de charge : la semaine est ramenée sous la limite, la sortie longue est protégée.
+const cw = context.capWeekKm([session(1,"Seuil",10,0,"q"),session(3,"Facile",8,0,"e"),session(5,"Sortie longue",20,0,"l")], 32);
+const cwt = cw.reduce((a,s)=>a+s.km,0);
+assert.ok(cwt <= 32.3, "limite respectée : " + cwt);
+assert.ok(cw.find(s=>s.tag==="l").km >= 17, "sortie longue protégée");
+assert.ok(cw.find(s=>s.tag==="q").km <= cw.find(s=>s.tag==="l").km);
 
 console.log("OK : scénarios sportifs validés (blocs, D+, charge, intensités) + qualité/sortie longue, familles, Strava.");
