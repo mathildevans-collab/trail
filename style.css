@@ -1869,3 +1869,10 @@ p.small.muted,p.muted.xs,.synth p,.synth .in p,details p.muted,.week-card p.mute
   #tabs .tabs-in>button[aria-current="page"] .nav-label{display:block;font-size:9px;line-height:1.1;}
   #tabs .tabs-in>button[aria-current="page"]{background:#fff;color:#1d2420;}
 }
+
+
+/* Accueil réservé à la navigation ordinateur */
+@media(max-width:899px){
+  #tabs .tabs-in>button[data-t="home"]{display:none!important;}
+  #tabs .tabs-in>button:not([data-t="home"]){flex:1 1 0;}
+}
