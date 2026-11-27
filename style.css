@@ -1857,3 +1857,15 @@ p.small.muted,p.muted.xs,.synth p,.synth .in p,details p.muted,.week-card p.mute
  .home-form,.home-next,.home-notifs,.home-week{grid-column:span 6}
 }
 @media(max-width:899px){.home-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.home-form,.home-next,.home-notifs,.home-week{grid-column:1/-1}}
+
+
+/* Navigation mobile : Accueil toujours visible, sans dépendre de l’onglet actif */
+@media(max-width:899px){
+  #tabs .tabs-in{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;width:100%;}
+  #tabs .tabs-in>button{display:flex!important;min-width:0;flex:initial!important;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:4px 1px;font-size:9px;white-space:normal;}
+  #tabs .tabs-in>button:first-child{visibility:visible!important;opacity:1!important;}
+  #tabs .tabs-in>button svg{display:block;width:20px;height:20px;flex:none;}
+  #tabs .tabs-in>button .nav-label{display:none;}
+  #tabs .tabs-in>button[aria-current="page"] .nav-label{display:block;font-size:9px;line-height:1.1;}
+  #tabs .tabs-in>button[aria-current="page"]{background:#fff;color:#1d2420;}
+}
