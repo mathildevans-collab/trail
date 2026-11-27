@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=184;
+var APPV=185;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -854,17 +854,41 @@ function goNow(){browsing=false; var r=activeRace(), pl=planOf(r); if(!pl)return
 
 // ---------- Aujourd’hui ----------
 function homeChartSvg(series,labels,min,max,aria){
-  var W=560,H=166,L=18,R=542,T=14,B=124,span=Math.max(1,max-min),n=Math.max(2,labels.length);
+  var W=560,H=184,L=18,R=542,T=18,B=132,span=Math.max(1,max-min),n=Math.max(2,labels.length);
   function xy(v,i){return [L+(R-L)*i/(n-1),T+(max-v)/span*(B-T)];}
-  var h='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(aria)+'">';
+  function smooth(points){
+    if(points.length<2)return "";
+    var d="M"+points[0][0].toFixed(1)+","+points[0][1].toFixed(1);
+    for(var i=0;i<points.length-1;i++){
+      var p0=points[Math.max(0,i-1)],p1=points[i],p2=points[i+1],p3=points[Math.min(points.length-1,i+2)];
+      var c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6];
+      var c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6];
+      d+=" C"+c1[0].toFixed(1)+","+c1[1].toFixed(1)+" "+c2[0].toFixed(1)+","+c2[1].toFixed(1)+" "+p2[0].toFixed(1)+","+p2[1].toFixed(1);
+    }
+    return d;
+  }
+  var h='<svg class="home-chart-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(aria)+'" preserveAspectRatio="none">';
+  h+='<defs><linearGradient id="home-grad-form" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="var(--brand)" stop-opacity=".22"/><stop offset="100%" stop-color="var(--brand)" stop-opacity="0"/></linearGradient><linearGradient id="home-grad-fatigue" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="var(--warn)" stop-opacity=".12"/><stop offset="100%" stop-color="var(--warn)" stop-opacity="0"/></linearGradient></defs>';
   [T,(T+B)/2,B].forEach(function(y){h+='<line class="home-chart-grid" x1="'+L+'" x2="'+R+'" y1="'+y+'" y2="'+y+'"/>';});
+  labels.forEach(function(label,i){if(label){var x=L+(R-L)*i/(n-1);h+='<line class="home-chart-tick" x1="'+x+'" x2="'+x+'" y1="'+(B+3)+'" y2="'+(B+7)+'"/>'; }});
   series.forEach(function(s){
-    var pts=[],dots=[];
-    s.values.forEach(function(v,i){if(v==null||!isFinite(v))return;var p=xy(v,i);pts.push(p[0].toFixed(1)+','+p[1].toFixed(1));dots.push('<circle class="home-chart-dot '+s.cls+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3"/>');});
-    if(pts.length>1)h+='<polyline class="home-chart-line '+s.cls+'" points="'+pts.join(' ')+'"/>';
-    h+=dots.join('');
+    var groups=[],group=[];
+    s.values.forEach(function(v,i){if(v==null||!isFinite(v)){if(group.length)groups.push(group);group=[];return;}group.push({p:xy(v,i),i:i});});
+    if(group.length)groups.push(group);
+    groups.forEach(function(g){
+      var points=g.map(function(x){return x.p;}),d=smooth(points);
+      if(points.length>1){
+        if(s.cls==="form"||s.cls==="fatigue"){
+          var area=d+" L"+points[points.length-1][0].toFixed(1)+","+B+" L"+points[0][0].toFixed(1)+","+B+" Z";
+          h+='<path class="home-chart-area '+s.cls+'" d="'+area+'"/>';
+        }
+        h+='<path class="home-chart-line '+s.cls+'" d="'+d+'"/>';
+      }
+      var last=g[g.length-1],p=last.p;
+      h+='<circle class="home-chart-point-halo '+s.cls+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="6"/><circle class="home-chart-point '+s.cls+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.2"/>';
+    });
   });
-  labels.forEach(function(label,i){if(!label)return;var p=xy(min,i);h+='<text class="home-chart-label" x="'+p[0].toFixed(1)+'" y="151" text-anchor="middle">'+esc(label)+'</text>';});
+  labels.forEach(function(label,i){if(!label)return;var x=L+(R-L)*i/(n-1);h+='<text class="home-chart-label" x="'+x.toFixed(1)+'" y="164" text-anchor="middle">'+esc(label)+'</text>';});
   return h+'</svg>';
 }
 function homeLegend(items){
