@@ -28,12 +28,15 @@ function extractFunction(name) {
 const context = {
   Math, Number, String, Object, Array, isFinite,
   TRAIN_PREF: null,
+  HIST: [], DAY: 864e5, todayUTC: () => Date.UTC(2026, 10, 27),
+  dms: s => Date.parse(s + "T00:00:00Z"), dayN: s => Math.round(Date.parse(s + "T00:00:00Z") / 864e5),
   kmS: n => String(n),
   RENFO: {},
   woMin: () => 12
 };
-const names = ["isClubSession", "canBackToBack", "applyTrailElevation", "athleteLoadRules", "coachingRules"];
+const names = ["stravaStats", "effLevel", "pauseRamp", "famOf", "longCapKm", "isClubSession", "canBackToBack", "applyTrailElevation", "athleteLoadRules", "coachingRules"];
 vm.createContext(context);
+vm.runInContext("var LVL=[\"debutant\",\"reprise\",\"regulier\",\"confirme\"], SS_CACHE=null, FAMLONG={\"10k\":[60,75,90],semi:[90,105,120],marathon:[150,165,180],tcourt:[75,105,120],tmoyen:[120,165,210],tlong:[180,225,270]};", context);
 vm.runInContext(names.map(extractFunction).join("\n"), context);
 
 function pref(profile, sessions = 5, days = [1,2,3,5,6]) {
@@ -98,4 +101,39 @@ assert.ok(recovery.warnings.length > 0);
 const taper = context.coachingRules(coachInput, trailPref, 25, false, "Affûtage");
 assert.equal(taper.sessions.filter(s => s.tag === "q" && !s.club).length, 0);
 
-console.log("OK : 4 familles de scénarios sportifs validées (blocs, D+, charge, intensités).");
+// 5. Qualité jamais au-dessus de la sortie longue ; la réduction touche la qualité d'abord.
+const qIn = [
+  session(1,"Fractionné",11,0,"q"),
+  session(3,"Endurance facile",5,0,"e"),
+  session(5,"Sortie longue",8,0,"l")
+];
+const qOut = context.athleteLoadRules(qIn, pref({discipline:"route",experience:"debutant",weekly_km:14,runs_per_week:3},3,[1,3,5]), 1, false);
+const qk = qOut.sessions.find(s => s.tag === "q").km, lk = qOut.sessions.find(s => s.tag === "l").km;
+assert.ok(qk <= lk + 0.01, "La qualité ne dépasse pas la sortie longue : " + qk + " / " + lk);
+assert.ok(lk >= qk, "La sortie longue est protégée : " + JSON.stringify(qOut.sessions.map(s=>[s.type,s.km])));
+
+// 6. Familles de course.
+assert.equal(context.famOf(10,50,{athlete_profile:{discipline:"route"}}).id, "10k");
+assert.equal(context.famOf(21.1,150,{athlete_profile:{discipline:"route"}}).id, "semi");
+assert.equal(context.famOf(42.2,250,{athlete_profile:{discipline:"route"}}).id, "marathon");
+assert.equal(context.famOf(25,1200,{athlete_profile:{discipline:"trail"}}).id, "tmoyen");
+assert.equal(context.famOf(15,300,{athlete_profile:{discipline:"trail"}}).id, "tcourt");
+assert.equal(context.famOf(50,3000,{athlete_profile:{discipline:"trail"}}).id, "tlong");
+
+// 7. Strava : niveau réel = le plus bas, pause = reprise progressive.
+const ds = n => new Date(Date.UTC(2026, 10, 27) - n * 864e5).toISOString().slice(0, 10);
+context.HIST.length = 0;
+for (let i = 1; i <= 24; i++) context.HIST.push({ date: ds(i * 3), km: 6, dp: 50, t: 2200, hr: 0 });
+context.HIST.sort((a, b) => a.date < b.date ? -1 : 1);
+context.SS_CACHE = null;
+const st = context.stravaStats();
+assert.ok(st.ok && st.level === "debutant", "6 km x ~5 sorties par 4 semaines : niveau observé débutant");
+assert.equal(context.effLevel({athlete_profile:{experience:"confirme"}}), "debutant");
+assert.equal(context.effLevel({athlete_profile:{experience:"debutant"}}), "debutant");
+assert.equal(context.pauseRamp(3), null);
+assert.equal(context.pauseRamp(10).f, 0.7);
+assert.equal(context.pauseRamp(20).f, 0.6);
+assert.equal(context.pauseRamp(40).f, 0.5);
+context.HIST.length = 0; context.SS_CACHE = null;
+
+console.log("OK : scénarios sportifs validés (blocs, D+, charge, intensités) + qualité/sortie longue, familles, Strava.");

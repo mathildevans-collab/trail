@@ -1857,3 +1857,7 @@ p.small.muted,p.muted.xs,.synth p,.synth .in p,details p.muted,.week-card p.mute
  .home-form,.home-next,.home-notifs,.home-week{grid-column:span 6}
 }
 @media(max-width:899px){.home-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.home-form,.home-next,.home-notifs,.home-week{grid-column:1/-1}}
+/* alertes de réalisme du plan */
+.pl2al{margin:-4px 0 14px;padding:10px 12px;border-radius:14px;background:var(--warn-soft);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 22%,transparent)}
+.pl2al b{display:block;font:700 12px/1 var(--display);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+.pl2al p{margin:0 0 4px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}.pl2al p:last-child{margin-bottom:0}

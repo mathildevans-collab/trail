@@ -251,3 +251,17 @@ Observés sur 5 profils (débutant 10 km, semi, marathon, débutant trail 25 km,
 - Les durées d'affûtage.
 - Les séances clés par famille.
 - La relecture par un coach et un kiné pour les profils à risque (débutants, trail long).
+
+## 14. Ce qui est codé (27 nov.)
+
+- Qualité jamais plus longue que la sortie longue. Si elle l'est, elle est raccourcie, puis remplacée par de l'endurance avec lignes droites.
+- Ordre de réduction du volume : qualité, puis sorties faciles, puis sortie longue.
+- Pas de séance de course de moins de 2 km.
+- Familles de course (10 km, semi, marathon, trail court, moyen, long) : séances clés différentes par famille et par phase.
+- Plafond de la sortie longue en minutes selon la famille et le niveau, et +10 % par semaine au plus.
+- Trail : D+ de la semaine au plus +10 %.
+- Veille de course : footing d'activation de 3 km.
+- Alertes « À savoir » en haut du plan : plan trop court, marathon sans base, trail sans 3 sorties, sortie longue trop faible, objectif plus rapide que les records.
+- Strava : volume réel des 4 dernières semaines, sortie la plus longue, jours où tu cours, pause (reprise à 70 / 60 / 50 %), D+ habituel, records contre objectif, niveau réel = le plus bas entre déclaré et observé.
+
+Reste à faire : douleur au check-in, antécédents de blessure, D− suivi à part, pic de charge dans les plans intégrés.
