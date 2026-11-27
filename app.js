@@ -889,10 +889,10 @@ function vHome(){
   // Récapitulatif kilométrique réel de la semaine, comparé au plan.
   var start=weekStart(Math.round(today/ DAY)), actual=sumRuns(start,start+6), planned=0, plannedDp=0;
   if(wk){wk.s.forEach(function(ss){planned+=+ss.km||0;plannedDp+=+ss.dp||0;});}
-  var extra=wk?extraWk(wk):{km:0,dp:0}; planned+=extra.km; plannedDp+=extra.dp;
   var ratio=planned>0?Math.min(100,actual.km/planned*100):0;
   h+='<section class="card home-card home-week"><div class="home-card-head"><h2>Récap de ta semaine</h2><span class="eyebrow">'+(wk?'Semaine '+w:'Activité')+'</span></div><div class="home-week-km"><b>'+kmS(actual.km)+'</b><span> / '+(planned?kmS(planned):"—")+' km</span></div><div class="bar home-progress"><i style="width:'+ratio.toFixed(1)+'%"></i></div><div class="home-week-stats"><div><b>+'+nb(actual.dp)+' m</b><span>D+ réalisé</span></div><div><b>+'+nb(plannedDp)+' m</b><span>D+ prévu</span></div><div><b>'+actual.n+'</b><span>sortie'+(actual.n>1?'s':'')+'</span></div></div></section>';
   // Segments Strava : reprend les segments sauvegardés et les actions de recherche déjà présentes.
+  ctWatch();
   var segHtml=cotesCard0().replace("Segments proposés","Segments proches de toi");
   h+='<section class="home-segments">'+segHtml+'</section>';
   h+='</div>';
