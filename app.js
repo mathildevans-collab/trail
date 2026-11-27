@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=186;
+var APPV=187;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -980,19 +980,48 @@ function goNow(){browsing=false; var r=activeRace(), pl=planOf(r); if(!pl)return
   if(i>=0&&i<pl.n*7)sel=i%7; else{var wk=pl.weeks[cur-1]; sel=wk&&wk.s.length?wk.s[0].dow:1;}}
 
 // ---------- Aujourd’hui ----------
-function homeChartSvg(series,labels,min,max,aria){
-  var W=560,H=166,L=18,R=542,T=14,B=124,span=Math.max(1,max-min),n=Math.max(2,labels.length);
+var HCID=0;
+function hcPath(pts,clampLo,clampHi){ // courbe lisse sans dépassement
+  var d="M"+pts[0][0].toFixed(1)+","+pts[0][1].toFixed(1);
+  for(var i=0;i<pts.length-1;i++){var p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2,t=0.17;
+    var y1=p1[1]+(p2[1]-p0[1])*t, y2=p2[1]-(p3[1]-p1[1])*t, lo=Math.min(p1[1],p2[1]), hi=Math.max(p1[1],p2[1]);
+    y1=Math.max(lo,Math.min(hi,y1)); y2=Math.max(lo,Math.min(hi,y2));
+    d+="C"+(p1[0]+(p2[0]-p0[0])*t).toFixed(1)+","+y1.toFixed(1)+" "+(p2[0]-(p3[0]-p1[0])*t).toFixed(1)+","+y2.toFixed(1)+" "+p2[0].toFixed(1)+","+p2[1].toFixed(1);}
+  return d;
+}
+function homeChart(series,labels,min,max,aria,opts){ // courbes façon Strava : lisses, aire dégradée, repères à droite, lecture au toucher
+  opts=opts||{}; var id="hc"+(++HCID), W=560,H=186,L=10,R=512,T=14,B=150,span=Math.max(1e-6,max-min),n=Math.max(2,labels.length), fmt=opts.fmt||function(v){return String(Math.round(v));};
   function xy(v,i){return [L+(R-L)*i/(n-1),T+(max-v)/span*(B-T)];}
-  var h='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(aria)+'">';
-  [T,(T+B)/2,B].forEach(function(y){h+='<line class="home-chart-grid" x1="'+L+'" x2="'+R+'" y1="'+y+'" y2="'+y+'"/>';});
-  series.forEach(function(s){
-    var pts=[],dots=[];
-    s.values.forEach(function(v,i){if(v==null||!isFinite(v))return;var p=xy(v,i);pts.push(p[0].toFixed(1)+','+p[1].toFixed(1));dots.push('<circle class="home-chart-dot '+s.cls+'" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3"/>');});
-    if(pts.length>1)h+='<polyline class="home-chart-line '+s.cls+'" points="'+pts.join(' ')+'"/>';
-    h+=dots.join('');
+  var h='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(aria)+'"><defs>';
+  series.forEach(function(sr,k){if(sr.fill)h+='<linearGradient id="'+id+'g'+k+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="hc-st '+sr.cls+'" stop-opacity=".34"/><stop offset="1" class="hc-st '+sr.cls+'" stop-opacity="0"/></linearGradient>';});
+  h+='</defs>';
+  [0,1,2].forEach(function(k){var y=T+(B-T)*k/2, v=max-span*k/2; h+='<line class="home-chart-grid" x1="'+L+'" x2="'+R+'" y1="'+y+'" y2="'+y+'"/><text class="hc-y" x="'+(R+8)+'" y="'+(y+4)+'">'+esc(fmt(v))+'</text>';});
+  series.forEach(function(sr,k){
+    var runs=[],cur=[]; sr.values.forEach(function(v,i){if(v==null||!isFinite(v)){if(cur.length)runs.push(cur);cur=[];}else cur.push(xy(v,i));}); if(cur.length)runs.push(cur);
+    runs.forEach(function(pts){
+      if(pts.length<2)return; var d=hcPath(pts);
+      if(sr.fill)h+='<path d="'+d+' L'+pts[pts.length-1][0].toFixed(1)+','+B+' L'+pts[0][0].toFixed(1)+','+B+'Z" fill="url(#'+id+'g'+k+')"/>';
+      h+='<path class="home-chart-line '+sr.cls+'" d="'+d+'"/>';});
+    var lp=runs.length?runs[runs.length-1][runs[runs.length-1].length-1]:null;
+    if(lp)h+='<circle class="hc-end '+sr.cls+'" cx="'+lp[0].toFixed(1)+'" cy="'+lp[1].toFixed(1)+'" r="5"/>';
   });
-  labels.forEach(function(label,i){if(!label)return;var p=xy(min,i);h+='<text class="home-chart-label" x="'+p[0].toFixed(1)+'" y="151" text-anchor="middle">'+esc(label)+'</text>';});
-  return h+'</svg>';
+  labels.forEach(function(label,i){if(!label)return;h+='<text class="home-chart-label" x="'+xy(min,i)[0].toFixed(1)+'" y="'+(H-14)+'" text-anchor="middle">'+esc(label)+'</text>';});
+  h+='<line class="hc-rule" x1="0" x2="0" y1="'+T+'" y2="'+B+'" hidden/></svg><div class="hc-tip" hidden></div>';
+  var data={n:n,L:L,R:R,W:W,tips:opts.tips||[],s:series.map(function(sr){return {c:sr.cls,n:sr.name||"",v:sr.values.map(function(v){return v==null||!isFinite(v)?null:Math.round(v*10)/10;})};}),u:opts.unit||""};
+  return '<div class="home-chart" data-hc="'+esc(JSON.stringify(data))+'">'+h+'</div>';
+}
+function hcMove(e){
+  var c=e.target&&e.target.closest?e.target.closest(".home-chart[data-hc]"):null;
+  document.querySelectorAll(".home-chart.on").forEach(function(o){if(o!==c){o.classList.remove("on");o.querySelector(".hc-rule").setAttribute("hidden","");o.querySelector(".hc-tip").hidden=true;}});
+  if(!c)return;
+  var d=c._d; if(!d){try{d=c._d=JSON.parse(c.dataset.hc);}catch(x){return;}}
+  var svg=c.querySelector("svg"), r=svg.getBoundingClientRect(); if(!r.width)return;
+  var vx=(e.clientX-r.left)/r.width*d.W, i=Math.round((vx-d.L)/(d.R-d.L)*(d.n-1)); i=Math.max(0,Math.min(d.n-1,i));
+  var x=d.L+(d.R-d.L)*i/(d.n-1), rule=c.querySelector(".hc-rule"), tip=c.querySelector(".hc-tip");
+  rule.setAttribute("x1",x); rule.setAttribute("x2",x); rule.removeAttribute("hidden"); c.classList.add("on");
+  var rows=d.s.filter(function(q){return q.v[i]!=null;}).map(function(q){return '<span><i class="'+q.c+'"></i>'+esc(q.n)+' <b>'+q.v[i]+(d.u?" "+d.u:"")+'</b></span>';}).join("");
+  tip.innerHTML='<em>'+esc(d.tips[i]||"")+'</em>'+rows; tip.hidden=false;
+  var pct=x/d.W*100; tip.style.left=pct+"%"; tip.style.transform=pct>58?"translateX(calc(-100% - 10px))":"translateX(10px)";
 }
 function homeLegend(items){
   return '<div class="home-chart-legend">'+items.map(function(x){return '<span><i class="'+x[0]+'"></i>'+esc(x[1])+'</span>';}).join('')+'</div>';
@@ -1005,18 +1034,18 @@ function vHome(){
   if(fs&&fs.pts.length){
     var z=fs.pts[fs.pts.length-1], st=z.z>15?["Très frais","ok"]:z.z>5?["Frais","ok"]:z.z>=-10?["Équilibré","ok"]:z.z>=-25?["Chargé","warn"]:["Fatigue élevée","bad"];
     var byDay={};fs.pts.forEach(function(p){byDay[p.d]=p;});
-    var formVals=[],fatVals=[],freshVals=[],formLabels=[],all=[];
+    var formVals=[],fatVals=[],freshVals=[],formLabels=[],formTips=[],all=[];
     for(var fi=0;fi<28;fi++){
       var fd=todayN-27+fi, fp=byDay[fd]||null;
       formVals.push(fp?fp.f:null);fatVals.push(fp?fp.a:null);freshVals.push(fp?fp.z:null);
-      formLabels.push(fi===0||fi===6||fi===13||fi===20||fi===27?String(new Date(fd*DAY).getUTCDate()):"");
+      formTips.push(fmtD(fd*DAY)); formLabels.push(fi===0||fi===6||fi===13||fi===20||fi===27?String(new Date(fd*DAY).getUTCDate()):"");
       if(fp)all.push(fp.f,fp.a,fp.z);
     }
     var fmin=all.length?Math.min.apply(null,all):0,fmax=all.length?Math.max.apply(null,all):1,margin=Math.max(3,(fmax-fmin)*0.08);
     fmin-=margin;fmax+=margin;
     fcard+='<div class="home-form-score"><b>'+st[0]+'</b><span class="chip '+st[1]+'">Fraîcheur '+(z.z>=0?"+":"")+Math.round(z.z)+'</span></div>';
     fcard+='<p class="small muted">Forme '+Math.round(z.f)+' · Fatigue '+Math.round(z.a)+'</p>';
-    fcard+='<div class="home-chart">'+homeChartSvg([{cls:"form",values:formVals},{cls:"fatigue",values:fatVals},{cls:"fresh",values:freshVals}],formLabels,fmin,fmax,"Évolution de la forme, de la fatigue et de la fraîcheur sur les 28 derniers jours")+'</div>';
+    fcard+=homeChart([{cls:"form",name:"Forme",values:formVals,fill:true},{cls:"fatigue",name:"Fatigue",values:fatVals},{cls:"fresh",name:"Fraîcheur",values:freshVals}],formLabels,fmin,fmax,"Évolution de la forme, de la fatigue et de la fraîcheur sur les 28 derniers jours",{tips:formTips});
     fcard+=homeLegend([["form","Forme"],["fatigue","Fatigue"],["fresh","Fraîcheur"]]);
     fcard+='<p class="xs muted" style="margin:8px 0 0">28 derniers jours · '+fs.n+' sorties synchronisées</p>';
   }else fcard+='<p class="small muted">Tes indicateurs apparaîtront après la synchronisation de tes premières sorties Strava.</p><button class="btn sm" data-act="sync">Synchroniser Strava</button>';
@@ -1047,10 +1076,11 @@ function vHome(){
   var start=weekStart(todayN),actual=sumRuns(start,start+6),planned=0,plannedDp=0,actualDays=[],plannedDays=[0,0,0,0,0,0,0],weekLabels=["L","M","M","J","V","S","D"];
   for(var di=0;di<7;di++){actualDays.push(di<=dowOf(todayN)?sumRuns(start+di,start+di).km:null);}
   if(wk){wk.s.forEach(function(ss){var sd=Math.round(sessDate(pl,w,ss)/DAY),ix=sd-start;if(ix>=0&&ix<7){plannedDays[ix]+=+ss.km||0;planned+=+ss.km||0;plannedDp+=+ss.dp||0;}});}
-  var chartMax=Math.max.apply(null,actualDays.concat(plannedDays).filter(function(v){return v!=null;}).concat([1]))*1.18;
+  var cum=function(a){var t=0;return a.map(function(v){if(v==null)return null;t+=v;return t;});}, actCum=cum(actualDays), plCum=cum(plannedDays), weekTips=weekLabels.map(function(_,k){return DOWL[k];});
+  var chartMax=Math.max.apply(null,actCum.concat(plCum).filter(function(v){return v!=null;}).concat([1]))*1.12;
   h+='<section class="card home-card home-week"><div class="home-card-head"><h2>Récap de ta semaine</h2><span class="eyebrow">'+(wk?'Semaine '+w:'Activité')+'</span></div>';
   h+='<div class="home-week-km"><b>'+kmS(actual.km)+'</b><span> / '+(planned?kmS(planned):"—")+' km</span></div>';
-  h+='<div class="home-chart">'+homeChartSvg([{cls:"actual",values:actualDays},{cls:"planned",values:wk?plannedDays:[null,null,null,null,null,null,null]}],weekLabels,0,chartMax,"Kilomètres réalisés et prévus pour chaque jour de la semaine")+'</div>';
+  h+=homeChart([{cls:"planned",name:"Prévus",values:wk?plCum:[null,null,null,null,null,null,null]},{cls:"actual",name:"Réalisés",values:actCum,fill:true}],weekLabels,0,chartMax,"Kilomètres cumulés réalisés et prévus sur la semaine",{tips:weekTips,unit:"km",fmt:function(v){return kmS(Math.round(v));}});
   h+=homeLegend([["actual","Réalisés"],["planned","Prévus"]]);
   h+='<div class="home-week-stats"><div><b>+'+nb(actual.dp)+' m</b><span>D+ réalisé</span></div><div><b>+'+nb(plannedDp)+' m</b><span>D+ prévu</span></div><div><b>'+actual.n+'</b><span>sortie'+(actual.n>1?'s':'')+'</span></div></div></section>';
   // Segments Strava : reprend les segments sauvegardés et les actions de recherche déjà présentes.
@@ -2125,6 +2155,7 @@ function vFormeStrava(){
   function mini(on){nav.classList.toggle("mini",on);}
   window.addEventListener("scroll",function(){var y=window.scrollY||0, d=y-last; if(y<40)mini(false); else if(d>8)mini(true); else if(d<-8)mini(false); if(Math.abs(d)>8||y<40)last=y;},{passive:true});
 })();
+["pointermove","pointerdown"].forEach(function(ev){document.addEventListener(ev,hcMove);}); document.addEventListener("pointerleave",hcMove,true);
 $("tabs").addEventListener("click",function(e){var b=e.target.closest("button[data-t]"); if(!b)return; if(b.dataset.t==="today")browsing=false; setTab(b.dataset.t);});
 $("view").addEventListener("click",function(e){
   var swi=e.target.closest("[data-sw]"); if(swi){toggleSw(swi.dataset.sw); return;}
