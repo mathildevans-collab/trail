@@ -920,8 +920,7 @@ function vHome(){
   var start=weekStart(todayN),actual=sumRuns(start,start+6),planned=0,plannedDp=0,actualDays=[],plannedDays=[0,0,0,0,0,0,0],weekLabels=["L","M","M","J","V","S","D"];
   for(var di=0;di<7;di++){actualDays.push(di<=dowOf(todayN)?sumRuns(start+di,start+di).km:null);}
   if(wk){wk.s.forEach(function(ss){var sd=Math.round(sessDate(pl,w,ss)/DAY),ix=sd-start;if(ix>=0&&ix<7){plannedDays[ix]+=+ss.km||0;planned+=+ss.km||0;plannedDp+=+ss.dp||0;}});}
-  var chartMax=Math.max(1).concat?1:1;
-  chartMax=Math.max.apply(null,actualDays.concat(plannedDays).filter(function(v){return v!=null;}).concat([1]))*1.18;
+  var chartMax=Math.max.apply(null,actualDays.concat(plannedDays).filter(function(v){return v!=null;}).concat([1]))*1.18;
   h+='<section class="card home-card home-week"><div class="home-card-head"><h2>Récap de ta semaine</h2><span class="eyebrow">'+(wk?'Semaine '+w:'Activité')+'</span></div>';
   h+='<div class="home-week-km"><b>'+kmS(actual.km)+'</b><span> / '+(planned?kmS(planned):"—")+' km</span></div>';
   h+='<div class="home-chart">'+homeChartSvg([{cls:"actual",values:actualDays},{cls:"planned",values:wk?plannedDays:[null,null,null,null,null,null,null]}],weekLabels,0,chartMax,"Kilomètres réalisés et prévus pour chaque jour de la semaine")+'</div>';
