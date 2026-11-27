@@ -1824,3 +1824,38 @@ p.small.muted,p.muted.xs,.synth p,.synth .in p,details p.muted,.week-card p.mute
  .wo-b{min-height:42px}
  .wo-tech{order:7;max-height:15vh;overflow:auto}
 }
+
+/* ---------- Accueil desktop ---------- */
+.home-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;align-items:stretch}
+.home-card{margin:0;min-width:0}
+.home-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.home-card-head h2{margin:0}
+.home-link{border:0;background:none;color:var(--brand);font-weight:700;font-size:13px;padding:6px 0}
+.home-form{grid-column:span 4}
+.home-next{grid-column:span 8}
+.home-notifs{grid-column:span 4}
+.home-week{grid-column:span 8}
+.home-segments{grid-column:1/-1;min-width:0}
+.home-segments>.card{margin:0}
+.home-form-score{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px}
+.home-form-score>b{font:800 22px var(--display)}
+.home-spark{height:56px;display:flex;align-items:flex-end;position:relative;margin-top:12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,transparent,var(--brand-soft))}
+.home-spark i{display:block;width:100%;height:50%;background:var(--brand);border-radius:8px 8px 0 0;opacity:.8}
+.home-spark span{position:absolute;right:0;top:0;font-size:11px;color:var(--muted)}
+.home-next h2{font-size:25px;margin:10px 0 4px}
+.home-next-date{font-weight:700;margin:0 0 8px}
+.home-notif-list{display:grid;gap:8px}
+.home-notif-list button{border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:10px;text-align:left;display:grid;gap:3px}
+.home-notif-list button span{font-size:12px;color:var(--muted)}
+.home-week-km{display:flex;align-items:baseline;gap:6px;margin:14px 0 10px}
+.home-week-km b{font:800 34px var(--display)}
+.home-week-km span{color:var(--muted);font-weight:700}
+.home-progress{height:10px}
+.home-week-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.home-week-stats>div{display:grid;gap:3px}
+.home-week-stats b{font:800 18px var(--display)}
+.home-week-stats span{font-size:12px;color:var(--muted)}
+@media(max-width:1099px) and (min-width:900px){
+ .home-form,.home-next,.home-notifs,.home-week{grid-column:span 6}
+}
+@media(max-width:899px){.home-grid{display:none}}
