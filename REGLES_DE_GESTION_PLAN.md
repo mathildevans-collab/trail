@@ -273,3 +273,9 @@ Reste à faire : douleur au check-in, antécédents de blessure, D− suivi à p
 - Si une séance de qualité est trop longue pour la semaine, elle est remplacée par une séance de qualité plus courte (allure spécifique, seuil, fartlek), pas par un footing.
 - Trail débutant : côtes et fartlek seulement, pas de tempo ni d'intensité longue.
 - Ultra : jamais proposé. Au-delà de 80 km-effort, une alerte s'affiche.
+
+Ajouts du 28 nov. (suite) :
+- Semi et marathon : la séance clé passe avant les footings. On raccourcit d'abord les footings (jamais sous 4 km), puis seulement après la qualité.
+- Quand une séance de qualité est trop longue, le repli est une séance facile variée (éducatifs, côtes courtes, lignes droites), plus un footing identique.
+- Débutant : progression de +6 % par semaine (plafond 1,75 fois le volume de départ), au lieu de +3,5 %.
+- Ces règles s'appliquent aussi aux plans déjà commencés : le plan est recalculé à chaque ouverture, les séances cochées restent cochées.

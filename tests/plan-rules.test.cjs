@@ -34,7 +34,7 @@ const context = {
   RENFO: {},
   woMin: () => 12
 };
-const names = ["stravaStats", "effLevel", "pauseRamp", "famOf", "longCapKm", "isClubSession", "capWeekKm", "canBackToBack", "applyTrailElevation", "athleteLoadRules", "coachingRules"];
+const names = ["stravaStats", "effLevel", "pauseRamp", "famOf", "longCapKm", "isClubSession", "capWeekKm", "trimEasy", "easyRoute", "canBackToBack", "applyTrailElevation", "athleteLoadRules", "coachingRules"];
 vm.createContext(context);
 vm.runInContext("var LVL=[\"debutant\",\"reprise\",\"regulier\",\"confirme\"], SS_CACHE=null, FAMLONG={\"10k\":[60,75,90],semi:[90,105,120],marathon:[150,165,180],tcourt:[75,105,120],tmoyen:[120,165,210],tlong:[180,225,270]};", context);
 vm.runInContext(names.map(extractFunction).join("\n"), context);
@@ -142,5 +142,14 @@ const cwt = cw.reduce((a,s)=>a+s.km,0);
 assert.ok(cwt <= 32.3, "limite respectée : " + cwt);
 assert.ok(cw.find(s=>s.tag==="l").km >= 17, "sortie longue protégée");
 assert.ok(cw.find(s=>s.tag==="q").km <= cw.find(s=>s.tag==="l").km);
+
+// 9. Séance clé protégée : on raccourcit les footings (jamais sous 4 km), pas la qualité ni la sortie longue.
+const te = context.trimEasy([session(1,"Seuil",10,0,"q"),session(3,"Facile",8,0,"e"),session(5,"Sortie longue",20,0,"l")], 3);
+assert.strictEqual(te.find(s=>s.tag==="q").km, 10); assert.strictEqual(te.find(s=>s.tag==="l").km, 20);
+assert.ok(te.find(s=>s.tag==="e").km >= 4 && te.find(s=>s.tag==="e").km <= 5.1, "footing raccourci sans passer sous 4 km");
+// 10. Séances faciles variées sur route : chaque variante a son propre nom.
+const easyNames = ["strides","prog","hills","drills"].map(k=>context.easyRoute(k,{tag:"e",type:"Endurance facile",km:7,dp:0},{},[130,145]).type);
+assert.strictEqual(new Set(easyNames).size, 4, "4 variantes différentes : " + easyNames.join(", "));
+assert.strictEqual(context.easyRoute("easy",{tag:"e",km:7},{},[130,145]), null);
 
 console.log("OK : scénarios sportifs validés (blocs, D+, charge, intensités) + qualité/sortie longue, familles, Strava.");
