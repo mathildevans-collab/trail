@@ -265,3 +265,11 @@ Observés sur 5 profils (débutant 10 km, semi, marathon, débutant trail 25 km,
 - Strava : volume réel des 4 dernières semaines, sortie la plus longue, jours où tu cours, pause (reprise à 70 / 60 / 50 %), D+ habituel, records contre objectif, niveau réel = le plus bas entre déclaré et observé.
 
 Reste à faire : douleur au check-in, antécédents de blessure, D− suivi à part, pic de charge dans les plans intégrés.
+
+## 15. Moins de redondance (28 nov.)
+
+- Séance facile du jeudi : elle change chaque semaine. Route : lignes droites, éducatifs, côtes courtes, progressif ou simple endurance, selon la phase. Trail : côtes courtes, sentier technique ou endurance.
+- Marathon distinct du semi : tempo long (15 à 38 min continues) et blocs à allure marathon, sortie longue jusqu'à 32 km pour un plan de 42 km, plafond de 3 h à 3 h 20 selon le niveau.
+- Si une séance de qualité est trop longue pour la semaine, elle est remplacée par une séance de qualité plus courte (allure spécifique, seuil, fartlek), pas par un footing.
+- Trail débutant : côtes et fartlek seulement, pas de tempo ni d'intensité longue.
+- Ultra : jamais proposé. Au-delà de 80 km-effort, une alerte s'affiche.

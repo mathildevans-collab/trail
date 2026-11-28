@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=189;
+var APPV=190;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -228,7 +228,11 @@ function tuesdayOf(T,n,ph){
 }
 function sess(o){o.k=o.k||KEYS[o.dow]; return o;}
 function wedOf(km,code,w){return sess({dow:2,tag:"e",type:"Endurance + renfo",km:km,dp:0,pace:"6:00 à 6:25/km",pacel:"Allure facile",renfo:code,steps:[[km+" km","Zone 2, 135-150 bpm"],[woMin("renfo",code)+" min",activeRenfo()[code].name+" à la maison"]],txt:km+" km en zone 2 (135 à 150 bpm) "+WEDV[(w-1)%4]+", puis "+woMin("renfo",code)+" min de renforcement à la maison ("+activeRenfo()[code].name+")."});}
-function thuOf(light){return sess({dow:3,tag:"e",type:"Endurance facile",km:light?5:7,dp:0,steps:[[String(light?5:7)+" km","Zone 1-2, respiration facile. Pas de séance intense."]],txt:light?"Footing très facile de récupération, en aisance respiratoire.":"Footing facile en zone 2. Les séances de club sont ajoutées uniquement aux jours renseignés dans tes préférences."});}
+function thuOf(light,w,rt){
+  if(w!=null&&!light&&!rt&&persoOn()){var v=w%3;
+    if(v===1)return sess({dow:3,tag:"e",type:"Endurance + côtes courtes",km:7,dp:80,steps:[["5 km","Zone 2 sur sentier"],["6 × 10 s","Montée vive sur une côte, descente en marchant"],["1 km","Retour au calme"]],txt:"5 km en zone 2, puis 6 montées vives de 10 s sur une côte, en redescendant en marchant. Ça réveille les jambes sans fatigue."});
+    if(v===2)return sess({dow:3,tag:"e",type:"Endurance sentier technique",km:6,dp:70,steps:[["6 km","Zone 2 sur sentier irrégulier : foulée courte, regard 3 m devant"]],txt:"6 km sur sentier technique, racines ou pierres. Va doucement : le but est d’apprendre à poser les pieds, pas la vitesse."});}
+  return sess({dow:3,tag:"e",type:"Endurance facile",km:light?5:7,dp:0,steps:[[String(light?5:7)+" km","Zone 1-2, respiration facile. Pas de séance intense."]],txt:light?"Footing très facile de récupération, en aisance respiratoire.":"Footing facile en zone 2. Les séances de club sont ajoutées uniquement aux jours renseignés dans tes préférences."});}
 function longSteps(km){return km>=14?[[km+" km","Zone 2, marche active dans les côtes"]]:[[km+" km","Zone 2, allure conversation"]];}
 function raceWeek(r,m){
   var rd=dowOf(dms(r.date)), S=[];
@@ -260,7 +264,7 @@ var SATG={Base:"Sentier roulant en zone 2, allure conversation.",Construction:"Z
 function genWeek(w,n,taper,r,m){
   if(w===n)return {ph:"Affûtage",rec:false,s:raceWeek(r,m),note:"Semaine de course. Vérifie l’heure de départ et prépare ton matériel."};
   var M=n-1-taper, ph=phaseName(w,n,taper), g=m.dp/m.L, flat=g<12, L=m.L;
-  var peakSat=Math.max(8,Math.min(30,Math.round(L*0.62))), peakSun=Math.max(10,Math.min(22,Math.round(L*0.5)));
+  var bigRoad=persoOn()&&L>=40&&isRoutePlan(m,TRAIN_PREF), peakSat=bigRoad?Math.min(32,Math.round(L*0.72)):Math.max(8,Math.min(30,Math.round(L*0.62))), peakSun=Math.max(10,Math.min(22,Math.round(L*0.5)));
   var f, rec=false, note="";
   if(w<=M){f=M>1?0.6+0.4*(w-1)/(M-1):1; rec=w%4===0&&w<M; if(rec)f*=0.72;} else f=(w-M===1&&taper===2)?0.75:0.55;
   var ps=w===1||phaseName(w-1,n,taper)!==ph;
@@ -270,13 +274,14 @@ function genWeek(w,n,taper,r,m){
   else if(ph==="Affûtage")tu=tuesdayOf("tempo",20,ph);
   else{var st=1; for(var x=1;x<w;x++)if(phaseName(x,n,taper)!==ph)st=x+1; var fam=persoOn()?famOf(L,m.dp,TRAIN_PREF).id:"", CY=(CYCF[fam]||CYC)[ph]||CYC[ph], T=CY[(w-st)%CY.length]; if(persoOn()&&T==="desc"&&w<4)T="cotes";
     if(flat){if(T==="cotes")T="fartlek"; if(T==="paires")T="courtes"; if(T==="desc")T="tempo";}
+    else if(persoOn()&&effLevel(TRAIN_PREF)==="debutant"){if(T==="tempo")T="fartlek"; if(T==="paires"||T==="courtes")T="cotes"; if(T==="desc"&&w<8)T="cotes";} // débutant trail : côtes et fartlek, pas de tempo ni d’intensité longue
     var p=(f-0.6)/0.4, nn={cotes:Math.round(4+4*p),tempo:Math.round((15+25*p)/5)*5,courtes:Math.round(6+4*p),paires:Math.round(3+2*p),desc:Math.round(4+2*p),fartlek:Math.round(4+2*p)}[T];
     tu=tuesdayOf(T,Math.max(2,nn),ph);}
   var sk_=Math.max(6,Math.round(peakSat*f)), uk=ph==="Affûtage"?Math.max(10,Math.round(peakSun*f)):Math.max(15,Math.round(peakSun*f));
   var b2b=canBackToBack()&&ph==="Spécifique"&&!rec&&w%4===2&&w<n-taper;
   var sd=Math.round(sk_*g*0.85/10)*10, ud=ph==="Affûtage"?Math.round(uk*g*0.6/10)*10:Math.max(500,Math.round(uk*g*0.75/10)*10);
   var wed=rec?7:Math.round(6+3*f), code=renfoOf(ph,w);
-  var S=[sess(Object.assign({dow:1},tu)),wedOf(wed,code,w),thuOf(rec||ph==="Affûtage"),
+  var S=[sess(Object.assign({dow:1},tu)),wedOf(wed,code,w),thuOf(rec||ph==="Affûtage",w,persoOn()&&isRoutePlan(m,TRAIN_PREF)),
     sess({dow:5,tag:"l",type:"Sortie longue",km:sk_,dp:sd,steps:longSteps(sk_),txt:sk_+" km de trail, +"+sd+" m. "+(rec?"Sortie facile pour récupérer.":SATG[ph])}),
     sess({dow:6,tag:"l",type:b2b?"Jour 2 du bloc":"Sortie longue",km:uk,dp:ud,steps:longSteps(uk),txt:(ph==="Affûtage"?"Sortie facile, "+uk+" km, +"+ud+" m.":"Sortie longue vallonnée. Prévu aujourd’hui : "+uk+" km, +"+ud+" m.")+(ph==="Spécifique"&&!rec?" Les 20 dernières minutes à allure course (environ "+mmss(rpace(m,uk,ud))+"/km sur ce relief).":"")})];
   return {ph:ph,rec:rec,s:S,note:note};
@@ -341,7 +346,7 @@ function famOf(L,dp,pref){ // famille de course : décide des séances clés
   if(!trail)return {id:L<=12?"10k":L<=25?"semi":"marathon",trail:false,eff:eff};
   return {id:eff<30?"tcourt":eff<55?"tmoyen":"tlong",trail:true,eff:eff};
 }
-var FAMLONG={"10k":[60,75,90],semi:[90,105,120],marathon:[150,165,180],tcourt:[75,105,120],tmoyen:[120,165,210],tlong:[180,225,270]}; // minutes max, par niveau
+var FAMLONG={"10k":[60,75,90],semi:[90,105,120],marathon:[150,180,200],tcourt:[75,105,120],tmoyen:[120,165,210],tlong:[180,225,270]}; // minutes max, par niveau
 var FAMMIN={"10k":[10,8],semi:[12,10],marathon:[14,14],tcourt:[8,8],tmoyen:[12,12],tlong:[14,14]}; // semaines mini : [débutant, autres]
 var FAMNAME={"10k":"un 10 km",semi:"un semi-marathon",marathon:"un marathon",tcourt:"ce trail court",tmoyen:"ce trail",tlong:"ce trail long"};
 function longCapKm(fam,lvl,pace,g){ // plafond de la sortie longue en km, d’après le temps maxi du niveau
@@ -584,6 +589,12 @@ function routeQuality(kind,n,wkn,m,vol){
   if(kind==="fartlek"){var F=Math.max(4,Math.round((6+Math.round(pc*4))*vol));
     return {tag:"q",type:"Fartlek route",km:Math.round((25+F*4)/6.2),dp:0,cal:1,steps:[["15 min","Endurance en zone 2"],[F+" × 2 min","Rapide"+ptxt(c.thr,"effort 7-8/10")+"(zone 4), 2 min de trot entre"],RCD],
       txt:"15 min faciles, puis "+F+" × 2 min rapides"+(c.thr?" (~"+mmss(c.thr)+"/km)":"")+" avec 2 min de trot, retour au calme 10 min."};}
+  if(kind==="tempoLong"){var D=Math.max(15,Math.round((20+Math.round(pc*18))*vol/5)*5);
+    return {tag:"q",type:"Tempo long",km:Math.round(5+D/5.2),dp:0,cal:1,steps:[RWU,[D+" min","Allure tempo, un peu plus lente que le seuil"+ptxt(c.thr?c.thr*1.04:0,"effort 6-7/10")+"("+z4[0]+"-"+z4[1]+" bpm), continu"],RCD],
+      txt:"Échauffement 15 min, puis "+D+" min continues à allure tempo"+(c.thr?" (~"+mmss(c.thr*1.04)+"/km)":"")+". C’est la séance qui apprend à tenir longtemps. Reste régulier du début à la fin."};}
+  if(kind==="speLong"){var B=Math.max(2,Math.round((2+(pc>0.6?1:0))*(vol>0.6?1:0.7))),kb=Math.max(3,Math.round((4+Math.round(pc*4))*vol)), tt=4+B*kb+(B-1)*1.5+2;
+    return {tag:"q",type:"Blocs allure marathon",km:Math.round(tt),dp:0,cal:1,steps:[["4 km","Échauffement en zone 2"],[B+" × "+kb+" km","Allure marathon"+ptxt(c.mar,"effort 6/10")+"("+zoneBpm(3)[0]+"-"+zoneBpm(3)[1]+" bpm), 1,5 km facile entre"],["2 km","Retour au calme"]],
+      txt:"4 km faciles, puis "+B+" blocs de "+kb+" km à allure marathon"+(c.mar?" ("+paceTxt(c.mar,5)+")":"")+", avec 1,5 km facile entre. C’est la répétition générale de ta course : alimentation et chaussures comme le jour J."};}
   var L=m.L||10, sp=L>=35?c.mar:(L>=18?(c.mar+c.thr)/2:c.thr*0.99), spn=L>=35?"marathon":(L>=18?"semi-marathon":"10 km"), zz=L>=35?zoneBpm(3):zoneBpm(4);
   var blk=Math.max(1,Math.round((2+(pc>0.5?1:0))*vol)), mn=Math.max(6,Math.round((8+Math.round(pc*8))*(vol>0.6?1:0.8)));
   return {tag:"q",type:"Allure spécifique",km:Math.round(5+blk*mn/5.5+blk*0.4),dp:0,cal:1,steps:[RWU,[blk+" × "+mn+" min","Allure "+spn+ptxt(sp,"effort 6-7/10")+"("+zz[0]+"-"+zz[1]+" bpm), 3 min de trot entre"],RCD],
@@ -593,13 +604,16 @@ var RQ={Base:["vma30","fartlek","vma30"],Construction:["seuil","vmal","seuil","f
 var RQF={ // séances clés de la route selon la distance visée
   "10k":{Base:["fartlek","vma30","fartlek"],Construction:["vmal","seuil","vma30","vmal"],"Spécifique":["spe","vmal","spe","vma30"]},
   semi:{Base:["fartlek","seuil","fartlek"],Construction:["seuil","spe","seuil","vmal"],"Spécifique":["spe","seuil","spe"]},
-  marathon:{Base:["fartlek","seuil","fartlek"],Construction:["seuil","spe","seuil"],"Spécifique":["spe","spe","seuil","spe"]}};
+  marathon:{Base:["fartlek","seuil","fartlek"],Construction:["seuil","tempoLong","seuil","speLong"],"Spécifique":["speLong","tempoLong","speLong","spe"]}};
+var ERL={Base:["strides","drills","easy","hills"],Construction:["strides","prog","easy","hills"],"Spécifique":["easy","strides","prog","easy"]}; // jeudi : une séance facile différente d’une semaine à l’autre
 function routeify(sessions,wk,n,m,lim){
-  var c=calibrate(), qi=0, z2=zoneBpm(2), fam=famOf(m.L,m.dp,TRAIN_PREF).id, lv=effLevel(TRAIN_PREF);
+  var c=calibrate(), qi=0, ei=0, z2=zoneBpm(2), fam=famOf(m.L,m.dp,TRAIN_PREF).id, lv=effLevel(TRAIN_PREF);
   return sessions.map(function(s){
     if(!s||s.race||s.club||s.type==="Course B"||s.type==="Renfo seul"||s.type==="Autre sport")return s;
     if(s.tag==="q"){var list=(RQF[fam]||RQ)[wk.ph]; if(!list)return s; var kind=list[(wk.n+qi++)%list.length]; if(kind==="vma30"&&lv==="debutant"&&wk.n<4)kind="fartlek";
       var q,vol=1; do{q=routeQuality(kind,n,wk.n,m,vol); vol-=0.2;}while(lim>0&&q.km>lim&&vol>=0.35);
+      if(lim>0&&q.km>lim&&(kind==="speLong"||kind==="tempoLong")){ // trop long pour la semaine : on garde une vraie séance de qualité, plus courte
+        var alt=["spe","seuil","fartlek"]; for(var ai=0;ai<alt.length&&q.km>lim;ai++){vol=1; do{q=routeQuality(alt[ai],n,wk.n,m,vol); vol-=0.2;}while(q.km>lim&&vol>=0.35);}}
       if(lim>0&&q.km>lim){var lk2=Math.floor(lim*10)/10; // trop long même réduite : on garde l’intention avec des lignes droites
         return sess(Object.assign({k:s.k,dow:s.dow},{tag:"e",type:"Endurance + lignes droites",km:lk2,dp:0,cal:1,steps:[[kmS(lk2)+" km","Endurance zone 2, avec 4 lignes droites de 15 s relâchées au milieu."]],txt:"Séance courte cette semaine : "+kmS(lk2)+" km en endurance, avec 4 lignes droites. La qualité reste plus courte que ta sortie longue."}));}
       return sess(Object.assign({k:s.k,dow:s.dow},q));}
@@ -609,9 +623,12 @@ function routeify(sessions,wk,n,m,lim){
       else{c2.type="Sortie longue endurance"; c2.steps=[[s.km+" km","Zone 2 ("+z2[0]+"-"+z2[1]+" bpm)"+(c.easy?", ~"+paceTxt(c.easy*1.02,10):", allure conversation")]]; c2.txt=s.km+" km en endurance fondamentale, allure conversation. Terrain plat ou peu vallonné.";}
       return c2;}
     if(s.tag==="e"&&s.km>=5&&!wk.rec&&wk.ph!=="Affûtage"&&(s.type==="Endurance facile"||s.type==="Footing"||s.type==="Progressif")){
-      var c3=Object.assign({},s,{type:"Endurance + lignes droites",cal:1,dp:0});
-      c3.steps=[[s.km+" km","Zone 2 ("+z2[0]+"-"+z2[1]+" bpm)"+(c.easy?", ~"+paceTxt(c.easy,10):"")],["6 × 20 s","Lignes droites relâchées en fin de sortie, 1 min de marche entre"]];
-      c3.txt=s.km+" km en endurance, puis 6 lignes droites de 20 s (foulée vive et relâchée). Ça entretient la vitesse sans fatigue.";
+      var ek=((ERL[wk.ph]||ERL.Base)[(wk.n+ei++)%(ERL[wk.ph]||ERL.Base).length]), c3=Object.assign({},s,{cal:1,dp:0}), ez="Zone 2 ("+z2[0]+"-"+z2[1]+" bpm)"+(c.easy?", ~"+paceTxt(c.easy,10):"");
+      if(ek==="strides"){c3.type="Endurance + lignes droites"; c3.steps=[[s.km+" km",ez],["6 × 20 s","Lignes droites relâchées en fin de sortie, 1 min de marche entre"]]; c3.txt=s.km+" km en endurance, puis 6 lignes droites de 20 s (foulée vive et relâchée). Ça entretient la vitesse sans fatigue.";}
+      else if(ek==="prog"){var pk=Math.max(2,Math.round(s.km*0.3)); c3.type="Progressif route"; c3.steps=[[(s.km-pk)+" km",ez],[pk+" km","Accélère doucement jusqu’à la zone 3 basse"]]; c3.txt=(s.km-pk)+" km faciles, puis "+pk+" km en accélérant doucement. Tu finis sur un rythme soutenu, jamais à fond.";}
+      else if(ek==="hills"){c3.type="Endurance + côtes courtes"; c3.dp=40; c3.steps=[[(s.km-1)+" km",ez],["6 × 10 s","Montée vive sur une petite côte, redescente en trottinant"]]; c3.txt=(s.km-1)+" km en endurance, puis 6 montées vives de 10 s sur une côte ou un faux plat montant. Ça renforce la foulée sans stress.";}
+      else if(ek==="drills"){c3.type="Endurance + éducatifs"; c3.steps=[["10 min","Zone 2, puis éducatifs : talons-fesses, montées de genoux, griffés"],[(Math.max(2,s.km-2))+" km",ez]]; c3.txt="10 min faciles, puis 3 éducatifs sur 20 m (talons-fesses, montées de genoux, griffés), et le reste en endurance. Ça travaille la technique de foulée.";}
+      else {return s;}
       return c3;}
     return s;});
 }
