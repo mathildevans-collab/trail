@@ -6,6 +6,10 @@
 // ---------- dessins et fiches : tout vient de exo.js / exo-txt.js ----------
 function figKey(name){return window.EXO?EXO.find(name):null;}
 function img(name,thumb){var id=figKey(name); if(!id||!window.EXO)return ''; return EXO.one(id,false);}
+function reduced(){try{return window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;}catch(e){return false;}}
+function imgDyn(name){var id=figKey(name); if(!id||!window.EXO)return ''; return reduced()?EXO.one(id,true):EXO.one(id,false,true);}
+function tempo(s){var m=/descente en (\d)\s*s/.exec((s&&(s.amount||s.sub))||""); var n=m?+m[1]:0; return n>=4?5400:n===3?4200:2600;}
+function stopAnim(){if(W&&W.stop){try{W.stop();}catch(e){}W.stop=null;}}
 function zone(name){var id=figKey(name); return id&&window.EXO?EXO.zone(id):"";}
 
 // ---------- construction de la séance ----------
@@ -63,7 +67,7 @@ function start(kind,code,c){
   begin(0); try{el.focus({preventScroll:true});}catch(e){} clearInterval(tick); tick=setInterval(loop,250);
 }
 function close(keep){
-  clearInterval(tick); tick=null; if(el)el.hidden=true; if(!keep)document.body.style.overflow=""; try{if(wake){wake.release();wake=null;}}catch(e){} W=null; if(!keep&&opener&&document.contains(opener)){try{opener.focus({preventScroll:true});}catch(e){}} if(!keep)opener=null;
+  stopAnim(); clearInterval(tick); tick=null; if(el)el.hidden=true; if(!keep)document.body.style.overflow=""; try{if(wake){wake.release();wake=null;}}catch(e){} W=null; if(!keep&&opener&&document.contains(opener)){try{opener.focus({preventScroll:true});}catch(e){}} if(!keep)opener=null;
 }
 function begin(i){
   var s=W.w.steps[i]; W.i=i; W.paused=false; W.last=-1; W.el0=Date.now();
@@ -101,19 +105,21 @@ function techBox(s){
   return h;
 }
 function render(){
-  if(!W)return; var w=W.w, s=w.steps[W.i], n=w.steps.length, rest=s.t!=="ex", exs=w.steps.filter(function(x){return x.t==="ex";}), idx=w.steps.slice(0,W.i+1).filter(function(x){return x.t==="ex";}).length;
+  if(!W)return; stopAnim(); var w=W.w, s=w.steps[W.i], n=w.steps.length, rest=s.t!=="ex", exs=w.steps.filter(function(x){return x.t==="ex";}), idx=w.steps.slice(0,W.i+1).filter(function(x){return x.t==="ex";}).length;
   var nx=null; for(var j=W.i+1;j<n;j++){if(w.steps[j].t==="ex"){nx=w.steps[j];break;}}
   var big=s.sec?'<div class="wo-ring"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="15.9155" class="bg"/><circle cx="20" cy="20" r="15.9155" class="fg" data-wr="1" stroke-dasharray="100" stroke-dashoffset="0"/></svg><div class="wo-t num" data-wt="1">'+mmss(s.sec)+'</div></div>'
      :'<div class="wo-reps"><b class="num">'+s.reps+'</b><span>répétitions</span><small class="num" data-wt="1">0:00</small></div>';
   el.innerHTML='<div class="wo-in'+(rest?' wo-rest':'')+'"><div class="wo-top"><div><b>'+esc(w.title)+'</b><small class="num">'+(s.t==="ex"?'Exercice '+idx+' / '+exs.length:rest?'Pause':'')+'</small></div><div class="wo-tr"><button class="wo-x" data-wa="sound" aria-label="Son" title="Son">'+(W.mute?"🔇":"🔊")+'</button><button class="wo-x" data-wa="close" aria-label="Fermer">×</button></div></div>'+
     '<div class="wo-bar"><i style="width:'+Math.round(W.i/(n-1)*100)+'%"></i></div>'+
-    '<div class="wo-stage">'+img(s.fig,true)+'</div>'+
-    '<h2 class="wo-name">'+esc(rest&&s.t!=="ready"?s.name:s.t==="ready"?s.name:s.name)+'</h2>'+
-    '<p class="wo-sub">'+esc(s.sub||"")+(s.note?' · '+esc(s.note):'')+'</p>'+(s.t==="ex"&&zone(s.fig)?'<p class="wo-mus"><i></i>'+esc(zone(s.fig))+'</p>':'')+big+techBox(s)+
+    '<div class="wo-stage">'+imgDyn(s.fig)+'</div>'+
+    '<div class="wo-txt"><h2 class="wo-name">'+esc(s.name)+'</h2>'+
+    '<p class="wo-sub">'+esc(s.sub||"")+(s.note?' · '+esc(s.note):'')+'</p>'+(s.t==="ex"&&zone(s.fig)?'<p class="wo-mus"><i></i>'+esc(zone(s.fig))+'</p>':'')+'</div>'+
+    '<div class="wo-clk">'+big+'</div><div class="wo-tbw">'+techBox(s)+'</div>'+
     '<div class="wo-ctl"><button class="wo-b" data-wa="prev" aria-label="Précédent">‹</button>'+
       (s.sec?'<button class="wo-b prim" data-wa="pause">'+(W.paused?"Reprendre":"Pause")+'</button>':'<button class="wo-b prim" data-wa="done">Fait ›</button>')+
       '<button class="wo-b" data-wa="next" aria-label="Passer">›</button></div></div>';
   paintTime(W.left);
+  var fg=el.querySelector(".wfig.dyn"); if(fg&&window.EXO&&EXO.animate)W.stop=EXO.animate(fg,fg.dataset.fig,tempo(s));
 }
 
 window.WORKOUT={muscles:zone,img:img,figKey:figKey,start:start,build:build,minutes:minutes,close:close};

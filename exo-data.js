@@ -66,4 +66,23 @@ A("calfstep",{n:"Mollets sur marche",l1:"Talons bas",l2:"Sur la pointe",
 A("skater",{n:"Sauts de patineur",l1:"Appui à droite",l2:"Saut à gauche",front:true,
  A:{x:76,H:"auto",anc:["l2",76],t:168,a:[-25,-70],b:[30,80],l:[8,-8,90],m:[-42,-62,90],hot:["thigh"]},
  B:{x:44,H:"auto",anc:["l2",44],t:192,a:[25,70],b:[-30,-80],l:[-8,8,90],m:[42,62,90],hot:["thigh"],ar:[[60,70,48,70,2]]}});
+// --- exercices spécifiques coureur (route et trail) ---
+A("rdl1",{n:"Charnière une jambe",l1:"Debout sur une jambe",l2:"Buste penché, jambe arrière",
+ A:{anc:["l2",58],H:"auto",t:180,a:[10,10],b:[10,10],l:[6,-6,90],m:[14,-30,90],cont:["l"]},
+ B:{anc:["l2",58],H:"auto",t:104,a:[0,0],b:[0,0],l:[10,-6,90],m:[-84,-84,-70],hot:["glute","thigh","back"],cont:["l"],ar:[[34,30,22,30,0]]}});
+A("deadbug",{n:"Dead bug",l1:"Bras et genoux en l’air",l2:"Bras et jambe opposés",
+ A:{anc:["hip",58],H:4,t:-90,hd:-90,a:[180,180],b:[180,180],l:[180,90,90],m:[180,90,90],hot:["torso"]},
+ B:{anc:["hip",58],H:4,t:-90,hd:-90,a:[-120,-120],b:[180,180],l:[180,90,90],m:[104,104,90],hot:["torso"],ar:[[84,44,98,44,0]]}});
+A("pogo",{n:"Sauts pogo",l1:"Appui court",l2:"Rebond sur l’avant-pied",
+ A:{anc:["l2",58],H:"auto",t:180,a:[30,80],b:[30,80],l:[8,-8,90],m:[8,-8,90]},
+ B:{x:58,H:42,t:180,a:[30,80],b:[30,80],l:[0,0,30],m:[0,0,30],hot:["shin","foot"],ar:[[28,38,28,24,0]]}});
+A("tibraise",{n:"Tibial contre le mur",l1:"Pieds à plat",l2:"Pointes relevées",
+ A:{anc:["hip",54],H:"auto",t:184,a:[10,10],b:[10,10],l:[30,30,90],m:[30,30,90],props:[["wall",47]]},
+ B:{anc:["hip",54],H:"auto",t:184,a:[10,10],b:[10,10],l:[30,30,140],m:[30,30,140],hot:["shin","foot"],props:[["wall",47]],ar:[[92,70,92,58,0]]}});
+A("kneedrive",{n:"Montées de genoux",l1:"Debout",l2:"Genou à hauteur de hanche",
+ A:{anc:["l2",58],H:"auto",t:180,a:[-30,80],b:[40,95],l:[0,0,90],m:[0,0,90]},
+ B:{anc:["l2",58],H:"auto",t:180,a:[40,95],b:[-30,80],l:[0,0,90],m:[96,6,60],hot:["thigh"],cont:["l"],ar:[[78,48,78,34,0]]}});
+A("lungeknee",{n:"Fente arrière, montée de genou",l1:"Fente basse",l2:"Genou levé",
+ A:{anc:["l2",64],H:"auto",t:180,a:[0,0],b:[0,0],l:[88,0,90],m:[-22,-103,20],hot:["thigh","glute"]},
+ B:{anc:["l2",64],H:"auto",t:180,a:[30,90],b:[-30,80],l:[0,0,90],m:[96,6,60],hot:["thigh","glute"],cont:["l"],ar:[[78,48,78,34,0]]}});
 })();

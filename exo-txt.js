@@ -2,6 +2,30 @@
 (function(){
 var T={
 // ---------- renforcement ----------
+rdl1:{z:"Ischios, fessiers, bas du dos",d:"Debout sur une jambe, genou légèrement fléchi. Les bras pendent devant toi. Pose une main sur un mur au début si l’équilibre manque.",
+ e:["Pousse la hanche vers l’arrière en gardant le dos plat.","Le buste descend, la jambe libre monte derrière toi dans le même alignement.","Descends jusqu’à sentir l’arrière de la cuisse s’étirer, en 3 secondes.","Serre le fessier et reviens debout."],
+ a:"Buste et jambe libre presque à l’horizontale, bassin de face.",r:"Inspire en descendant, souffle en remontant.",p:"Dos plat, hanches parallèles au sol, regard quelques pas devant.",
+ x:["Dos qui s’arrondit.","Bassin qui s’ouvre vers le côté.","Genou d’appui qui se verrouille."],v:"Plus facile : orteils de la jambe libre au sol, main sur un mur. Plus dur : une bouteille d’eau dans chaque main."},
+deadbug:{z:"Abdominaux profonds, bassin",d:"Allongé sur le dos, bras tendus vers le plafond, hanches et genoux à 90°, bas du dos au sol.",
+ e:["Plaque le bas du dos au sol en rentrant le nombril.","Descends lentement un bras derrière la tête et la jambe opposée vers l’avant.","Reste 1 seconde, sans que le dos se creuse.","Reviens, puis change de côté."],
+ a:"Bras et jambe frôlent le sol, seulement tant que le bas du dos reste collé.",r:"Souffle en allongeant, inspire en revenant.",p:"Nuque détendue, côtes basses, mouvement lent.",
+ x:["Bas du dos qui se décolle.","Mouvement trop rapide.","Retenir sa respiration."],v:"Plus facile : bouge seulement les jambes. Plus dur : tiens une bouteille d’eau dans les mains."},
+pogo:{z:"Mollets, tendons d’Achille, pieds",d:"Debout, pieds largeur de bassin, genoux presque tendus, bras relâchés.",
+ e:["Rebondis sur l’avant-pied avec de petits sauts rapides.","Les genoux restent presque tendus : les chevilles font le travail.","Décolle à peine du sol et réceptionne sur la pointe du pied.","Garde un rythme régulier, comme un ressort."],
+ a:"Sauts de 2 à 5 cm, sans écraser les talons.",r:"Respire naturellement.",p:"Corps gainé, regard devant, contact au sol le plus court possible.",
+ x:["Fléchir les genoux comme pour un squat.","Poser les talons.","Sauter trop haut."],v:"Plus facile : sauts sur deux pieds, plus lents. Arrête si le tendon d’Achille tire."},
+tibraise:{z:"Tibial antérieur (devant du tibia)",d:"Dos et fesses contre un mur, pieds à un grand pas devant, jambes tendues, talons au sol.",
+ e:["Relève les pointes de pieds vers les tibias.","Garde les talons au sol.","Marque 1 seconde en haut.","Redescends lentement."],
+ a:"Pointes aussi hautes que possible, sans bouger les jambes.",r:"Souffle en relevant.",p:"Dos contre le mur, genoux souples.",
+ x:["Plier les genoux pour compenser.","Mouvement trop rapide.","Talons qui décollent."],v:"Plus facile : pieds plus proches du mur. Plus dur : pieds plus éloignés, ou une jambe à la fois."},
+kneedrive:{z:"Fléchisseurs de hanche, mollets, coordination",d:"Debout, grand, bras fléchis à 90° comme en course.",
+ e:["Monte un genou à hauteur de hanche, pied sous le genou.","Pousse dans l’autre pied jusque sur la pointe.","Pose le pied sous toi, puis change de jambe.","Alterne avec les bras opposés, rythme régulier."],
+ a:"Cuisse à l’horizontale, pied de support sur la pointe.",r:"Souffle à chaque deuxième appui.",p:"Buste droit, hanches hautes, appuis rapides.",
+ x:["Buste qui part en arrière.","Pied qui traîne derrière.","Appuis lourds."],v:"Plus facile : marche active. Plus dur : alterne 2 fois la même jambe."},
+lungeknee:{z:"Cuisses, fessiers, équilibre",d:"Debout, pieds largeur de bassin, mains sur les hanches.",
+ e:["Recule une jambe en fente, genou arrière près du sol.","Pousse fort dans le pied avant pour te redresser.","Monte le genou arrière à hauteur de hanche.","Pose le pied derrière et enchaîne."],
+ a:"Fente à 90°, puis genou à hauteur de hanche.",r:"Inspire en descendant, souffle en poussant.",p:"Buste droit, jambe d’appui stable, regard devant.",
+ x:["Genou avant qui rentre.","Buste penché en avant.","Poser la jambe libre trop vite."],v:"Plus facile : sans la montée de genou. Plus dur : une bouteille d’eau dans chaque main."},
 squat:{z:"Cuisses, fessiers",d:"Debout, pieds écartés à la largeur des épaules, pointes légèrement ouvertes. Bras tendus devant toi pour l’équilibre.",
  e:["Inspire, puis pousse les hanches vers l’arrière comme pour t’asseoir sur une chaise.","Fléchis les genoux en les gardant dans l’axe des orteils.","Descends en 3 secondes jusqu’à ce que les cuisses soient parallèles au sol.","Remonte en poussant dans tout le pied jusqu’à te redresser."],
  a:"Cuisses parallèles au sol, ou un peu plus haut si les talons se décollent.",r:"Inspire en descendant, souffle en remontant.",p:"Dos plat, poitrine ouverte, regard devant, poids réparti sur tout le pied.",
@@ -190,6 +214,7 @@ openbook:{z:"Dos thoracique, épaules",d:"À quatre pattes, une main derrière l
 };
 // aliases : nom d’exercice (de la liste des séances) → identifiant
 var M=[
+ [/charni[èe]re.*(une jambe|unipodal)/,"rdl1"],[/dead bug/,"deadbug"],[/pogo/,"pogo"],[/tibial/,"tibraise"],[/fente.*mont[ée]e de genou/,"lungeknee"],[/mont[ée]es? de genoux?/,"kneedrive"],
  [/fente lat[ée]rale lente|adducteurs/,"adduct"],[/pont fessier.*(une jambe|pied sur la chaise)/,"bridge1"],[/pont fessier/,"bridge"],[/ischios gliss/,"hamslide"],
  [/chaise murale/,"wallsit"],[/mollet.*genou fl[ée]chi/,"calfbent"],[/mollets? contre un mur|mollet.*jambe tendue/,"calfwall"],[/mollet|montées de mollets/,"calfstep"],
  [/planche.*[ée]paule/,"plankTap"],[/planche/,"plank"],[/gainage lat[ée]ral.*(lev[ée]e|jambe)/,"sideplankleg"],[/gainage lat/,"sideplank"],[/bird dog/,"birddog"],

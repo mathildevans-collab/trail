@@ -27,7 +27,7 @@ function solve(P){
       var j1=pt(root,lens[0],a[0]), a2=a[1];
       if(typeof a2==="string"){ var sgn=a2.charAt(1)==="+"?1:-1, need=(floor-j1[1])/lens[1]; if(Math.abs(need)>1.001)o.warn=(o.warn||"")+names+" hors de portée ("+rnd(need)+") ";
         a2=sgn*clampAcos(need); }
-      var j2=pt(j1,lens[1],a2), r={}; r[names+"1"]=j1; r[names+"2"]=j2; if(a[2]!==undefined)r[names+"3"]=pt(j2,LEN.ft,a[2]); return r;
+      var j2=pt(j1,lens[1],a2), r={}; r[names+"1"]=j1; r[names+"2"]=j2; if(a[2]!==undefined)r[names+"3"]=pt(j2,LEN.ft,a[2]); r[names+"A"]=[a[0],a2,a[2]===undefined?90:a[2]]; return r;
     }
     Object.assign(o,limb(hip,P.l||[0,0,90],[LEN.th,LEN.sh],floorOf("l"),"l"),limb(hip,P.m||[0,0,90],[LEN.th,LEN.sh],floorOf("m"),"m"),
       limb(o.sh,P.a||[0,0],[LEN.ua,LEN.fa],floorOf("a"),"a"),limb(o.sh,P.b||[0,0],[LEN.ua,LEN.fa],floorOf("b"),"b"));
@@ -39,7 +39,7 @@ function solve(P){
     hipY=best;
   } else hipY=G-(P.H==null?33:P.H);
   var o=build(hipY), ax=P.anc?o[P.anc[0]][0]:o.hip[0], dx=(P.anc?P.anc[1]:x)-ax;
-  Object.keys(o).forEach(function(k){ if(k==="warn")return; o[k]=[o[k][0]+dx,o[k][1]]; });
+  Object.keys(o).forEach(function(k){ if(k==="warn"||/A$/.test(k))return; o[k]=[o[k][0]+dx,o[k][1]]; });
   return o;
 }
 function seg(p,q,w,col,op){return '<path d="M'+rnd(p[0])+' '+rnd(p[1])+'L'+rnd(q[0])+' '+rnd(q[1])+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round"'+(op?' opacity="'+op+'"':'')+'/>';}
@@ -88,9 +88,46 @@ function add(id,o){o.id=id; EX[id]=o; ORDER.push(id);}
 
 function svgBox(inner,w,cls,label){return '<svg viewBox="0 0 '+w+' 86" class="'+cls+'" role="img" aria-label="'+String(label||"").replace(/"/g,"")+'" preserveAspectRatio="xMidYMid meet">'+inner+'</svg>';}
 function floor(x0,x1){return '<path d="M'+x0+' '+G+'H'+x1+'" stroke="var(--line,#ccc)" stroke-width="2" stroke-linecap="round"/>';}
+
+// ================= mouvement fluide entre les deux poses =================
+function resolve(P){ // pose → angles numériques et position du bassin (les appuis « g+ » / « g− » sont calculés)
+  var o=solve(P), t=P.t==null?180:P.t;
+  return {hx:o.hip[0],hy:o.hip[1],t:t,hd:P.hd==null?t:P.hd,sp:P.sp||null,l:o.lA,m:o.mA,a:o.aA.slice(0,2),b:o.bA.slice(0,2),hot:P.hot||[],ar:P.ar||[],props:P.props||[],fo:P.fo,front:P.front};
+}
+function lerp(a,b,u){return a+(b-a)*u;}
+function lerpA(a,b,u){return a.map(function(v,i){return lerp(v,b[i]==null?v:b[i],u);});}
+function mixProps(pa,pb,u){
+  var out=[]; pa.forEach(function(p,i){var q=pb[i]; if(q&&q[0]===p[0]&&q.length===p.length)out.push(p.map(function(v,k){return k&&typeof v==="number"&&typeof q[k]==="number"?lerp(v,q[k],u):v;})); else out.push(p);}); return out;
+}
+function mix(A,B,u){
+  var sp=null; if(A.sp||B.sp){var sa=A.sp||[A.t,A.t], sb=B.sp||[B.t,B.t]; sp=lerpA(sa,sb,u);}
+  var late=u>=.5;
+  return {anc:["hip",lerp(A.hx,B.hx,u)],H:G-lerp(A.hy,B.hy,u),t:lerp(A.t,B.t,u),hd:lerp(A.hd,B.hd,u),sp:sp,l:lerpA(A.l,B.l,u),m:lerpA(A.m,B.m,u),a:lerpA(A.a,B.a,u),b:lerpA(A.b,B.b,u),
+    hot:late?B.hot:A.hot,ar:late?B.ar:A.ar,props:mixProps(A.props,B.props,u),fo:late?B.fo:A.fo,front:late?B.front:A.front};
+}
+// ping-pong : maintien en A, montée vers B, maintien en B, retour
+function phaseU(ph,hold){ var h=hold||.12, m=(1-2*h)/2; // ph 0..1
+  if(ph<h)return 0; if(ph<h+m)return ease((ph-h)/m); if(ph<2*h+m)return 1; return 1-ease((ph-2*h-m)/m);
+}
+function ease(x){return x<=0?0:x>=1?1:(1-Math.cos(Math.PI*x))/2;}
+function animate(svg,id,period){ // renvoie une fonction d’arrêt
+  var e=EX[id]; if(!svg||!e||!e.B)return function(){};
+  var ra=resolve(e.A), rb=resolve(e.B), host=svg.querySelector("g.dyn"); if(!host)return function(){};
+  var alive=true, raf=0, t0=0, last=0, T=(period||e.T||2600);
+  function draw(u){host.innerHTML=pose(mix(ra,rb,u),"s");}
+  function frame(ts){
+    if(!alive||!svg.isConnected){alive=false;return;}
+    if(!t0)t0=ts; if(ts-last>=33){last=ts; draw(phaseU((((ts-t0)%T)/T),e.hold));}
+    raf=requestAnimationFrame(frame);
+  }
+  draw(0); raf=requestAnimationFrame(frame);
+  return function(){alive=false; if(raf)cancelAnimationFrame(raf);};
+}
 // panneau unique (animé entre A et B)
-function one(id,thumb){
-  var e=EX[id]; if(!e)return ''; var two=!!e.B&&!thumb;
+function one(id,thumb,dyn){
+  var e=EX[id]; if(!e)return '';
+  if(dyn&&e.B)return '<svg viewBox="8 0 100 86" class="wfig dyn" role="img" aria-label="'+String(e.n).replace(/"/g,"")+'" data-fig="'+id+'" preserveAspectRatio="xMidYMid meet">'+floor(8,108)+'<g class="dyn"></g></svg>';
+  var two=!!e.B&&!thumb;
   var inner=floor(8,108)+pose(e.A,"p1")+(two?pose(e.B,"p2"):'');
   return '<svg viewBox="8 0 100 86" class="wfig'+(two?' anim':'')+'" role="img" aria-label="'+String(e.n).replace(/"/g,"")+'" preserveAspectRatio="xMidYMid meet">'+inner+'</svg>';
 }
@@ -103,5 +140,5 @@ function pair(id){
   return '<svg viewBox="0 -4 200 90" class="wfig pair" role="img" aria-label="'+String(e.n).replace(/"/g,"")+' : étape 1, '+(e.l1||"départ")+', puis étape 2, '+(e.l2||"mouvement")+'" preserveAspectRatio="xMidYMid meet">'+inner+'</svg>';
 }
 
-root.EXO={EX:EX,ORDER:ORDER,add:add,one:one,pair:pair,pose:pose,solve:solve,LEN:LEN,G:G};
+root.EXO={EX:EX,ORDER:ORDER,add:add,one:one,pair:pair,pose:pose,solve:solve,animate:animate,mix:mix,resolve:resolve,LEN:LEN,G:G};
 })(typeof window!=="undefined"?window:globalThis);
