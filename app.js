@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=188;
+var APPV=189;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -374,7 +374,7 @@ function planAlerts(r,m,n,weeks,pref){ // alertes de réalisme : jamais de plan 
   if((f.id==="tmoyen"||f.id==="tlong")&&runs<3)A.push("Pour un trail de cette taille, il faut au moins 3 sorties par semaine. Commence par un trail plus court.");
   if((f.id==="tmoyen"||f.id==="tlong")&&lvl==="debutant"&&A.length<2)A.push("C’est un grand trail pour un début. Vise la ligne d’arrivée, pas un temps.");
   var lk=0,lw=null; weeks.forEach(function(w){w.s.forEach(function(s){if(s.tag==="l"&&!s.race&&!s.club&&s.type!=="Course B"&&(+s.km||0)>lk){lk=+s.km;lw=w;}});});
-  if(lk>0&&lw&&lw.km>0&&lk/lw.km>0.4&&A.length<3)A.push("Ta plus longue sortie ("+kmS(Math.round(lk*10)/10)+" km) pèse plus de 40 % de sa semaine. Ajoute une sortie facile si tu peux.");
+  if(lk>0&&lw&&lw.km>0&&lk/lw.km>0.4&&A.length<3)A.push("Ta plus longue sortie ("+kmS(Math.round(lk*10)/10)+" km) pèse plus de 40 % de sa semaine. Ajoute une sortie facile de 4 à 6 km pour mieux répartir la charge.");
   if(persoOn()&&lk>0&&!f.trail&&(f.id==="marathon"?lk<m.L*0.55:f.id==="semi"?lk<m.L*0.6:false)&&A.length<3)A.push("Avec ton volume de départ, ta sortie longue plafonne à "+kmS(Math.round(lk))+" km pour "+kmS(m.L)+" km de course. Prévois un objectif prudent.");
   var c=calibrate();
   if(c.vdot&&A.length<3){var d=f.eff*1000, pred=timeAt(c.vdot,d)/60*(f.trail?1.12:1); if(m.goal&&m.goal<pred*0.93)A.push("Ton objectif ("+hm(m.goal)+") est plus rapide que ce que tes records laissent prévoir (environ "+hm(Math.round(pred))+"). Estimation à confirmer.");}
@@ -975,7 +975,7 @@ function bindProfile(m){
 }
 
 // ---------- navigation ----------
-var FOLD={}, planCurW=0, tab="home", cur=1, sel=1, browsing=false, openWk=null, openPh=null, CV="list", CT="", prevTab="home", resetArmed=false, editRes=false;
+var NARROW=(window.matchMedia&&matchMedia("(max-width:899px)").matches), FOLD={}, planCurW=0, tab=NARROW?"today":"home", cur=1, sel=1, browsing=false, openWk=null, openPh=null, CV="list", CT="", prevTab=NARROW?"today":"home", resetArmed=false, editRes=false;
 function goNow(){browsing=false; var r=activeRace(), pl=planOf(r); if(!pl)return; var i=planIdx(pl); cur=nowWeek(pl);
   if(i>=0&&i<pl.n*7)sel=i%7; else{var wk=pl.weeks[cur-1]; sel=wk&&wk.s.length?wk.s[0].dow:1;}}
 
@@ -1047,7 +1047,7 @@ function vHome(){
     fcard+='<p class="small muted">Forme '+Math.round(z.f)+' · Fatigue '+Math.round(z.a)+'</p>';
     fcard+=homeChart([{cls:"form",name:"Forme",values:formVals,fill:true},{cls:"fatigue",name:"Fatigue",values:fatVals},{cls:"fresh",name:"Fraîcheur",values:freshVals}],formLabels,fmin,fmax,"Évolution de la forme, de la fatigue et de la fraîcheur sur les 28 derniers jours",{tips:formTips});
     fcard+=homeLegend([["form","Forme"],["fatigue","Fatigue"],["fresh","Fraîcheur"]]);
-    fcard+='<p class="xs muted" style="margin:8px 0 0">28 derniers jours · '+fs.n+' sorties synchronisées</p>';
+    fcard+='<p class="xs muted" style="margin:8px 0 0">28 derniers jours · '+fs.n+' sorties. Fraîcheur = forme moins fatigue.</p>';
   }else fcard+='<p class="small muted">Tes indicateurs apparaîtront après la synchronisation de tes premières sorties Strava.</p><button class="btn sm" data-act="sync">Synchroniser Strava</button>';
   fcard+='</section>';h+=fcard;
   // Prochaine séance : première séance non terminée à partir d’aujourd’hui.
@@ -1064,7 +1064,7 @@ function vHome(){
   h+='<section class="card home-card home-next"><div class="home-card-head"><span class="eyebrow">À venir</span><span class="chip">'+(next?fmtL(next.date):"Plan")+'</span></div>';
   if(next){
     var ns=next.s,mins=estDur(pl.m,ns),desc=[ns.km?kmS(ns.km)+" km":"",ns.dp?"+"+nb(ns.dp)+" m D+":"",mins?"≈ "+dur(mins):"",zoneOf(ns.type).split(" · ")[0]].filter(Boolean).join(" · ");
-    h+='<h2>'+esc(ns.type)+'</h2><p class="home-next-date">'+esc(fmtL(next.date))+' · '+esc(DOWL[nd])+'</p><p class="small muted">'+esc(desc)+'</p>'+(ns.txt?'<p class="small">'+esc(ns.txt)+'</p>':'')+'<button class="btn primary sm" data-go="plan">Voir ma séance →</button>';
+    h+='<h2>'+esc(ns.type)+'</h2><p class="home-next-date">'+esc(fmtL(next.date))+' · '+esc(DOWL[nd])+'</p><p class="small muted">'+esc(desc)+'</p>'+(ns.txt?'<p class="small home-clamp">'+esc(ns.txt)+'</p>':'')+'<button class="btn primary sm" data-go="plan">Voir ma séance →</button>';
   }else h+='<h2>Aucune séance à venir</h2><p class="small muted">Ton planning est à jour.</p><button class="btn sm" data-go="plan">Ouvrir mon plan</button>';
   h+='</section>';
   // Notifications du coach et de synchronisation.
@@ -1655,10 +1655,10 @@ function vRenfo(){
     h+='<div class="rf-hero"><span class="eyebrow">À FAIRE '+(dd<=0?"AUJOURD’HUI":dd===1?"DEMAIN":DOWL[rf.dow].toUpperCase())+'</span><h2>'+esc(nm[0])+'</h2><p>'+esc(nm[1]||R0.tours)+' · '+woMin("renfo",rf.renfo)+' min</p><div class="rf-btns">'+woBtns(rf.renfo,1)+'</div></div>';}
   h+='<div class="rf-sec"><h3>Renforcement</h3><span>7 séances · une chaise suffit</span></div><div class="rf-grid">';
   ["A1","A2","B1","B2","C1","C2","D"].forEach(function(k){var R1=RENFO[k], n=R1.name.split(" · ");
-    h+='<div class="rf-card"><span class="rf-ic">'+I.dumb+'</span><div class="rf-tx"><b>'+esc(n[0])+'</b><small>'+esc(n[1]||R1.tours)+'</small></div><span class="rf-min">'+woMin("renfo",k)+' min</span><div class="rf-act"><button class="btn sm" data-wo="renfo:'+k+'">▶ Lancer</button><button class="rf-more" data-sheet="renfo:'+k+'">Exercices</button></div></div>';});
+    h+='<div class="rf-card"><button class="rf-open" data-sheet="renfo:'+k+'" aria-label="Voir les exercices de '+esc(n[0])+'"><span class="rf-ic">'+I.dumb+'</span><span class="rf-tx"><b>'+esc(n[0])+'</b><small>'+esc(n[1]||R1.tours)+' · '+woMin("renfo",k)+' min</small></span></button><button class="rf-go" data-wo="renfo:'+k+'" aria-label="Lancer '+esc(n[0])+'">▶</button></div>';});
   h+='</div><div class="rf-sec"><h3>Mobilité</h3><span>6 séances · 10 à 15 min</span></div><div class="rf-grid">';
   ["hanches","chevilles","ischios","genoux","dos","complet"].forEach(function(k){var M=MOBS[k];
-    h+='<div class="rf-card"><span class="rf-ic">'+I.leaf+'</span><div class="rf-tx"><b>'+esc(M.name)+'</b><small>'+esc(M.goal)+'</small></div><span class="rf-min">'+woMin("mob",k)+' min</span><div class="rf-act"><button class="btn sm" data-wo="mob:'+k+'">▶ Lancer</button><button class="rf-more" data-sheet="mob:'+k+'">Exercices</button></div></div>';});
+    h+='<div class="rf-card"><button class="rf-open" data-sheet="mob:'+k+'" aria-label="Voir les exercices de '+esc(M.name)+'"><span class="rf-ic">'+I.leaf+'</span><span class="rf-tx"><b>'+esc(M.name)+'</b><small>'+woMin("mob",k)+' min · '+esc(M.goal)+'</small></span></button><button class="rf-go" data-wo="mob:'+k+'" aria-label="Lancer '+esc(M.name)+'">▶</button></div>';});
   return h+'</div>';
 }
 function vSettings(){
@@ -1873,7 +1873,7 @@ function sheetAct(a,b){
     if(pendingGpx){rr.gpx={name:pendingGpx.name,total:pendingGpx.total,pts:scalePts(pendingGpx.pts,pendingGpx.total,rr.km)}; if(!isB&&pendingGpx.prof)rr.prof=pendingGpx.prof.map(function(p){return [Math.round(p[0]*rr.km/pendingGpx.total*100)/100,p[1]];});}
     var msg="Course mise à jour.";
     if(!r0){D.races.push(rr); D.focus=rr.id; if(tab==="course")CV="detail";
-      if(rr.prio==="A"){var cur_=activeRace(); if(!cur_||daysTo(cur_)<0||(dms(rr.date)<dms(cur_.date)&&daysTo(rr)>=0)){D.active=rr.id; msg="Course ajoutée : ton plan est prêt.";} else msg="Course ajoutée. Touche « Suivre le plan » pour basculer dessus.";}
+      if(rr.prio==="A"){var cur_=activeRace(); if(!cur_||daysTo(cur_)<0||(dms(rr.date)<dms(cur_.date)&&daysTo(rr)>=0)){D.active=rr.id; msg="Course ajoutée : ton plan est prêt.";} else msg="Course ajoutée. Active-la dans Mes courses.";}
       else msg="Course B ajoutée : elle est glissée dans ton plan.";}
     MC={}; PC={}; save(); closeSheet(); toast(msg); goNow(); render(true); return;
   }
@@ -1907,6 +1907,7 @@ function sideFoot(){var el=$("sideFoot"); if(!el)return; var nm=window.CADENZO_P
   el.innerHTML='<div class="sf-user">'+(ph?'<img src="'+esc(ph)+'" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">':'<span class="sf-ph" aria-hidden="true">'+esc(nm.charAt(0).toUpperCase())+'</span>')+'<span class="sf-tx"><b>'+esc(nm)+'</b><small><i class="'+(sy.err?"ko":"ok")+'"></i>'+esc(st)+'</small></span></div>';}
 function render(keep){
   var y=window.scrollY, v;
+  if(tab==="home"&&window.matchMedia&&matchMedia("(max-width:899px)").matches)tab="today"; // sur mobile : Aujourd’hui, pas d’Accueil
   if(tab==="home")v=vHome(); else if(tab==="today")v=vToday(); else if(tab==="plan")v=vPlan(); else if(tab==="course")v=vCourse(); else if(tab==="forme")v=vForme(); else if(tab==="renfo")v=vRenfo(); else v=vSettings();
   if((tab==="home"||tab==="today")||(tab==="forme"&&FSUB!=="garmin"))v+=syncNote();
   $("view").innerHTML=v; sideFoot();
