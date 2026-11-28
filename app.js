@@ -7,7 +7,7 @@ var $=function(id){return document.getElementById(id);};
 var USER_ID=String(window.CADENZO_USER_ID||"anonymous").replace(/[^a-zA-Z0-9_-]/g,"");
 function userKey(k){return k+":"+USER_ID;}
 var KEY="thp40v3:"+USER_ID, OLDKEY="thp40v2:"+USER_ID;
-var APPV=191;
+var APPV=192;
 var STRAVA=true;    // activités du compte Strava connecté via Supabase
 var REPO="mathildevans-collab/trail";
 var DOW=["lun","mar","mer","jeu","ven","sam","dim"], DOWL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"], DL=["L","M","M","J","V","S","D"];
@@ -2640,6 +2640,7 @@ window.addEventListener("storage",function(e){ if(e.key!==KEY||!e.newValue||e.ne
 if(window.SAFE){SAFE.persist(); setTimeout(function(){snapSoon(JSON.stringify(D));},1500);
   if(LOADNOTE){var bad=""; try{bad=localStorage.getItem(KEY+".bad")||"";}catch(e){} if(bad)SAFE.snap("illisible",bad);
     setTimeout(function(){toast(LOADNOTE==="prev"?"Données abîmées : version précédente récupérée. Voir Réglages › Copies automatiques.":"Données illisibles, copie gardée. Réglages › Copies automatiques pour restaurer.");},800);}}
+if(window.__CADENZO_TEST)window.__CADENZO_TEST={planOf:planOf,nextMonday:nextMonday,todayUTC:todayUTC,setPref:function(p){TRAIN_PREF=p;PC={};},setHist:function(a){HIST=a;SS_CACHE=null;PC={};},D:function(){return D;}}; // point d’accès réservé aux tests automatiques (inactif sans cet indicateur)
 setTimeout(checkUpdate,1500); setInterval(checkUpdate,10*60*1000);
 document.addEventListener("visibilitychange",function(){if(!document.hidden)checkUpdate();});
 })();
